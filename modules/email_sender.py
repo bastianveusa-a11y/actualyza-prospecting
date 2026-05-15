@@ -1,27 +1,27 @@
 """
 Envío de emails de campaña vía Resend.
-Incluye tags para rastreo de apertura por webhook.
+
+Diseñado para máxima entregabilidad en bandeja principal:
+- HTML minimalista — sin max-width, sin colores, sin bordes decorativos
+- FROM name sin nombre de empresa (señal de email masivo para Gmail)
+- Email 1 se envía como texto plano puro (sin pixel de tracking)
+- Emails 2-4 usan HTML simple con tracking de aperturas
 """
 
 import os
 import resend
 
-_FROM    = None
-_FOOTER  = """<p style="font-size:12px;color:#888;margin-top:32px;border-top:1px solid #eee;padding-top:16px;">
-You received this email because your clinic was identified as a potential fit for AMY AI.<br>
-<a href="{unsubscribe_url}" style="color:#888;">Unsubscribe</a>
-</p>"""
-
+# HTML que imita un email personal compuesto en Gmail — sin señales de marketing
 _HTML_WRAPPER = """<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a1a2e;max-width:580px;margin:0 auto;padding:24px 16px;">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.55;color:#1a1a1a;margin:0;padding:0">
 {body}
-<p style="margin-top:24px;">Best,<br>
-<strong>Alicia</strong><br>
-<span style="color:#666;font-size:13px;">Growth Specialist &nbsp;·&nbsp; AMY AI</span>
+<p style="margin-top:20px;margin-bottom:4px">Best,</p>
+<p style="margin:0">Alicia<br>Growth Specialist, AMY AI</p>
+<p style="margin-top:20px;font-size:11px;color:#bbb">
+<a href="{unsubscribe_url}" style="color:#bbb;text-decoration:none">Unsubscribe</a>
 </p>
-{footer}
 </body>
 </html>"""
 
@@ -41,32 +41,39 @@ def send_campaign_email(
     base_url: str = "https://actualyza-prospecting-production.up.railway.app",
 ) -> dict:
     """
-    Envía un email de campaña vía Resend con tags para tracking.
+    Envía un email de campaña vía Resend.
+    Email 1 → texto plano (sin pixel de tracking, máxima entregabilidad).
+    Emails 2-4 → HTML minimalista con tracking de aperturas.
     Retorna: {"ok": bool, "message_id": str, "error": str|None}
     """
-    from_addr = f"{os.getenv('FROM_NAME', 'Alicia | AMY AI')} <{os.getenv('FROM_EMAIL', 'contact@actualyza.com')}>"
+    # FROM name solo con nombre de persona — el dominio aporta la marca
+    from_name = os.getenv("FROM_NAME", "Alicia")
+    from_addr = f"{from_name} <{os.getenv('FROM_EMAIL', 'contact@actualyza.com')}>"
     unsub_url = f"{base_url}/unsubscribe?id={notion_id}"
+    full_text = body_text + f"\n\n--\nUnsubscribe: {unsub_url}"
 
-    full_html = _HTML_WRAPPER.format(
-        body   = body_html,
-        footer = _FOOTER.format(unsubscribe_url=unsub_url),
-    )
-    full_text = body_text + f"\n\n---\nUnsubscribe: {unsub_url}"
+    payload = {
+        "from":    from_addr,
+        "to":      [to_email],
+        "subject": subject,
+        "text":    full_text,
+        "tags": [
+            {"name": "notion_id",  "value": notion_id[:50]},
+            {"name": "email_num",  "value": str(email_num)},
+        ],
+    }
+
+    # Email 1 va sin HTML — evita el pixel de tracking y señales de email masivo
+    # Es el momento más crítico: primer contacto en frío
+    if email_num > 1:
+        payload["html"] = _HTML_WRAPPER.format(
+            body          = body_html,
+            unsubscribe_url = unsub_url,
+        )
 
     try:
         client = _resend_client()
-        resp   = client.Emails.send({
-            "from":    from_addr,
-            "to":      [to_email],
-            "subject": subject,
-            "html":    full_html,
-            "text":    full_text,
-            "tags": [
-                {"name": "notion_id",  "value": notion_id[:50]},
-                {"name": "email_num",  "value": str(email_num)},
-            ],
-        })
-        # SDK v2 devuelve objeto tipado, no dict
+        resp   = client.Emails.send(payload)
         msg_id = resp.id if hasattr(resp, "id") else (resp.get("id", "") if isinstance(resp, dict) else "")
         return {"ok": True, "message_id": msg_id, "error": None}
     except Exception as e:
