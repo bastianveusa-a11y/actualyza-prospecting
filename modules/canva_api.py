@@ -164,6 +164,54 @@ def _headers() -> dict:
     }
 
 
+def upload_asset_binary(image_bytes: bytes, name: str = "creative") -> str:
+    """
+    Sube una imagen como bytes binarios a Canva.
+    Retorna la URL pública del asset en Canva CDN.
+    """
+    name_b64 = base64.b64encode(name.encode()).decode()
+    token    = _get_valid_token()
+    r = requests.post(
+        f"{CANVA_API_BASE}/assets",
+        data=image_bytes,
+        headers={
+            "Authorization":         f"Bearer {token}",
+            "Content-Type":          "application/octet-stream",
+            "Asset-Upload-Metadata": json.dumps({"name_base64": name_b64}),
+        },
+        timeout=60,
+    )
+    r.raise_for_status()
+    data = r.json()
+    # Canva retorna job ID — hay que esperar a que procese
+    job_id = data.get("job", {}).get("id") or data.get("id", "")
+    if not job_id:
+        raise RuntimeError(f"No se pudo obtener job ID de upload: {data}")
+    return _poll_asset_upload(job_id, token)
+
+
+def _poll_asset_upload(job_id: str, token: str, max_wait: int = 60) -> str:
+    """Espera que el asset upload termine y retorna la thumbnail/view URL."""
+    deadline = time.time() + max_wait
+    headers  = {"Authorization": f"Bearer {token}"}
+    while time.time() < deadline:
+        r = requests.get(f"{CANVA_API_BASE}/assets/{job_id}", headers=headers, timeout=15)
+        r.raise_for_status()
+        data   = r.json()
+        asset  = data.get("asset", data)
+        status = asset.get("import_status", {}).get("state") or asset.get("status", "")
+        if status in ("success", "succeeded", ""):
+            url = (asset.get("thumbnail", {}).get("url")
+                   or asset.get("url")
+                   or asset.get("view_url", ""))
+            if url:
+                return url
+        if status in ("failed", "error"):
+            raise RuntimeError(f"Asset upload falló: {data}")
+        time.sleep(2)
+    raise TimeoutError("Asset upload no completó a tiempo")
+
+
 def upload_asset_from_url(image_url: str, name: str = "flux-bg") -> str:
     """Sube una imagen desde URL a Canva y retorna el asset ID."""
     r = requests.post(

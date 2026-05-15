@@ -544,22 +544,24 @@ def api_generate_creative():
         return jsonify({"ok": False, "error": str(e)}), 429
 
     try:
-        from modules.image_gen  import generate_background
-        from modules.canva_api  import is_authorized, upload_asset_from_url, create_banner_design, export_design
+        from modules.image_gen import generate_background, compose_creative
+        from modules.canva_api import is_authorized, upload_asset_binary
 
-        img_url = generate_background(categoria, email_num)
+        flux_url = generate_background(categoria, email_num)
+        composed = compose_creative(flux_url, categoria, email_num)
 
         if is_authorized():
             try:
-                asset_id  = upload_asset_from_url(img_url, name=f"flux-{categoria}-e{email_num}")
-                design_id = create_banner_design(asset_id, categoria, email_num)
-                final_url = export_design(design_id)
+                final_url = upload_asset_binary(composed, name=f"amy-ai-{categoria}-e{email_num}")
                 return jsonify({"ok": True, "image_url": final_url, "source": "canva"})
             except Exception as canva_err:
-                # Canva falló — devuelve fondo Flux de todas formas
-                return jsonify({"ok": True, "image_url": img_url, "source": "flux", "canva_error": str(canva_err)})
+                pass  # fallback a local
 
-        return jsonify({"ok": True, "image_url": img_url, "source": "flux"})
+        # Fallback: servir desde Flask static
+        static_path = Path(__file__).parent / "static" / "img" / "creatives"
+        static_path.mkdir(parents=True, exist_ok=True)
+        (static_path / f"{categoria}_{email_num}.jpg").write_bytes(composed)
+        return jsonify({"ok": True, "image_url": f"/static/img/creatives/{categoria}_{email_num}.jpg", "source": "local"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -702,13 +704,21 @@ def _generate_all_assets_bg(force: bool = False):
                     from modules.api_budget import increment
                     increment("flux_images", 1)
                     img_url = generate_background(cat, num)
-                    if is_authorized():
-                        try:
-                            asset_id  = upload_asset_from_url(img_url, name=f"flux-{cat}-e{num}")
-                            design_id = create_banner_design(asset_id, cat, num)
-                            img_url   = export_design(design_id)
-                        except Exception as ce:
-                            print(f"    Canva falló para {key}: {ce}")
+                    try:
+                        from modules.image_gen import compose_creative
+                        from modules.canva_api import is_authorized, upload_asset_binary
+                        composed = compose_creative(img_url, cat, num)
+                        if is_authorized():
+                            canva_url = upload_asset_binary(composed, name=f"amy-ai-{cat}-e{num}")
+                            img_url   = canva_url
+                        else:
+                            # Sin Canva: guardar localmente y servir desde Flask
+                            static_path = Path(__file__).parent / "static" / "img" / "creatives"
+                            static_path.mkdir(parents=True, exist_ok=True)
+                            (static_path / f"{cat}_{num}.jpg").write_bytes(composed)
+                            img_url = f"/static/img/creatives/{cat}_{num}.jpg"
+                    except Exception as ce:
+                        print(f"    Composición falló para {key}: {ce}")
                     existing[key] = img_url
                     _save_assets(existing)
                     print(f"  ✓ {key}")
