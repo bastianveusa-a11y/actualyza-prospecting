@@ -63,6 +63,7 @@ DB_SCHEMA = {
     "Entidad Legal":    {"rich_text": {}},
     "Google Maps":      {"url": {}},
     "Google Place ID":  {"rich_text": {}},
+    "Página Facebook":  {"url": {}},
     "Sunbiz URL":       {"url": {}},
     "Sunbiz Score":     {"number": {"format": "number"}},
     "Notas":            {"rich_text": {}},
@@ -218,6 +219,8 @@ def _build_properties(data: dict) -> dict:
         props["Google Maps"] = {"url": data["google_maps_url"]}
     if "google_place_id" in data:
         props["Google Place ID"] = {"rich_text": txt(data["google_place_id"])}
+    if "facebook_page" in data and data["facebook_page"]:
+        props["Página Facebook"] = {"url": data["facebook_page"]}
     if "sunbiz_url" in data and data["sunbiz_url"]:
         props["Sunbiz URL"] = {"url": data["sunbiz_url"]}
     if "match_score" in data and data["match_score"]:

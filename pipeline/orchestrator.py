@@ -137,14 +137,17 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
     """
     name = clinic.get("nombre", "")
 
-    # Meta Ad Library
+    # Meta Ad Library — usa el sitio web de la clínica para encontrar el slug exacto de FB/IG
     meta = count_ads_for_page(
         page_name=name,
         user_token=META_TOKEN,
         delay=META_DELAY,
+        website_url=clinic.get("web") or None,
     )
     clinic["anuncios_activos"] = meta["count"]
     clinic["inversion_meta"]   = meta["level"]
+    if meta.get("fb_slug"):
+        clinic["facebook_page"] = f"https://facebook.com/{meta['fb_slug']}"
     if meta.get("method", "").startswith("scraping"):
         try:
             increment("meta_scraping", 1)
@@ -179,7 +182,8 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
 
     if action == "created":
         run_stats["created"] += 1
-        log(f"  ✓ {name} | {clinic['rating']}★ | {meta['level']} ({meta['count']} anuncios)")
+        slug_info = f" @{meta['fb_slug']}" if meta.get("fb_slug") else ""
+        log(f"  ✓ {name} | {clinic['rating']}★ | {meta['level']} ({meta['count']} anuncios){slug_info}")
     elif action == "updated":
         run_stats["updated"] += 1
         dueno = clinic.get("dueno", "—")
