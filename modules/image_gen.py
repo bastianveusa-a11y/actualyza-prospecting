@@ -149,7 +149,6 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
     Retorna los bytes del PNG final.
     """
     from PIL import Image, ImageDraw, ImageFont
-    import textwrap
 
     _ensure_fonts()
 

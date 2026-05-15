@@ -627,11 +627,11 @@ def _save_local_assets(data: dict) -> None:
 
 def _save_assets(data: dict) -> None:
     """Guarda assets en Notion (persistente) y localmente (cache)."""
+    import datetime
+    data["_saved_at"] = datetime.datetime.utcnow().isoformat()
     _save_local_assets(data)
     # Guardar en Notion
     try:
-        import datetime
-        data["_saved_at"] = datetime.datetime.utcnow().isoformat()
         content_json      = json.dumps(data, indent=2)
         page = _notion_get_assets_page()
         if page:
@@ -650,13 +650,13 @@ def _save_assets(data: dict) -> None:
                         timeout=10,
                     )
                     return
-        # Crear página nueva si no existe
+        # Crear página nueva si no existe (workspace root, no en la DB de clínicas)
         http.post(
             "https://api.notion.com/v1/pages",
             headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"},
             json={
-                "parent":     {"database_id": NOTION_DB_ID},
-                "properties": {"Nombre": {"title": [{"text": {"content": _NOTION_ASSETS_PAGE_TITLE}}]}},
+                "parent":     {"type": "workspace", "workspace": True},
+                "properties": {"title": {"title": [{"text": {"content": _NOTION_ASSETS_PAGE_TITLE}}]}},
                 "children": [{
                     "object": "block", "type": "code",
                     "code": {"rich_text": [{"type": "text", "text": {"content": content_json}}], "language": "json"},
@@ -700,7 +700,6 @@ def _generate_all_assets_bg(force: bool = False):
                     continue
                 try:
                     from modules.image_gen  import generate_background
-                    from modules.canva_api  import is_authorized, upload_asset_from_url, create_banner_design, export_design
                     from modules.api_budget import increment
                     increment("flux_images", 1)
                     img_url = generate_background(cat, num)

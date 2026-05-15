@@ -200,7 +200,7 @@ def _poll_asset_upload(job_id: str, token: str, max_wait: int = 60) -> str:
         data   = r.json()
         asset  = data.get("asset", data)
         status = asset.get("import_status", {}).get("state") or asset.get("status", "")
-        if status in ("success", "succeeded", ""):
+        if status in ("success", "succeeded"):
             url = (asset.get("thumbnail", {}).get("url")
                    or asset.get("url")
                    or asset.get("view_url", ""))
