@@ -573,9 +573,10 @@ def api_campaigns():
     campos  = ["notion_id", "nombre", "ciudad", "categoria", "email",
                "corre_anuncios", "campana_email", "email_etapa",
                "email_enviados", "email_abiertos", "lead_score"]
+    # Solo leads con correo (elegibles para campaña)
     rows = [{k: c.get(k) for k in campos} for c in clinics if c.get("email")]
     rows.sort(key=lambda r: r.get("lead_score", 0), reverse=True)
-    return jsonify(rows)
+    return jsonify(rows)   # lista vacía si nadie tiene correo → el JS muestra todos con aviso
 
 
 @app.route("/api/enable-campaign", methods=["POST"])

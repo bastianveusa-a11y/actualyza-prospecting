@@ -1236,22 +1236,21 @@ function etapaBadge(etapa) {
   return `<span class="badge ${cls}">${etapa||'—'}</span>`;
 }
 function adsCell(c) {
-  const n = c.anuncios || 0;
-  const v = c.corre_anuncios;
+  const n  = c.anuncios || 0;
+  const v  = (n > 0) ? 'Sí' : (c.corre_anuncios || '');
   const id = c.notion_id;
 
-  let display = '';
-  if (n > 0)       display = `<span style="color:var(--green);font-weight:600;margin-right:6px">Sí (${n})</span>`;
-  else if (v==='Sí')  display = `<span style="color:var(--green);font-weight:600;margin-right:6px">Sí</span>`;
-  else if (v==='No')  display = `<span style="color:var(--text3);margin-right:6px">No</span>`;
-  else                display = `<span style="color:var(--text3);font-size:.75rem;margin-right:6px" title="Verificar con 📢">?</span>`;
+  const base = 'padding:2px 10px;border-radius:4px;border:1px solid;font-size:.68rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;';
+  const activeSi = `${base}border-color:rgba(64,200,152,.6);background:rgba(64,200,152,.18);color:var(--green)`;
+  const activeNo = `${base}border-color:rgba(120,120,160,.5);background:rgba(120,120,160,.15);color:var(--text2)`;
+  const inactSi  = `${base}border-color:rgba(64,200,152,.2);background:transparent;color:var(--text3)`;
+  const inactNo  = `${base}border-color:var(--border);background:transparent;color:var(--text3);margin-left:4px`;
 
-  const btnStyle = 'padding:2px 8px;border-radius:4px;border:1px solid;font-size:.68rem;font-weight:600;cursor:pointer;font-family:inherit;';
-  const btnSi  = `<button style="${btnStyle}border-color:rgba(64,200,152,.4);background:rgba(64,200,152,.1);color:var(--green)"
-                   onclick="setAds('${id}','Sí')">Sí</button>`;
-  const btnNo  = `<button style="${btnStyle}border-color:var(--border);background:transparent;color:var(--text3);margin-left:4px"
-                   onclick="setAds('${id}','No')">No</button>`;
-  return display + btnSi + btnNo;
+  const btnSi = `<button style="${v==='Sí' ? activeSi : inactSi}"
+                  onclick="setAds('${id}','Sí')">Sí</button>`;
+  const btnNo = `<button style="${v==='No' ? activeNo : inactNo}margin-left:4px"
+                  onclick="setAds('${id}','No')">No</button>`;
+  return btnSi + btnNo;
 }
 
 async function setAds(notionId, value) {
@@ -1288,7 +1287,19 @@ async function loadCampanas() {
 
   const body = document.getElementById('camp-body');
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="9" class="tbl-empty">Sin leads con correo electrónico todavía.</td></tr>';
+    // Mostrar todos los leads aunque no tengan email, para que el usuario vea el estado
+    const todos = allClinics.slice().sort((a,b)=>(b.lead_score||0)-(a.lead_score||0));
+    if (!todos.length) {
+      body.innerHTML = '<tr><td colspan="9" class="tbl-empty">Sin leads en Notion todavía — corre el pipeline primero.</td></tr>';
+      return;
+    }
+    body.innerHTML = todos.map(c => `<tr>
+      <td style="font-weight:500">${escHtml(c.nombre)}</td>
+      <td style="text-align:center">${c.ciudad||'—'}</td>
+      <td style="text-align:center">${scoreBadge(c.lead_score||0)}</td>
+      <td style="font-size:.72rem;color:var(--red)">Sin correo — correr pipeline</td>
+      <td colspan="5" style="color:var(--text3);font-size:.72rem;text-align:center">—</td>
+    </tr>`).join('');
     return;
   }
 
