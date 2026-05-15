@@ -66,6 +66,8 @@ def send_campaign_email(
                 {"name": "email_num",  "value": str(email_num)},
             ],
         })
-        return {"ok": True, "message_id": resp.get("id", ""), "error": None}
+        # SDK v2 devuelve objeto tipado, no dict
+        msg_id = resp.id if hasattr(resp, "id") else (resp.get("id", "") if isinstance(resp, dict) else "")
+        return {"ok": True, "message_id": msg_id, "error": None}
     except Exception as e:
         return {"ok": False, "message_id": "", "error": str(e)}

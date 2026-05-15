@@ -715,11 +715,17 @@ def webhook_resend():
 
     notion_id = None
     email_num = None
-    for tag in ev_data.get("tags", []):
-        if tag.get("name") == "notion_id":
-            notion_id = tag["value"]
-        if tag.get("name") == "email_num":
-            email_num = tag["value"]
+    # Resend manda tags como dict {"notion_id": "...", "email_num": "1"}
+    tags = ev_data.get("tags", {})
+    if isinstance(tags, dict):
+        notion_id = tags.get("notion_id")
+        email_num = tags.get("email_num")
+    elif isinstance(tags, list):
+        for tag in tags:
+            if tag.get("name") == "notion_id":
+                notion_id = tag["value"]
+            if tag.get("name") == "email_num":
+                email_num = tag["value"]
 
     if not notion_id:
         return jsonify({"ok": True})
