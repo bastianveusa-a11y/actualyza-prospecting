@@ -247,6 +247,7 @@ def get_budget() -> dict:
         "meta_scraping":  int(os.getenv("META_SCRAPING_MONTHLY_LIMIT", "300")),
         "claude_emails":  int(os.getenv("CLAUDE_MONTHLY_LIMIT",        "500")),
         "resend_emails":  int(os.getenv("RESEND_MONTHLY_LIMIT",        "2800")),
+        "flux_images":    int(os.getenv("FLUX_MONTHLY_LIMIT",          "100")),
     }
     # Metadata por servicio: icono, nota de costo/plan, si tiene costo real
     meta = {
@@ -255,6 +256,7 @@ def get_budget() -> dict:
         "meta_scraping":  {"icon": "📢", "label": "Meta Scraping",    "note": "sin costo",              "paid": False},
         "claude_emails":  {"icon": "🤖", "label": "Claude (emails)",  "note": "~$0.002 por email",      "paid": True},
         "resend_emails":  {"icon": "📨", "label": "Resend",           "note": "3,000 gratis/mes",       "paid": False},
+        "flux_images":    {"icon": "🎨", "label": "Flux (imágenes)",  "note": "~$0.004 por imagen",     "paid": True},
     }
     raw   = {}
     month = datetime.now(timezone.utc).strftime("%Y-%m")
@@ -516,6 +518,32 @@ def api_enable_group():
 
     _cache = {"data": None, "ts": 0.0}
     return jsonify({"ok": True, "enabled": enabled, "total": len(eligible), "errors": errors})
+
+
+@app.route("/api/generate-creative", methods=["POST"])
+@_require_auth
+def api_generate_creative():
+    """
+    Genera un creativo de email con Flux 1.1 Pro.
+    Flujo: Flux genera imagen de fondo → URL devuelta al cliente.
+    Body: { "categoria": str, "email_num": int }
+    """
+    data      = request.json or {}
+    categoria = data.get("categoria", "dental").strip()
+    email_num = int(data.get("email_num", 2))
+
+    try:
+        from modules.api_budget import increment
+        increment("flux_images", 1)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 429
+
+    try:
+        from modules.image_gen import generate_background
+        img_url = generate_background(categoria, email_num)
+        return jsonify({"ok": True, "image_url": img_url})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/meta-token")

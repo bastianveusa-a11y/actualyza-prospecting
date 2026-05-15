@@ -146,6 +146,56 @@ header {
 .score-low  { background: rgba(120,120,160,0.12); color: #9090b8; }
 .opened-tag { font-size: 0.62rem; color: var(--green); }
 
+/* Flux section */
+.flux-section {
+  margin-top: 28px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px 22px;
+}
+.flux-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px;
+}
+.flux-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
+.flux-sub { font-size: 0.72rem; color: var(--text3); }
+.flux-badge {
+  flex-shrink: 0; font-size: 0.7rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid rgba(201,169,110,0.3); color: var(--gold);
+  background: rgba(201,169,110,0.06);
+}
+.flux-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.flux-card {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.flux-card-label { font-size: 0.75rem; font-weight: 600; }
+.flux-card-desc { font-size: 0.7rem; color: var(--text3); }
+.flux-img-wrap {
+  border-radius: var(--r-sm); overflow: hidden;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  min-height: 160px; display: flex; align-items: center; justify-content: center;
+}
+.flux-img-wrap img { width: 100%; height: auto; display: block; }
+.flux-placeholder { color: var(--text3); font-size: 0.75rem; }
+.flux-loading {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--text3); font-size: 0.75rem;
+}
+.flux-spinner {
+  width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.flux-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px; border-radius: var(--r-sm); width: 100%;
+  border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.08);
+  color: var(--gold); font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s;
+}
+.flux-btn:hover { background: rgba(201,169,110,0.16); border-color: rgba(201,169,110,0.5); }
+.flux-btn:disabled { opacity: .4; cursor: not-allowed; }
+
 /* Enable button */
 .btn-enable-group {
   width: 100%; padding: 8px; border-radius: var(--r-sm);
@@ -356,6 +406,41 @@ header {
     </div>
   </div>
 
+  <!-- Flux creative assets -->
+  <div class="flux-section" id="flux-section" style="display:none">
+    <div class="flux-header">
+      <div>
+        <div class="flux-title">Visuales de campaña</div>
+        <div class="flux-sub">Generados con Flux 1.1 Pro · Solo se incluyen en emails a leads que ya abrieron el anterior</div>
+      </div>
+      <div class="flux-badge">🎨 Flux 1.1 Pro</div>
+    </div>
+    <div class="flux-grid">
+      <div class="flux-card" id="flux-card-2">
+        <div class="flux-card-label">Email 2b — Banner de impacto</div>
+        <div class="flux-card-desc">Para leads que abrieron Email 1 pero no respondieron</div>
+        <div class="flux-img-wrap" id="flux-img-2">
+          <div class="flux-placeholder">Sin generar</div>
+        </div>
+        <button class="flux-btn" id="flux-btn-2" onclick="generateCreative(2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Generar con Flux
+        </button>
+      </div>
+      <div class="flux-card" id="flux-card-3">
+        <div class="flux-card-label">Email 3 — Social proof</div>
+        <div class="flux-card-desc">Para leads que abrieron cualquier email anterior</div>
+        <div class="flux-img-wrap" id="flux-img-3">
+          <div class="flux-placeholder">Sin generar</div>
+        </div>
+        <button class="flux-btn" id="flux-btn-3" onclick="generateCreative(3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Generar con Flux
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /shell -->
 
 <script>
@@ -435,6 +520,7 @@ function tryRenderKanban() {
     document.getElementById('kanban').innerHTML = '<div style="color:var(--text3);font-size:.85rem;padding:40px">Selecciona ciudad y categoría ↑</div>';
     document.getElementById('group-summary').style.display = 'none';
   }
+  toggleFluxSection();
 }
 
 // ── Kanban ────────────────────────────────────────────────────
@@ -635,6 +721,67 @@ async function enableGroup() {
   } catch(e) {
     alert('Error: ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = `Habilitar Email 1 → ${pending} leads`; }
+  }
+}
+
+// ── Flux creative generation ──────────────────────────────────
+const fluxCache = {}; // key: "categoria|emailNum" → image_url
+
+function toggleFluxSection() {
+  const show = !!(selectedCity && selectedCat);
+  document.getElementById('flux-section').style.display = show ? 'block' : 'none';
+  if (show) {
+    // Restore cached images for this category
+    [2, 3].forEach(n => {
+      const key = `${selectedCat}|${n}`;
+      if (fluxCache[key]) showFluxImage(n, fluxCache[key]);
+      else resetFluxCard(n);
+    });
+  }
+}
+
+function resetFluxCard(emailNum) {
+  const wrap = document.getElementById(`flux-img-${emailNum}`);
+  const btn  = document.getElementById(`flux-btn-${emailNum}`);
+  wrap.innerHTML = '<div class="flux-placeholder">Sin generar</div>';
+  btn.disabled   = false;
+  btn.innerHTML  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Generar con Flux`;
+}
+
+function showFluxImage(emailNum, url) {
+  const wrap = document.getElementById(`flux-img-${emailNum}`);
+  wrap.innerHTML = `<img src="${url}" alt="Creativo Email ${emailNum}">`;
+}
+
+async function generateCreative(emailNum) {
+  if (!selectedCat) return;
+  const btn  = document.getElementById(`flux-btn-${emailNum}`);
+  const wrap = document.getElementById(`flux-img-${emailNum}`);
+
+  btn.disabled  = true;
+  btn.innerHTML = '<div class="flux-spinner"></div> Generando…';
+  wrap.innerHTML= '<div class="flux-loading"><div class="flux-spinner"></div><div>Flux está generando la imagen…</div></div>';
+
+  try {
+    const r    = await fetch('/api/generate-creative', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ categoria: selectedCat, email_num: emailNum }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      fluxCache[`${selectedCat}|${emailNum}`] = data.image_url;
+      showFluxImage(emailNum, data.image_url);
+      btn.disabled  = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Regenerar`;
+    } else {
+      wrap.innerHTML = `<div class="flux-placeholder" style="color:var(--red)">Error: ${escHtml(data.error||'')}</div>`;
+      btn.disabled   = false;
+      btn.innerHTML  = 'Reintentar';
+    }
+  } catch(e) {
+    wrap.innerHTML = `<div class="flux-placeholder" style="color:var(--red)">Error de conexión</div>`;
+    btn.disabled   = false;
+    btn.innerHTML  = 'Reintentar';
   }
 }
 

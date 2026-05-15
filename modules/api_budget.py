@@ -18,6 +18,7 @@ DEFAULTS = {
     "meta_scraping":  300,   # Meta scraping: sin costo — límite por cortesía
     "claude_emails":  500,   # Claude API: ~$0.002/email (haiku) — alerta preventiva
     "resend_emails":  2800,  # Resend plan gratis: 3,000/mes; margen de 200
+    "flux_images":    100,   # Replicate Flux: ~$0.004/imagen — 100 = ~$0.40/mes
 }
 
 
