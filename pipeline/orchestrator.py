@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 load_dotenv()
 
-from modules.google_places import search_clinics, CATEGORIES
+from modules.google_places import search_clinics, CATEGORIES, AVAILABLE_CITIES
 from modules.meta_ads import count_ads_for_page
 from modules.notion_db import upsert_clinic, ensure_db_schema
 from modules.sunbiz import lookup_clinic as sunbiz_lookup
@@ -37,12 +37,15 @@ META_DELAY    = 2.5   # segundos entre calls a Meta
 SUNBIZ_DELAY  = 3.5   # segundos entre calls a Sunbiz (Cloudflare)
 EMAIL_DELAY   = 1.5   # segundos entre requests al sitio web de la clínica
 
-# Orden de procesamiento
-CITIES = [
+# Orden de procesamiento por defecto (cuando no se especifican targets)
+DEFAULT_CITIES = [
     ("Miami",   "FL"),
     ("Orlando", "FL"),
     ("Dallas",  "TX"),
 ]
+
+# Mapa city→state para lookup rápido
+_STATE_MAP = {c["city"]: c["state"] for c in AVAILABLE_CITIES}
 
 PROGRESS_FILE = Path(__file__).parent.parent / "data" / "progress.json"
 LOG_FILE      = Path(__file__).parent.parent / "data" / "runs.log"
@@ -50,11 +53,26 @@ LOG_FILE      = Path(__file__).parent.parent / "data" / "runs.log"
 
 # ── Progreso persistente ──────────────────────────────────────
 
-def _fresh_state() -> dict:
+def _resolve_targets(targets) -> list:
+    """Convierte targets del dashboard en [(city, state_code, [cats])]."""
+    if not targets:
+        return [(city, sc, list(CATEGORIES.keys())) for city, sc in DEFAULT_CITIES]
+    result = []
+    for t in targets:
+        city = t.get("city", "").strip()
+        sc   = t.get("state", _STATE_MAP.get(city, "")).strip()
+        cats = t.get("categories") or list(CATEGORIES.keys())
+        if city and sc:
+            result.append((city, sc, [c for c in cats if c in CATEGORIES]))
+    return result or [(city, sc, list(CATEGORIES.keys())) for city, sc in DEFAULT_CITIES]
+
+
+def _fresh_state(resolved=None) -> dict:
+    targets = resolved or _resolve_targets(None)
     state = {}
-    for city, state_code in CITIES:
-        state[city] = {}
-        for cat in CATEGORIES:
+    for city, state_code, cats in targets:
+        state.setdefault(city, {})
+        for cat in cats:
             state[city][cat] = {
                 "status":          "pending",
                 "next_page_token": None,
@@ -78,33 +96,28 @@ def save_progress(state: dict) -> None:
     PROGRESS_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
 
 
-def should_monthly_reset(state: dict) -> bool:
-    """
-    Retorna True si todos los mercados están completos Y han pasado 28+ días
-    desde la última ejecución. Dispara el barrido mensual automático.
-    """
+def should_monthly_reset(state: dict, resolved: list) -> bool:
+    """Retorna True si todos los targets están completos y han pasado 28+ días."""
     all_complete = all(
         state.get(city, {}).get(cat, {}).get("status") == "complete"
-        for city, _ in CITIES
-        for cat in CATEGORIES
+        for city, _, cats in resolved
+        for cat in cats
     )
     if not all_complete:
         return False
 
     last_runs = [
         state[city][cat]["last_run"]
-        for city, _ in CITIES
-        for cat in CATEGORIES
+        for city, _, cats in resolved
+        for cat in cats
         if state.get(city, {}).get(cat, {}).get("last_run")
     ]
     if not last_runs:
         return False
 
     try:
-        latest_str = max(last_runs)
-        latest     = datetime.fromisoformat(latest_str.replace("Z", "+00:00"))
-        days       = (datetime.now(timezone.utc) - latest).days
-        return days >= 28
+        latest = datetime.fromisoformat(max(last_runs).replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - latest).days >= 28
     except Exception:
         return False
 
@@ -120,10 +133,10 @@ def log(msg: str) -> None:
 
 # ── Lógica principal ──────────────────────────────────────────
 
-def next_pending(state: dict) -> Optional[Tuple[str, str, str]]:
+def next_pending(state: dict, resolved: list) -> Optional[Tuple[str, str, str]]:
     """Devuelve (city, state_code, category) del siguiente bloque a procesar."""
-    for city, state_code in CITIES:
-        for cat in CATEGORIES:
+    for city, state_code, cats in resolved:
+        for cat in cats:
             entry = state.get(city, {}).get(cat, {})
             if entry.get("status") != "complete":
                 return city, state_code, cat
@@ -197,13 +210,16 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
     return action
 
 
-def run_pipeline(stop_flag=None) -> None:
+def run_pipeline(stop_flag=None, targets=None) -> None:
+    resolved = _resolve_targets(targets)
+    cities_desc = ", ".join(f"{c}/{'+'.join(cats)}" for c, _, cats in resolved)
+
     log("=" * 55)
     log("PIPELINE INICIADO")
+    log(f"Objetivos: {cities_desc}")
     log(f"Tanda máxima: {MAX_PER_RUN} clínicas nuevas")
     log("=" * 55)
 
-    # Validaciones básicas
     if not GOOGLE_KEY:
         log("ERROR: GOOGLE_PLACES_API_KEY no configurada. Saliendo.")
         return
@@ -211,10 +227,8 @@ def run_pipeline(stop_flag=None) -> None:
         log("ERROR: Notion no configurado. Saliendo.")
         return
 
-    # Muestra uso actual de APIs
     print_report()
 
-    # Verifica que Google Places tenga presupuesto antes de arrancar
     try:
         check("google_places")
     except BudgetExceeded as e:
@@ -224,9 +238,25 @@ def run_pipeline(stop_flag=None) -> None:
     ensure_db_schema(NOTION_TOKEN, NOTION_DB_ID)
 
     state = load_progress()
-    if should_monthly_reset(state):
-        log("Reset mensual automático — todos los mercados serán re-buscados.")
-        state = _fresh_state()
+
+    # Inicializa entradas faltantes para los targets solicitados
+    for city, state_code, cats in resolved:
+        state.setdefault(city, {})
+        for cat in cats:
+            if cat not in state[city]:
+                state[city][cat] = {
+                    "status": "pending", "next_page_token": None,
+                    "processed": 0, "last_run": None,
+                }
+
+    if should_monthly_reset(state, resolved):
+        log("Reset mensual automático — mercados seleccionados serán re-buscados.")
+        for city, _, cats in resolved:
+            for cat in cats:
+                state[city][cat] = {
+                    "status": "pending", "next_page_token": None,
+                    "processed": 0, "last_run": None,
+                }
         save_progress(state)
 
     run_stats = {"created": 0, "updated": 0, "errors": 0}
@@ -239,7 +269,7 @@ def run_pipeline(stop_flag=None) -> None:
             _print_summary(run_stats, run_start)
             return
 
-        target = next_pending(state)
+        target = next_pending(state, resolved)
         if not target:
             log("Todos los mercados procesados. Pipeline completo.")
             break

@@ -383,6 +383,60 @@ tbody td a:hover { color: var(--gold); }
 #loader.show { opacity: 1; pointer-events: all; }
 .spinner { width: 40px; height: 40px; border: 3px solid rgba(201,169,110,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
 
+/* ── Target selector ── */
+.targets-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px; background: rgba(255,255,255,0.02);
+  border-top: 1px solid var(--border); cursor: pointer;
+  font-size: 0.75rem; color: var(--text3); transition: background .2s;
+  border: none; font-family: 'Inter', sans-serif; text-align: left;
+}
+.targets-toggle:hover { background: rgba(255,255,255,0.04); color: var(--text2); }
+.targets-toggle-label { display: flex; align-items: center; gap: 8px; }
+.targets-toggle-arrow { transition: transform .25s; }
+.targets-toggle-arrow.open { transform: rotate(180deg); }
+.targets-summary { font-size: 0.72rem; color: var(--gold); }
+
+.targets-panel {
+  display: none; padding: 16px 18px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+.targets-panel.open { display: block; }
+
+.targets-grid { display: grid; grid-template-columns: 1fr 200px; gap: 24px; }
+.targets-col-title { font-size: 0.68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+
+.city-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 500;
+  border: 1px solid var(--border); background: transparent; color: var(--text3);
+  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+.chip:hover { border-color: rgba(201,169,110,0.4); color: var(--text2); }
+.chip.active { border-color: rgba(201,169,110,0.5); background: rgba(201,169,110,0.1); color: var(--gold); }
+.chip .es-badge { font-size: 0.6rem; background: rgba(64,200,152,0.2); color: var(--green); padding: 1px 5px; border-radius: 8px; }
+
+.cat-chips { display: flex; flex-direction: column; gap: 6px; }
+.custom-city-row { display: flex; gap: 6px; margin-top: 8px; }
+.custom-city-row input {
+  flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text); font-size: 0.75rem;
+  padding: 5px 8px; outline: none; font-family: 'Inter', sans-serif;
+  transition: border-color .2s;
+}
+.custom-city-row input::placeholder { color: var(--text3); }
+.custom-city-row input:focus { border-color: var(--border-h); }
+.custom-city-row input.state-input { width: 44px; flex: none; text-transform: uppercase; }
+.add-city-btn {
+  padding: 5px 10px; border-radius: var(--r-sm); border: 1px solid var(--border);
+  background: transparent; color: var(--text3); font-size: 0.72rem;
+  cursor: pointer; font-family: 'Inter', sans-serif; transition: all .15s;
+}
+.add-city-btn:hover { border-color: var(--border-h); color: var(--gold); }
+
 /* ── Responsive ── */
 @media (max-width: 1200px) {
   .kpis { grid-template-columns: repeat(3, 1fr); }
@@ -474,6 +528,37 @@ tbody td a:hover { color: var(--gold); }
       </div>
       <div class="action-bar-status" id="action-status"></div>
     </div>
+    <!-- targets toggle -->
+    <button class="targets-toggle" onclick="toggleTargets()">
+      <div class="targets-toggle-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        Objetivos de recolección
+        <span class="targets-summary" id="targets-summary">Miami · Orlando · Dallas / todas categorías</span>
+      </div>
+      <svg class="targets-toggle-arrow" id="targets-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </button>
+
+    <!-- targets panel -->
+    <div class="targets-panel" id="targets-panel">
+      <div class="targets-grid">
+        <div>
+          <div class="targets-col-title">Ciudades</div>
+          <div class="city-chips" id="city-chips">Cargando…</div>
+          <div class="custom-city-row">
+            <input id="custom-city" placeholder="Ciudad personalizada" class="custom-city-input">
+            <input id="custom-state" placeholder="TX" maxlength="2" class="custom-city-input state-input">
+            <button class="add-city-btn" onclick="addCustomCity()">+ Agregar</button>
+          </div>
+        </div>
+        <div>
+          <div class="targets-col-title">Categorías</div>
+          <div class="cat-chips" id="cat-chips">Cargando…</div>
+        </div>
+      </div>
+    </div>
+
     <!-- progress panel (visible while running) -->
     <div class="progress-panel" id="progress-panel">
       <div class="progress-top">
@@ -698,6 +783,12 @@ let countdownTimer  = null;
 let nextRunDate     = null;
 let statusPoller    = null;
 
+// Target selection state
+let availableCities = [];
+let availableCats   = [];
+let selectedCities  = new Set();   // "City|STATE"
+let selectedCats    = new Set();   // category keys
+
 // ── Colors ────────────────────────────────────────────────────
 const C = {
   gold:'#c9a96e', goldL:'#e8c97a', blue:'#5080ff', green:'#40c898',
@@ -713,7 +804,7 @@ const CATS   = ['dental','estetica','medspa','wellness'];
 const CAT_LABELS = { dental:'Dental', estetica:'Estética', medspa:'Med Spa', wellness:'Wellness' };
 
 // ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); });
+document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); loadTargetConfig(); });
 
 async function loadAll() {
   showLoader(true);
@@ -752,11 +843,132 @@ function showLoader(v) { document.getElementById('loader').classList.toggle('sho
 const SECS_PER_CLINIC = 20; // ~20 segundos por clínica
 
 async function startCollection() {
-  const res  = await fetch('/api/run-pipeline', {method:'POST'});
+  const targets = buildTargetsPayload();
+  if (!targets.length) { setStatus('<span class="error-msg">Selecciona al menos una ciudad y una categoría.</span>'); return; }
+  const res  = await fetch('/api/run-pipeline', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({targets}),
+  });
   const data = await res.json();
   if (!data.ok) { setStatus(`<span class="error-msg">${data.error}</span>`); return; }
   setRunningUI(true);
   startPolling();
+}
+
+// ── Target config ─────────────────────────────────────────────
+async function loadTargetConfig() {
+  const res  = await fetch('/api/available-cities');
+  const data = await res.json();
+  availableCities = data.cities || [];
+  availableCats   = data.categories || [];
+
+  // Load from localStorage or set defaults
+  const saved = JSON.parse(localStorage.getItem('pipeline_targets') || 'null');
+  if (saved) {
+    selectedCities = new Set(saved.cities || []);
+    selectedCats   = new Set(saved.cats   || []);
+  } else {
+    // Defaults: Miami, Orlando, Dallas + all categories
+    selectedCities = new Set(['Miami|FL', 'Orlando|FL', 'Dallas|TX']);
+    selectedCats   = new Set(availableCats.map(c => c.key));
+  }
+  renderCityChips();
+  renderCatChips();
+  updateTargetsSummary();
+}
+
+function cityKey(c) { return `${c.city}|${c.state}`; }
+
+function renderCityChips() {
+  const el = document.getElementById('city-chips');
+  el.innerHTML = availableCities.map(c => {
+    const key    = cityKey(c);
+    const active = selectedCities.has(key);
+    const es     = c.es ? `<span class="es-badge">ES</span>` : '';
+    const note   = c.note ? `<span style="font-size:.62rem;opacity:.7">${c.note}</span>` : '';
+    return `<button class="chip ${active?'active':''}" onclick="toggleCity('${key}')" title="${c.note||''}">
+      ${c.label} ${es}
+    </button>`;
+  }).join('');
+}
+
+function renderCatChips() {
+  const el = document.getElementById('cat-chips');
+  el.innerHTML = availableCats.map(c => {
+    const active = selectedCats.has(c.key);
+    return `<button class="chip ${active?'active':''}" onclick="toggleCat('${c.key}')">
+      ${c.label}
+    </button>`;
+  }).join('');
+}
+
+function toggleCity(key) {
+  if (selectedCities.has(key)) selectedCities.delete(key);
+  else selectedCities.add(key);
+  renderCityChips();
+  saveTargets();
+  updateTargetsSummary();
+}
+
+function toggleCat(key) {
+  if (selectedCats.has(key)) selectedCats.delete(key);
+  else selectedCats.add(key);
+  renderCatChips();
+  saveTargets();
+  updateTargetsSummary();
+}
+
+function addCustomCity() {
+  const city  = document.getElementById('custom-city').value.trim();
+  const state = document.getElementById('custom-state').value.trim().toUpperCase();
+  if (!city || !state) return;
+  const key = `${city}|${state}`;
+  if (!availableCities.find(c => cityKey(c) === key)) {
+    availableCities.push({city, state, label: `${city}, ${state}`, es: false, note: 'personalizada'});
+  }
+  selectedCities.add(key);
+  document.getElementById('custom-city').value  = '';
+  document.getElementById('custom-state').value = '';
+  renderCityChips();
+  saveTargets();
+  updateTargetsSummary();
+}
+
+function buildTargetsPayload() {
+  const cats = [...selectedCats];
+  return [...selectedCities].map(key => {
+    const [city, state] = key.split('|');
+    return {city, state, categories: cats};
+  });
+}
+
+function saveTargets() {
+  localStorage.setItem('pipeline_targets', JSON.stringify({
+    cities: [...selectedCities],
+    cats:   [...selectedCats],
+  }));
+}
+
+function updateTargetsSummary() {
+  const cityLabels = [...selectedCities].map(key => {
+    const [city] = key.split('|');
+    return city;
+  });
+  const catLabels = [...selectedCats].map(k => {
+    const c = availableCats.find(x => x.key === k);
+    return c ? c.label : k;
+  });
+  const summary = cityLabels.length
+    ? `${cityLabels.join(' · ')} / ${catLabels.join(' · ') || '—'}`
+    : 'Sin objetivos seleccionados';
+  document.getElementById('targets-summary').textContent = summary;
+}
+
+function toggleTargets() {
+  const panel = document.getElementById('targets-panel');
+  const arrow = document.getElementById('targets-arrow');
+  panel.classList.toggle('open');
+  arrow.classList.toggle('open');
 }
 
 async function resetProgress() {

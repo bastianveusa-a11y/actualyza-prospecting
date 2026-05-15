@@ -381,13 +381,14 @@ def _parse_run_progress() -> dict:
 
 def _run_pipeline_bg():
     global _pipeline_state, _cache, _stop_requested
-    _stop_requested              = False
-    _pipeline_state["running"]   = True
+    _stop_requested                  = False
+    _pipeline_state["running"]       = True
     _pipeline_state["last_started"]  = datetime.now(timezone.utc).isoformat()
     _pipeline_state["error"]         = None
+    targets = _pipeline_state.get("targets")
     try:
         from pipeline.orchestrator import run_pipeline
-        run_pipeline(stop_flag=lambda: _stop_requested)
+        run_pipeline(stop_flag=lambda: _stop_requested, targets=targets)
         _cache = {"data": None, "ts": 0.0}
     except Exception as e:
         _pipeline_state["error"] = str(e)
@@ -401,8 +402,19 @@ def _run_pipeline_bg():
 def api_run_pipeline():
     if _pipeline_state["running"]:
         return jsonify({"ok": False, "error": "Pipeline ya está corriendo"}), 409
+    _pipeline_state["targets"] = (request.json or {}).get("targets") or None
     threading.Thread(target=_run_pipeline_bg, daemon=True).start()
     return jsonify({"ok": True, "status": "started"})
+
+
+@app.route("/api/available-cities")
+@_require_auth
+def api_available_cities():
+    from modules.google_places import AVAILABLE_CITIES, CATEGORIES
+    return jsonify({
+        "cities":     AVAILABLE_CITIES,
+        "categories": [{"key": k, "label": v.title()} for k, v in CATEGORIES.items()],
+    })
 
 
 @app.route("/campaigns")
