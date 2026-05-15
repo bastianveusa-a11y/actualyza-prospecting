@@ -19,7 +19,7 @@ import requests as http
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from flask import Flask, jsonify, render_template, request, Response
+from flask import Flask, jsonify, render_template, request, Response, redirect
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -524,8 +524,8 @@ def api_enable_group():
 @_require_auth
 def api_generate_creative():
     """
-    Genera un creativo de email con Flux 1.1 Pro.
-    Flujo: Flux genera imagen de fondo → URL devuelta al cliente.
+    Genera un creativo completo: Flux (fondo) → Canva (composición) → PNG final.
+    Si Canva no está autorizado, retorna solo la imagen Flux como fallback.
     Body: { "categoria": str, "email_num": int }
     """
     data      = request.json or {}
@@ -539,11 +539,69 @@ def api_generate_creative():
         return jsonify({"ok": False, "error": str(e)}), 429
 
     try:
-        from modules.image_gen import generate_background
+        from modules.image_gen  import generate_background
+        from modules.canva_api  import is_authorized, upload_asset_from_url, create_banner_design, export_design
+
         img_url = generate_background(categoria, email_num)
-        return jsonify({"ok": True, "image_url": img_url})
+
+        if is_authorized():
+            try:
+                asset_id  = upload_asset_from_url(img_url, name=f"flux-{categoria}-e{email_num}")
+                design_id = create_banner_design(asset_id, categoria, email_num)
+                final_url = export_design(design_id)
+                return jsonify({"ok": True, "image_url": final_url, "source": "canva"})
+            except Exception as canva_err:
+                # Canva falló — devuelve fondo Flux de todas formas
+                return jsonify({"ok": True, "image_url": img_url, "source": "flux", "canva_error": str(canva_err)})
+
+        return jsonify({"ok": True, "image_url": img_url, "source": "flux"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ── Canva OAuth ───────────────────────────────────────────────────────────────
+
+@app.route("/oauth/canva")
+@_require_auth
+def canva_oauth_start():
+    """Inicia el flujo OAuth de Canva."""
+    from modules.canva_api import get_oauth_url
+    client_id    = os.getenv("CANVA_CLIENT_ID", "")
+    redirect_uri = os.getenv("CANVA_REDIRECT_URI",
+                             "https://actualyza-prospecting-production.up.railway.app/oauth/canva/callback")
+    if not client_id:
+        return "CANVA_CLIENT_ID no configurado en Railway", 500
+    url = get_oauth_url(client_id, redirect_uri, state="actualyza")
+    return redirect(url)
+
+
+@app.route("/oauth/canva/callback")
+def canva_oauth_callback():
+    """Recibe el code de Canva y lo intercambia por access token."""
+    code  = request.args.get("code", "")
+    error = request.args.get("error", "")
+    if error:
+        return f"Canva OAuth error: {error}", 400
+    if not code:
+        return "Código de autorización faltante", 400
+
+    from modules.canva_api import exchange_code
+    client_id     = os.getenv("CANVA_CLIENT_ID", "")
+    client_secret = os.getenv("CANVA_CLIENT_SECRET", "")
+    redirect_uri  = os.getenv("CANVA_REDIRECT_URI",
+                              "https://actualyza-prospecting-production.up.railway.app/oauth/canva/callback")
+    try:
+        exchange_code(code, client_id, client_secret, redirect_uri)
+        return redirect("/creatives?canva=connected")
+    except Exception as e:
+        return f"Error al obtener token: {e}", 500
+
+
+@app.route("/api/canva-status")
+@_require_auth
+def api_canva_status():
+    from modules.canva_api import is_authorized
+    return jsonify({"authorized": is_authorized()})
 
 
 @app.route("/meta-token")
