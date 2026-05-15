@@ -106,22 +106,72 @@ def count_ads_for_page(
         fb_slug = social["facebook"]
         ig_slug = social["instagram"]
 
-    # El nombre más preciso disponible: slug FB > slug IG > nombre de clínica
-    exact_name  = fb_slug or ig_slug or page_name
-    search_type = "page" if (fb_slug or ig_slug) else "keyword_unordered"
+    slug = fb_slug or ig_slug
 
     # Paso 2: Intentar API oficial si hay token
     if user_token:
-        result = _count_via_api(exact_name, facebook_page_id, user_token)
+        search_name = slug or page_name
+        search_type = "page" if slug else "keyword_unordered"
+        result = _count_via_api(search_name, facebook_page_id, user_token)
         if result["error"] is None:
-            result["fb_slug"] = fb_slug or ig_slug
+            result["fb_slug"] = slug
             return result
         print(f"    API Meta falló ({result['error']}), usando scraping web...")
 
-    # Paso 3: Scraping de Ad Library
-    result = _count_via_scraping(exact_name, delay=0, search_type=search_type)
-    result["fb_slug"] = fb_slug or ig_slug
+    # Paso 3: Scraping con búsqueda progresiva
+    if slug:
+        # Tenemos slug exacto → búsqueda por página directamente
+        result = _count_via_scraping(slug, delay=0, search_type="page")
+    else:
+        # Sin slug → búsqueda progresiva por nombre (nombre completo → 3 palabras → 2 palabras)
+        result = _progressive_search(page_name)
+
+    result["fb_slug"] = slug
     return result
+
+
+def _search_terms(name: str) -> list:
+    """
+    Genera variantes del nombre de menor a mayor especificidad.
+    Ejemplo: "Miami Dental Center & Orthodontics" →
+      ["Miami Dental Center & Orthodontics", "Miami Dental Center", "Miami Dental"]
+    """
+    words = name.split()
+    seen, terms = set(), []
+    for n in [len(words), 3, 2]:
+        t = ' '.join(words[:n]).strip()
+        if t and t not in seen:
+            seen.add(t)
+            terms.append(t)
+    return terms
+
+
+def _progressive_search(name: str) -> dict:
+    """
+    Busca en Ad Library con el nombre completo primero.
+    Si no hay resultados claros, prueba con menos palabras.
+    Para en el primer resultado positivo o cuando agota las opciones.
+    """
+    last = None
+    for term in _search_terms(name):
+        result = _count_via_scraping(term, delay=0, search_type="keyword_unordered")
+        last   = result
+
+        if result.get("has_ads") is True:
+            # Encontró anuncios — no seguir acortando
+            result["search_term"] = term
+            return result
+
+        if result.get("has_ads") is False:
+            # Confirmado sin anuncios con este término
+            result["search_term"] = term
+            return result
+
+        # has_ads is None → no pudo determinar, prueba con menos palabras
+        time.sleep(0.8)
+
+    last["search_term"] = _search_terms(name)[-1]
+    return last
 
 
 def _count_via_api(page_name: str, page_id: str, token: str) -> dict:

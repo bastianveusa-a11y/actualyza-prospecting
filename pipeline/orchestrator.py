@@ -183,8 +183,9 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
 
     if action == "created":
         run_stats["created"] += 1
-        slug_info = f" @{meta['fb_slug']}" if meta.get("fb_slug") else ""
-        log(f"  ✓ {name} | {clinic['rating']}★ | {meta['level']} ({meta['count']} anuncios){slug_info}")
+        slug_info   = f" @{meta['fb_slug']}"             if meta.get("fb_slug")      else ""
+        term_info   = f" [búsqueda: '{meta['search_term']}']" if meta.get("search_term") else ""
+        log(f"  ✓ {name} | {clinic['rating']}★ | {meta['level']} ({meta['count']} anuncios){slug_info}{term_info}")
     elif action == "updated":
         run_stats["updated"] += 1
         dueno = clinic.get("dueno", "—")
