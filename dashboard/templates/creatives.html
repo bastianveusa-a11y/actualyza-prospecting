@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Secuencias de Campaña</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #080910; --bg2: #0d0e1a; --bg3: #12131f;
+  --card:     rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07);
+  --border-h: rgba(201,169,110,0.3);
+  --gold: #c9a96e; --gold-l: #e8c97a; --gold-d: #9a7840;
+  --text: #eeeef8; --text2: #7878a0; --text3: #50506a;
+  --blue: #5080ff; --green: #40c898; --orange: #ff9050;
+  --red: #ff5070; --purple: #b060f0; --teal: #40d0c0;
+  --r: 12px; --r-sm: 8px;
+}
+html { font-size: 14px; }
+body {
+  font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+  min-height: 100vh; overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.shell { max-width: 100%; padding: 24px 28px 48px; }
+
+/* Header */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-mark {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.02em; }
+.logo-text span { color: var(--gold); }
+.logo-sub { font-size: 0.7rem; color: var(--text3); margin-top: 1px; }
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+  border-radius: var(--r-sm); border: 1px solid var(--border);
+  background: var(--card); color: var(--text2); font-size: 0.78rem;
+  font-weight: 500; cursor: pointer; transition: all .2s;
+  font-family: 'Inter', sans-serif; text-decoration: none;
+}
+.nav-btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
+.nav-btn svg { width: 13px; height: 13px; }
+
+/* Group selector */
+.group-selector {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 22px; margin-bottom: 22px;
+}
+.gs-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.gs-label { font-size: 0.65rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); flex-shrink: 0; }
+.gs-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.gs-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 20px; font-size: 0.73rem; font-weight: 500;
+  border: 1px solid var(--border); background: transparent; color: var(--text3);
+  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; white-space: nowrap;
+}
+.chip:hover { border-color: rgba(201,169,110,0.4); color: var(--text2); }
+.chip.active { border-color: var(--gold); background: rgba(201,169,110,0.12); color: var(--gold); font-weight: 600; }
+
+.group-summary {
+  display: flex; align-items: center; gap: 20px;
+  padding: 12px 0 0; border-top: 1px solid var(--border); margin-top: 14px;
+  flex-wrap: wrap;
+}
+.gs-stat { display: flex; flex-direction: column; gap: 2px; }
+.gs-stat-num { font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.gs-stat-label { font-size: 0.65rem; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+
+/* Kanban */
+.kanban-wrap { overflow-x: auto; padding-bottom: 16px; }
+.kanban {
+  display: flex; gap: 14px; align-items: flex-start;
+  min-width: fit-content; padding-bottom: 4px;
+}
+.kanban-col {
+  flex: 0 0 270px; display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+}
+.col-header {
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+.col-header-left { flex: 1; }
+.col-stage {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.col-desc { font-size: 0.72rem; color: var(--text3); }
+.col-count {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 22px; border-radius: 11px;
+  font-size: 0.72rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  background: rgba(255,255,255,0.06);
+}
+.col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; max-height: 60vh; overflow-y: auto; }
+.col-empty { padding: 24px 16px; text-align: center; color: var(--text3); font-size: 0.75rem; }
+.col-action { padding: 10px; border-top: 1px solid var(--border); }
+
+/* Lead card */
+.lead-card {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 11px 12px; cursor: pointer;
+  transition: all .15s; display: flex; flex-direction: column; gap: 6px;
+}
+.lead-card:hover { border-color: rgba(201,169,110,0.35); background: rgba(201,169,110,0.05); transform: translateY(-1px); }
+.lead-card.active { border-color: var(--gold); background: rgba(201,169,110,0.08); }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.card-name { font-size: 0.78rem; font-weight: 600; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-bottom { display: flex; align-items: center; justify-content: space-between; }
+.card-meta { display: flex; align-items: center; gap: 6px; }
+.card-arrow { color: var(--text3); font-size: 0.9rem; transition: color .15s; }
+.lead-card:hover .card-arrow { color: var(--gold); }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 0.62rem; font-weight: 600; }
+.b-miami   { background: rgba(80,128,255,0.15); color: #80a8ff; }
+.b-orlando { background: rgba(64,200,152,0.15); color: #60d0a8; }
+.b-dallas  { background: rgba(201,169,110,0.15); color: var(--gold-l); }
+.b-city    { background: rgba(80,128,255,0.1);  color: #80a8ff; }
+.score-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 20px; border-radius: 5px;
+  font-size: 0.65rem; font-weight: 700; flex-shrink: 0;
+}
+.score-high { background: rgba(64,200,152,0.18); color: #50d8a8; }
+.score-mid  { background: rgba(255,144,80,0.18); color: #ffb070; }
+.score-low-b{ background: rgba(80,128,255,0.15); color: #80a8ff; }
+.score-low  { background: rgba(120,120,160,0.12); color: #9090b8; }
+.opened-tag { font-size: 0.62rem; color: var(--green); }
+
+/* Enable button */
+.btn-enable-group {
+  width: 100%; padding: 8px; border-radius: var(--r-sm);
+  border: 1px solid rgba(201,169,110,0.3);
+  background: rgba(201,169,110,0.08); color: var(--gold);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all .2s;
+}
+.btn-enable-group:hover { background: rgba(201,169,110,0.16); border-color: rgba(201,169,110,0.5); }
+.btn-enable-group:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Preview panel */
+.preview-overlay {
+  position: fixed; inset: 0; z-index: 98;
+  background: rgba(0,0,0,0.45); opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+.preview-overlay.open { opacity: 1; pointer-events: all; }
+
+.preview-panel {
+  position: fixed; top: 0; right: 0; height: 100vh; width: 460px; z-index: 99;
+  background: #0e0f1c; border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+}
+.preview-panel.open { transform: translateX(0); }
+
+.pp-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+}
+.pp-top { display: flex; align-items: center; justify-content: space-between; }
+.pp-clinic { font-size: 0.9rem; font-weight: 600; }
+.pp-city { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+.pp-close {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  color: var(--text3); font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; font-family: inherit;
+}
+.pp-close:hover { background: rgba(255,80,112,0.15); color: var(--red); border-color: rgba(255,80,112,0.3); }
+
+/* Email tabs */
+.pp-tabs { display: flex; gap: 4px; }
+.pp-tab {
+  flex: 1; padding: 6px 0; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text3); font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+}
+.pp-tab:hover { border-color: var(--border-h); color: var(--text2); }
+.pp-tab.active { background: rgba(201,169,110,0.12); border-color: var(--gold); color: var(--gold); }
+
+.pp-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+.pp-subject {
+  font-size: 0.72rem; color: var(--text3); margin-bottom: 4px;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.pp-subject-text {
+  font-size: 0.85rem; font-weight: 600; color: var(--text);
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Email render frame — looks like inbox */
+.email-frame {
+  background: #fff; border-radius: 8px; padding: 22px 24px;
+  color: #1a1a1a; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.55;
+}
+.email-frame p { margin: 0 0 12px; }
+.email-frame p:last-child { margin-bottom: 0; }
+
+.pp-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 0; gap: 14px; color: var(--text3);
+}
+.pp-loading-spinner {
+  width: 32px; height: 32px; border: 2px solid rgba(201,169,110,0.2);
+  border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pp-loading-text { font-size: 0.78rem; }
+
+.pp-error { padding: 24px; text-align: center; color: var(--red); font-size: 0.8rem; }
+
+.pp-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 12px; color: var(--text3);
+}
+.pp-empty-icon { font-size: 2.5rem; opacity: .4; }
+.pp-empty-text { font-size: 0.8rem; }
+
+/* Loader */
+#loader { position: fixed; inset: 0; background: rgba(8,9,16,0.8); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .3s; }
+#loader.show { opacity: 1; pointer-events: all; }
+.spinner { width: 36px; height: 36px; border: 3px solid rgba(201,169,110,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+
+@media (max-width: 600px) {
+  .shell { padding: 16px; }
+  .preview-panel { width: 100%; }
+  .gs-row { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="spinner"></div></div>
+
+<!-- Preview overlay -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()"></div>
+
+<!-- Preview panel -->
+<div class="preview-panel" id="preview-panel">
+  <div class="pp-header">
+    <div class="pp-top">
+      <div>
+        <div class="pp-clinic" id="pp-clinic-name">—</div>
+        <div class="pp-city" id="pp-clinic-meta">—</div>
+      </div>
+      <button class="pp-close" onclick="closePreview()">×</button>
+    </div>
+    <div class="pp-tabs">
+      <button class="pp-tab active" id="tab-1" onclick="switchTab(1)">Email 1<br><span style="font-weight:400;font-size:.62rem;opacity:.7">Intro</span></button>
+      <button class="pp-tab" id="tab-2" onclick="switchTab(2)">Email 2<br><span style="font-weight:400;font-size:.62rem;opacity:.7">Seguimiento</span></button>
+      <button class="pp-tab" id="tab-3" onclick="switchTab(3)">Email 3<br><span style="font-weight:400;font-size:.62rem;opacity:.7">Prueba social</span></button>
+      <button class="pp-tab" id="tab-4" onclick="switchTab(4)">Email 4<br><span style="font-weight:400;font-size:.62rem;opacity:.7">Cierre</span></button>
+    </div>
+  </div>
+  <div class="pp-body" id="pp-body">
+    <div class="pp-empty">
+      <div class="pp-empty-icon">✉️</div>
+      <div class="pp-empty-text">Selecciona un lead para previsualizar su secuencia</div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="logo-text">Actual<span>yza</span></div>
+        <div class="logo-sub">Secuencias · AMY AI</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Dashboard
+      </a>
+      <a href="/campaigns" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>
+        Campañas
+      </a>
+      <button class="nav-btn" onclick="refreshAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Group selector -->
+  <div class="group-selector">
+    <div class="gs-row">
+      <div class="gs-label">Ciudad</div>
+      <div class="gs-chips" id="city-chips">Cargando…</div>
+      <div class="gs-divider"></div>
+      <div class="gs-label">Categoría</div>
+      <div class="gs-chips" id="cat-chips">Cargando…</div>
+    </div>
+    <div class="group-summary" id="group-summary" style="display:none">
+      <div class="gs-stat">
+        <div class="gs-stat-num" id="gs-total">—</div>
+        <div class="gs-stat-label">Total leads</div>
+      </div>
+      <div class="gs-stat">
+        <div class="gs-stat-num" style="color:var(--text3)" id="gs-pending">—</div>
+        <div class="gs-stat-label">Sin iniciar</div>
+      </div>
+      <div class="gs-stat">
+        <div class="gs-stat-num" style="color:var(--blue)" id="gs-active">—</div>
+        <div class="gs-stat-label">Activos</div>
+      </div>
+      <div class="gs-stat">
+        <div class="gs-stat-num" style="color:var(--green)" id="gs-opened">—</div>
+        <div class="gs-stat-label">Abrieron</div>
+      </div>
+      <div class="gs-stat">
+        <div class="gs-stat-num" style="color:var(--gold)" id="gs-completed">—</div>
+        <div class="gs-stat-label">Completados</div>
+      </div>
+      <div class="gs-stat" style="margin-left:auto">
+        <div class="gs-stat-num" style="color:var(--text3)" id="gs-no-email">—</div>
+        <div class="gs-stat-label">Sin correo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kanban -->
+  <div class="kanban-wrap">
+    <div class="kanban" id="kanban">
+      <div style="color:var(--text3);font-size:.85rem;padding:40px">
+        Selecciona ciudad y categoría para ver el grupo ↑
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+const C = { gold:'#c9a96e', blue:'#5080ff', green:'#40c898', orange:'#ff9050', red:'#ff5070', purple:'#b060f0', teal:'#40d0c0', muted:'#505080' };
+
+let allClinics    = [];
+let selectedCity  = '';
+let selectedCat   = '';
+let activeNotionId= '';
+let activeEmailNum= 1;
+const previewCache = new Map(); // key: "notionId|emailNum" → {subject, body_html}
+
+const STAGES = [
+  { key:'pending',   label:'Sin iniciar',  color: C.muted,   desc:'Recibirán Email 1',  nextEmail: 1 },
+  { key:'sent_e1',   label:'Email 1 ✓',   color: C.blue,    desc:'Recibirán Email 2',  nextEmail: 2 },
+  { key:'sent_e2',   label:'Email 2 ✓',   color: C.orange,  desc:'Recibirán Email 3',  nextEmail: 3 },
+  { key:'sent_e3',   label:'Email 3 ✓',   color: C.purple,  desc:'Recibirán Email 4',  nextEmail: 4 },
+  { key:'completed', label:'Completados', color: C.green,   desc:'Secuencia completa', nextEmail: 4 },
+];
+
+const CAT_LABELS = { dental:'Dental', estetica:'Estética', medspa:'Med Spa', wellness:'Wellness' };
+
+document.addEventListener('DOMContentLoaded', loadAll);
+
+async function loadAll() {
+  showLoader(true);
+  const [cityData, clinics] = await Promise.all([
+    fetch('/api/available-cities').then(r => r.json()),
+    fetch('/api/clinics').then(r => r.json()),
+  ]);
+  allClinics = clinics;
+  renderCityChips(cityData.cities || []);
+  renderCatChips(cityData.categories || []);
+  showLoader(false);
+}
+
+async function refreshAll() {
+  await fetch('/api/refresh', {method:'POST'});
+  previewCache.clear();
+  await loadAll();
+  if (selectedCity && selectedCat) renderKanban();
+}
+
+// ── Group selector ────────────────────────────────────────────
+function renderCityChips(cities) {
+  const el = document.getElementById('city-chips');
+  const present = new Set(allClinics.map(c => c.ciudad));
+  el.innerHTML = cities
+    .filter(c => present.has(c.city))
+    .map(c => `<button class="chip ${c.city===selectedCity?'active':''}" onclick="selectCity('${c.city}')">${c.label}</button>`)
+    .join('');
+}
+
+function renderCatChips(cats) {
+  const el = document.getElementById('cat-chips');
+  el.innerHTML = cats.map(c => {
+    const active = c.key === selectedCat;
+    return `<button class="chip ${active?'active':''}" onclick="selectCat('${c.key}')">${c.label}</button>`;
+  }).join('');
+}
+
+function selectCity(city) {
+  selectedCity = selectedCity === city ? '' : city;
+  document.querySelectorAll('#city-chips .chip').forEach(b => b.classList.toggle('active', b.textContent.includes(city) && selectedCity === city));
+  tryRenderKanban();
+}
+
+function selectCat(cat) {
+  selectedCat = selectedCat === cat ? '' : cat;
+  document.querySelectorAll('#cat-chips .chip').forEach(b => b.classList.toggle('active', b.onclick?.toString().includes(cat) && selectedCat === cat));
+  tryRenderKanban();
+}
+
+function tryRenderKanban() {
+  if (selectedCity && selectedCat) renderKanban();
+  else {
+    document.getElementById('kanban').innerHTML = '<div style="color:var(--text3);font-size:.85rem;padding:40px">Selecciona ciudad y categoría ↑</div>';
+    document.getElementById('group-summary').style.display = 'none';
+  }
+}
+
+// ── Kanban ────────────────────────────────────────────────────
+function classifyLead(c) {
+  const status = c.campana_email || '';
+  if (status === 'Completada') return 'completed';
+  if (!status || status === 'No iniciada') return 'pending';
+  const etapa = c.email_etapa || 0;
+  if (etapa >= 3) return 'sent_e3';
+  if (etapa >= 2) return 'sent_e2';
+  if (etapa >= 1) return 'sent_e1';
+  return 'pending';
+}
+
+function renderKanban() {
+  const group = allClinics.filter(c => c.ciudad === selectedCity && c.categoria === selectedCat);
+  const withEmail    = group.filter(c => c.email);
+  const withoutEmail = group.filter(c => !c.email);
+
+  // Summary stats
+  const buckets = {};
+  STAGES.forEach(s => buckets[s.key] = []);
+  withEmail.forEach(c => { const b = classifyLead(c); if(buckets[b]) buckets[b].push(c); });
+
+  const abrieron   = withEmail.filter(c => (c.email_abiertos||0) > 0).length;
+  const completados= buckets['completed'].length;
+  const activos    = withEmail.filter(c => ['Activa','Pausada'].includes(c.campana_email)).length;
+
+  document.getElementById('gs-total').textContent     = group.length;
+  document.getElementById('gs-pending').textContent   = buckets['pending'].length;
+  document.getElementById('gs-active').textContent    = activos;
+  document.getElementById('gs-opened').textContent    = abrieron;
+  document.getElementById('gs-completed').textContent = completados;
+  document.getElementById('gs-no-email').textContent  = withoutEmail.length;
+  document.getElementById('group-summary').style.display = '';
+
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = STAGES.map(stage => {
+    const leads = buckets[stage.key] || [];
+    leads.sort((a,b) => (b.lead_score||0)-(a.lead_score||0));
+
+    const cards = leads.length
+      ? leads.map(c => leadCard(c, stage.nextEmail)).join('')
+      : `<div class="col-empty">Sin leads en esta etapa</div>`;
+
+    const showEnable = stage.key === 'pending' && leads.length > 0;
+    const colAction  = showEnable
+      ? `<div class="col-action">
+           <button class="btn-enable-group" id="btn-enable" onclick="enableGroup()">
+             Habilitar Email 1 → ${leads.length} lead${leads.length!==1?'s':''}
+           </button>
+         </div>`
+      : '';
+
+    return `<div class="kanban-col">
+      <div class="col-header">
+        <div class="col-header-left">
+          <div class="col-stage" style="color:${stage.color}">${stage.label}</div>
+          <div class="col-desc">${stage.desc}</div>
+        </div>
+        <div class="col-count" style="color:${stage.color}">${leads.length}</div>
+      </div>
+      <div class="col-body">${cards}</div>
+      ${colAction}
+    </div>`;
+  }).join('');
+}
+
+function leadCard(c, emailNum) {
+  const score  = c.lead_score || 0;
+  let scls = 'score-low';
+  if (score >= 70) scls = 'score-high';
+  else if (score >= 45) scls = 'score-mid';
+  else if (score >= 20) scls = 'score-low-b';
+
+  const cityBadge = `<span class="badge b-city">${c.ciudad||''}</span>`;
+  const opened = (c.email_abiertos||0) > 0 ? `<span class="opened-tag">✓ abrió</span>` : '';
+  const isActive = c.notion_id === activeNotionId;
+
+  return `<div class="lead-card${isActive?' active':''}" onclick="openPreview('${c.notion_id}','${escHtml(c.nombre)}','${escHtml(c.ciudad||'')} · ${escHtml(CAT_LABELS[c.categoria]||'')}',${emailNum})">
+    <div class="card-top">
+      <div class="card-name">${escHtml(c.nombre)}</div>
+      <span class="score-badge ${scls}">${score}</span>
+    </div>
+    <div class="card-bottom">
+      <div class="card-meta">${cityBadge}${opened}</div>
+      <span class="card-arrow">›</span>
+    </div>
+  </div>`;
+}
+
+// ── Preview panel ─────────────────────────────────────────────
+function openPreview(notionId, name, meta, defaultEmailNum) {
+  activeNotionId  = notionId;
+  activeEmailNum  = defaultEmailNum;
+
+  document.getElementById('pp-clinic-name').textContent = name;
+  document.getElementById('pp-clinic-meta').textContent = meta;
+  document.getElementById('preview-panel').classList.add('open');
+  document.getElementById('preview-overlay').classList.add('open');
+
+  // Update active tab
+  for (let i=1; i<=4; i++) {
+    document.getElementById(`tab-${i}`).classList.toggle('active', i === defaultEmailNum);
+  }
+
+  // Re-render kanban to highlight active card
+  renderKanban();
+
+  loadEmailPreview(notionId, defaultEmailNum);
+}
+
+function closePreview() {
+  document.getElementById('preview-panel').classList.remove('open');
+  document.getElementById('preview-overlay').classList.remove('open');
+  activeNotionId = '';
+  renderKanban();
+}
+
+function switchTab(num) {
+  if (!activeNotionId) return;
+  activeEmailNum = num;
+  for (let i=1; i<=4; i++) {
+    document.getElementById(`tab-${i}`).classList.toggle('active', i === num);
+  }
+  loadEmailPreview(activeNotionId, num);
+}
+
+async function loadEmailPreview(notionId, emailNum) {
+  const cacheKey = `${notionId}|${emailNum}`;
+  const body     = document.getElementById('pp-body');
+
+  if (previewCache.has(cacheKey)) {
+    renderEmailPreview(previewCache.get(cacheKey));
+    return;
+  }
+
+  body.innerHTML = `<div class="pp-loading">
+    <div class="pp-loading-spinner"></div>
+    <div class="pp-loading-text">Claude está escribiendo Email ${emailNum}…</div>
+  </div>`;
+
+  try {
+    const r    = await fetch('/api/preview-email', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({notion_id: notionId, email_num: emailNum}),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      previewCache.set(cacheKey, data);
+      // Only render if this is still the active preview
+      if (activeNotionId === notionId && activeEmailNum === emailNum) {
+        renderEmailPreview(data);
+      }
+    } else {
+      body.innerHTML = `<div class="pp-error">Error generando email: ${escHtml(data.error||'')}</div>`;
+    }
+  } catch(e) {
+    body.innerHTML = `<div class="pp-error">Error de conexión: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderEmailPreview(data) {
+  const body = document.getElementById('pp-body');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="pp-subject">Asunto</div>
+    <div class="pp-subject-text">${escHtml(data.subject || '')}</div>
+    <div class="email-frame">${data.body_html || ''}<p style="margin-top:20px;margin-bottom:4px">Best,</p><p style="margin:0">Alicia<br>Growth Specialist, AMY AI</p><p style="margin-top:16px;font-size:11px;color:#bbb">Unsubscribe</p></div>`;
+}
+
+// ── Enable group ──────────────────────────────────────────────
+async function enableGroup() {
+  if (!selectedCity || !selectedCat) return;
+  const pending = allClinics.filter(c =>
+    c.ciudad === selectedCity && c.categoria === selectedCat &&
+    c.email && (!c.campana_email || c.campana_email === 'No iniciada')
+  ).length;
+
+  if (!confirm(`Habilitar campaña para ${pending} lead${pending!==1?'s':''} en ${selectedCity} / ${CAT_LABELS[selectedCat]||selectedCat}?\n\nEsto generará y enviará Email 1 a cada uno. Puede tomar ${Math.ceil(pending*3)} segundos.`)) return;
+
+  const btn = document.getElementById('btn-enable');
+  if (btn) { btn.disabled = true; btn.textContent = `Enviando… 0 / ${pending}`; }
+
+  try {
+    const r    = await fetch('/api/enable-group', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({city: selectedCity, category: selectedCat}),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      allClinics = await fetch('/api/clinics').then(r => r.json());
+      renderKanban();
+      if (data.errors?.length) {
+        alert(`✓ ${data.enabled} habilitados · ${data.errors.length} errores:\n${data.errors.map(e=>e.clinic+': '+e.error).join('\n')}`);
+      }
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = `Habilitar Email 1 → ${pending} leads`; }
+  }
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function showLoader(v) { document.getElementById('loader').classList.toggle('show', v); }
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>

@@ -434,6 +434,90 @@ def campaigns_page():
     return render_template("campaigns.html")
 
 
+@app.route("/creatives")
+@_require_auth
+def creatives_page():
+    return render_template("creatives.html")
+
+
+@app.route("/api/preview-email", methods=["POST"])
+@_require_auth
+def api_preview_email():
+    data         = request.json or {}
+    page_id      = data.get("notion_id", "").strip()
+    email_num    = int(data.get("email_num", 1))
+    prev_opened  = bool(data.get("previous_opened", False))
+    if not page_id:
+        return jsonify({"ok": False, "error": "notion_id requerido"}), 400
+    clinics = get_clinics()
+    clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
+    if not clinic:
+        return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
+    try:
+        from modules.claude_writer import write_email
+        generated = write_email(clinic, email_num=email_num, previous_opened=prev_opened)
+        return jsonify({"ok": True, **generated})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/enable-group", methods=["POST"])
+@_require_auth
+def api_enable_group():
+    global _cache
+    data     = request.json or {}
+    city     = data.get("city", "").strip()
+    category = data.get("category", "").strip()
+    if not city or not category:
+        return jsonify({"ok": False, "error": "city y category requeridos"}), 400
+
+    clinics  = get_clinics()
+    eligible = [
+        c for c in clinics
+        if c["ciudad"] == city
+        and c["categoria"] == category
+        and c.get("email")
+        and (not c.get("campana_email") or c.get("campana_email") == "No iniciada")
+    ]
+    if not eligible:
+        return jsonify({"ok": True, "enabled": 0, "total": 0})
+
+    from modules.claude_writer import write_email
+    from modules.email_sender  import send_campaign_email
+    from datetime import date, timedelta
+
+    enabled, errors = 0, []
+    for clinic in eligible:
+        try:
+            gen    = write_email(clinic, email_num=1)
+            result = send_campaign_email(
+                to_email  = clinic["email"],
+                subject   = gen["subject"],
+                body_html = gen["body_html"],
+                body_text = gen["body_text"],
+                notion_id = clinic["notion_id"],
+                email_num = 1,
+            )
+            if result["ok"]:
+                hoy     = date.today().isoformat()
+                proximo = (date.today() + timedelta(days=3)).isoformat()
+                _notion_patch(clinic["notion_id"], {
+                    "Campaña Email":  {"select": {"name": "Activa"}},
+                    "Email Etapa":    {"number": 1},
+                    "Email Enviados": {"number": 1},
+                    "Último Email":   {"date":   {"start": hoy}},
+                    "Próximo Email":  {"date":   {"start": proximo}},
+                })
+                enabled += 1
+            else:
+                errors.append({"clinic": clinic["nombre"], "error": result["error"]})
+        except Exception as e:
+            errors.append({"clinic": clinic["nombre"], "error": str(e)})
+
+    _cache = {"data": None, "ts": 0.0}
+    return jsonify({"ok": True, "enabled": enabled, "total": len(eligible), "errors": errors})
+
+
 @app.route("/meta-token")
 @_require_auth
 def meta_token_page():
