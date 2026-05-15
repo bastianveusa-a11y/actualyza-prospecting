@@ -1130,7 +1130,7 @@ function renderTable() {
         <td>${cityBadge(c.ciudad)}</td>
         <td>${catBadgeF(c.categoria)}</td>
         <td>${rating}</td>
-        <td style="text-align:center">${c.anuncios || 0}</td>
+        <td style="text-align:center">${adsCell(c)}</td>
         <td>${invBadgeF(c.inversion)}</td>
         <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dueno}</td>
         <td style="max-width:170px">${emailCell}</td>
@@ -1195,6 +1195,14 @@ function invBadgeF(inv) {
 function etapaBadge(etapa) {
   const cls = {'No contactado':'etapa-nc','En proceso':'etapa-ep','Contactado':'etapa-ct','Respondió':'etapa-rs'}[etapa]||'etapa-nc';
   return `<span class="badge ${cls}">${etapa||'—'}</span>`;
+}
+function adsCell(c) {
+  const n = c.anuncios || 0;
+  const v = c.corre_anuncios; // "Sí" | "No" | "Sin verificar" | ""
+  if (n > 0)       return `<span style="color:var(--green);font-weight:600">Sí (${n})</span>`;
+  if (v === 'Sí')  return `<span style="color:var(--green);font-weight:600">Sí</span>`;
+  if (v === 'No')  return `<span style="color:var(--text3)">No</span>`;
+  return `<span style="color:var(--text3);font-size:.75rem" title="Verificar con 📢">?</span>`;
 }
 
 // ── Log ───────────────────────────────────────────────────────

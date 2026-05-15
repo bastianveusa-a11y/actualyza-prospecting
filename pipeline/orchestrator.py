@@ -146,6 +146,7 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
     )
     clinic["anuncios_activos"] = meta["count"]
     clinic["inversion_meta"]   = meta["level"]
+    clinic["corre_anuncios"]   = meta.get("has_ads")   # True / False / None
     if meta.get("fb_slug"):
         clinic["facebook_page"] = f"https://facebook.com/{meta['fb_slug']}"
     if meta.get("method", "").startswith("scraping"):

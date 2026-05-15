@@ -147,9 +147,10 @@ def fetch_clinics() -> list:
                 "maps":        _prop(page, "Google Maps",     "url"),
                 "direccion":   _prop(page, "Dirección",       "rich_text"),
                 "zip":         _prop(page, "ZIP",             "rich_text"),
-                "email":        _prop(page, "Email Contacto",  "email"),
-                "facebook_page":_prop(page, "Página Facebook", "url"),
-                "last_edited":  page.get("last_edited_time", ""),
+                "email":          _prop(page, "Email Contacto",    "email"),
+                "facebook_page":  _prop(page, "Página Facebook",   "url"),
+                "corre_anuncios": _prop(page, "¿Corre Anuncios?",  "select"),
+                "last_edited":    page.get("last_edited_time", ""),
             }
             # Link directo a Meta Ad Library para esta clínica
             fb = c["facebook_page"]

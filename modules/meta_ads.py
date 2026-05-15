@@ -143,13 +143,13 @@ def _count_via_api(page_name: str, page_id: str, token: str) -> dict:
         data = r.json()
         if "error" in data:
             return {
-                "count": 0, "level": "Sin anuncios", "method": "api",
+                "count": 0, "level": "Sin anuncios", "has_ads": None, "method": "api",
                 "error": f"Error {data['error'].get('code')}: {data['error'].get('message', '')}",
             }
         count = len(data.get("data", []))
-        return {"count": count, "level": _classify_level(count), "method": "api", "error": None}
+        return {"count": count, "level": _classify_level(count), "has_ads": count > 0, "method": "api", "error": None}
     except Exception as e:
-        return {"count": 0, "level": "Sin anuncios", "method": "api", "error": str(e)}
+        return {"count": 0, "level": "Sin anuncios", "has_ads": None, "method": "api", "error": str(e)}
 
 
 def _count_via_scraping(
@@ -159,10 +159,20 @@ def _count_via_scraping(
 ) -> dict:
     """
     Scraping de facebook.com/ads/library.
-    Con search_type='page' y un slug exacto, los resultados son mucho más precisos.
+    Usa una sesión para obtener cookies primero (mejora detección).
+    Devuelve has_ads=True/False/None según lo que pueda determinar.
     """
     if delay > 0:
         time.sleep(delay)
+
+    session = requests.Session()
+    session.headers.update(_HEADERS)
+
+    # Paso 1: visitar homepage para obtener cookies de sesión
+    try:
+        session.get(LIBRARY_URL, timeout=8)
+    except Exception:
+        pass
 
     params = {
         "active_status": "active",
@@ -172,34 +182,63 @@ def _count_via_scraping(
         "search_type":   search_type,
     }
     try:
-        r    = requests.get(LIBRARY_URL, params=params, headers=_HEADERS, timeout=15)
+        r    = session.get(LIBRARY_URL, params=params, timeout=15)
         text = r.text
 
-        # Patrones para extraer cantidad
-        patterns = [
+        # Patrones para número exacto
+        count_patterns = [
             r'"total_count"\s*:\s*(\d+)',
-            r'(\d[\d,]*)\s+result',
-            r'Showing\s+.*?(\d+)\s+ad',
+            r'"count"\s*:\s*(\d+)',
+            r'(\d[\d,]*)\s+results?',
+            r'(\d[\d,]*)\s+active\s+ads?',
         ]
-        for pat in patterns:
+        for pat in count_patterns:
             m = re.search(pat, text, re.IGNORECASE)
             if m:
                 count = int(m.group(1).replace(',', ''))
                 return {
                     "count": count, "level": _classify_level(count),
+                    "has_ads": count > 0,
                     "method": f"scraping_{search_type}", "error": None,
                 }
 
-        # Indicador binario si no se puede extraer número
-        has_ads = '"ad_archive_id"' in text or "active ads" in text.lower()
-        count   = 1 if has_ads else 0
+        # Detección binaria: ¿hay anuncios?
+        positive = (
+            '"ad_archive_id"'   in text
+            or '"ad_snapshot_url"' in text
+            or 'active ads'        in text.lower()
+        )
+        if positive:
+            return {
+                "count": 1, "level": "Baja",
+                "has_ads": True,
+                "method": f"scraping_{search_type}_si", "error": None,
+            }
+
+        # Detección binaria: ¿confirmado sin anuncios?
+        negative = any(p in text.lower() for p in [
+            'no results found', 'no ads found', '0 results',
+            'no se encontraron', 'sin resultados',
+        ])
+        if negative:
+            return {
+                "count": 0, "level": "Sin anuncios",
+                "has_ads": False,
+                "method": f"scraping_{search_type}_no", "error": None,
+            }
+
+        # No pudimos determinar — página JS sin datos en HTML estático
         return {
-            "count": count, "level": "Baja" if has_ads else "Sin anuncios",
-            "method": f"scraping_{search_type}_approx", "error": None,
+            "count": 0, "level": "Sin anuncios",
+            "has_ads": None,   # None = desconocido
+            "method": "scraping_unknown", "error": None,
         }
 
     except Exception as e:
-        return {"count": 0, "level": "Sin anuncios", "method": "scraping", "error": str(e)}
+        return {
+            "count": 0, "level": "Sin anuncios",
+            "has_ads": None, "method": "scraping", "error": str(e),
+        }
 
 
 def _classify_level(count: int) -> str:
