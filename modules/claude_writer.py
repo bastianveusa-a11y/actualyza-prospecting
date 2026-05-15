@@ -166,7 +166,7 @@ def write_email(
 def _cat_label(cat: str) -> str:
     return {
         "dental":   "dental",
-        "estetica": "aesthetic",
+        "estetica": "esthetic",
         "medspa":   "med spa",
         "wellness": "wellness",
     }.get(cat, cat or "medical")
