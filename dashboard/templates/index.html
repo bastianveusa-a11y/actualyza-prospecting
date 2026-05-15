@@ -1181,20 +1181,29 @@ function renderPipeline(s) {
 
 // ── Budget ───────────────────────────────────────────────────
 function renderBudget(budget) {
-  const names = { google_places:'Google Places', sunbiz:'Sunbiz', meta_scraping:'Meta Scraping' };
   document.getElementById('budget-month').textContent =
     new Date().toLocaleString('es', {month:'long', year:'numeric'});
   const el = document.getElementById('budget-rows');
   el.innerHTML = Object.entries(budget).map(([key, b]) => {
     let barColor = C.green, cls = '';
-    if (b.pct >= 80) { barColor = C.red; cls = 'budget-danger'; }
+    if (b.pct >= 80) { barColor = C.red;    cls = 'budget-danger'; }
     else if (b.pct >= 60) { barColor = C.orange; cls = 'budget-warning'; }
+    const icon  = b.icon  || '🔧';
+    const label = b.label || key;
+    const note  = b.note  ? `<span style="font-size:.65rem;color:var(--text3);margin-left:6px">${b.note}</span>` : '';
+    const paidDot = b.paid ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:4px;vertical-align:middle" title="Servicio con costo"></span>` : '';
     return `<div class="budget-row">
       <div class="budget-header">
-        <span class="budget-name ${cls}">${names[key]||key}</span>
-        <span class="budget-nums">${b.count}/${b.limit} — ${b.remaining} restantes</span>
+        <span class="budget-name ${cls}">${icon} ${label}${paidDot}${note}</span>
+        <span class="budget-nums">${b.count} / ${b.limit}</span>
       </div>
-      <div class="budget-bar-wrap"><div class="budget-bar" style="width:${b.pct}%;background:${barColor}"></div></div>
+      <div class="budget-bar-wrap">
+        <div class="budget-bar" style="width:${b.pct}%;background:${barColor}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px">
+        <span style="font-size:.65rem;color:var(--text3)">${b.pct}% usado</span>
+        <span style="font-size:.65rem;color:var(--text3)">${b.remaining} restantes</span>
+      </div>
     </div>`;
   }).join('');
 }

@@ -12,12 +12,12 @@ from pathlib import Path
 USAGE_FILE = Path(__file__).parent.parent / "data" / "api_usage.json"
 
 # Límites mensuales por servicio
-# Google Places: $200 crédito / $0.032 por request = 6,250 gratuitos
-# Dejamos un margen amplio — 200 requests cuesta $6.40 (cubierto por crédito)
 DEFAULTS = {
-    "google_places": 3750,  # 60% de 6,250 gratuitos — margen del 40% libre
-    "sunbiz":        500,   # sin costo — límite por cortesía al servidor
-    "meta_scraping": 300,   # sin costo — límite por cortesía
+    "google_places":  3750,  # Google Places: $200 crédito = 6,250 gratis; usamos 60%
+    "sunbiz":         500,   # Sunbiz: sin costo — límite por cortesía al servidor
+    "meta_scraping":  300,   # Meta scraping: sin costo — límite por cortesía
+    "claude_emails":  500,   # Claude API: ~$0.002/email (haiku) — alerta preventiva
+    "resend_emails":  2800,  # Resend plan gratis: 3,000/mes; margen de 200
 }
 
 

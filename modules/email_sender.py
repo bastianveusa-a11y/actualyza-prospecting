@@ -75,6 +75,11 @@ def send_campaign_email(
         client = _resend_client()
         resp   = client.Emails.send(payload)
         msg_id = resp.id if hasattr(resp, "id") else (resp.get("id", "") if isinstance(resp, dict) else "")
+        try:
+            from modules.api_budget import increment
+            increment("resend_emails", 1)
+        except Exception:
+            pass
         return {"ok": True, "message_id": msg_id, "error": None}
     except Exception as e:
         return {"ok": False, "message_id": "", "error": str(e)}

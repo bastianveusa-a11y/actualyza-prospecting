@@ -145,6 +145,12 @@ def write_email(
         messages   = [{"role": "user", "content": prompt}],
     )
 
+    try:
+        from modules.api_budget import increment
+        increment("claude_emails", 1)
+    except Exception:
+        pass
+
     raw = msg.content[0].text.strip()
 
     # Strip markdown code fences if Claude adds them
