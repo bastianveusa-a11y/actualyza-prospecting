@@ -595,15 +595,18 @@ def api_enable_campaign():
     if not clinic.get("email"):
         return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
 
-    # Generar y enviar Email 1
+    test_email = (data.get("test_email") or "").strip()
+    destino    = test_email or clinic["email"]
+    es_prueba  = bool(test_email)
+
     try:
         from modules.claude_writer import write_email
         from modules.email_sender  import send_campaign_email
 
         generated = write_email(clinic, email_num=1)
         result    = send_campaign_email(
-            to_email  = clinic["email"],
-            subject   = generated["subject"],
+            to_email  = destino,
+            subject   = f"[PRUEBA] {generated['subject']}" if es_prueba else generated["subject"],
             body_html = generated["body_html"],
             body_text = generated["body_text"],
             notion_id = page_id,
@@ -612,19 +615,21 @@ def api_enable_campaign():
         if not result["ok"]:
             return jsonify({"ok": False, "error": result["error"]}), 500
 
-        # Actualizar Notion
-        from datetime import date, timedelta
-        hoy       = date.today().isoformat()
-        proximo   = (date.today() + timedelta(days=3)).isoformat()
-        _notion_patch(page_id, {
-            "Campaña Email": {"select": {"name": "Activa"}},
-            "Email Etapa":   {"number": 1},
-            "Email Enviados":{"number": 1},
-            "Último Email":  {"date":   {"start": hoy}},
-            "Próximo Email": {"date":   {"start": proximo}},
-        })
-        _cache = {"data": None, "ts": 0.0}
-        return jsonify({"ok": True, "subject": generated["subject"], "email_num": 1})
+        # Solo actualiza Notion si no es prueba
+        if not es_prueba:
+            from datetime import date, timedelta
+            hoy     = date.today().isoformat()
+            proximo = (date.today() + timedelta(days=3)).isoformat()
+            _notion_patch(page_id, {
+                "Campaña Email": {"select": {"name": "Activa"}},
+                "Email Etapa":   {"number": 1},
+                "Email Enviados":{"number": 1},
+                "Último Email":  {"date":   {"start": hoy}},
+                "Próximo Email": {"date":   {"start": proximo}},
+            })
+            _cache = {"data": None, "ts": 0.0}
+
+        return jsonify({"ok": True, "subject": generated["subject"], "email_num": 1, "prueba": es_prueba})
 
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -646,12 +651,15 @@ def api_send_next_email():
     if not clinic.get("email"):
         return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
 
+    test_email    = (data.get("test_email") or "").strip()
+    es_prueba     = bool(test_email)
     current_etapa = int(clinic.get("email_etapa") or 0)
     next_etapa    = current_etapa + 1
     if next_etapa > 4:
         return jsonify({"ok": False, "error": "Secuencia completa (4 emails enviados)"}), 400
 
     prev_opened = (clinic.get("email_abiertos") or 0) > 0
+    destino     = test_email or clinic["email"]
 
     try:
         from modules.claude_writer import write_email
@@ -660,8 +668,8 @@ def api_send_next_email():
 
         generated = write_email(clinic, email_num=next_etapa, previous_opened=prev_opened)
         result    = send_campaign_email(
-            to_email  = clinic["email"],
-            subject   = generated["subject"],
+            to_email  = destino,
+            subject   = f"[PRUEBA] {generated['subject']}" if es_prueba else generated["subject"],
             body_html = generated["body_html"],
             body_text = generated["body_text"],
             notion_id = page_id,
@@ -670,24 +678,25 @@ def api_send_next_email():
         if not result["ok"]:
             return jsonify({"ok": False, "error": result["error"]}), 500
 
-        enviados  = int(clinic.get("email_enviados") or 0) + 1
-        days_next = [0, 3, 5, 7][min(next_etapa - 1, 3)]
-        hoy       = date.today().isoformat()
-        proximo   = (date.today() + timedelta(days=days_next)).isoformat() if next_etapa < 4 else None
+        if not es_prueba:
+            enviados  = int(clinic.get("email_enviados") or 0) + 1
+            days_next = [0, 3, 5, 7][min(next_etapa - 1, 3)]
+            hoy       = date.today().isoformat()
+            proximo   = (date.today() + timedelta(days=days_next)).isoformat() if next_etapa < 4 else None
 
-        patch = {
-            "Email Etapa":    {"number": next_etapa},
-            "Email Enviados": {"number": enviados},
-            "Último Email":   {"date":   {"start": hoy}},
-        }
-        if next_etapa == 4:
-            patch["Campaña Email"] = {"select": {"name": "Completada"}}
-        if proximo:
-            patch["Próximo Email"] = {"date": {"start": proximo}}
+            patch = {
+                "Email Etapa":    {"number": next_etapa},
+                "Email Enviados": {"number": enviados},
+                "Último Email":   {"date":   {"start": hoy}},
+            }
+            if next_etapa == 4:
+                patch["Campaña Email"] = {"select": {"name": "Completada"}}
+            if proximo:
+                patch["Próximo Email"] = {"date": {"start": proximo}}
 
-        _notion_patch(page_id, patch)
-        _cache = {"data": None, "ts": 0.0}
-        return jsonify({"ok": True, "subject": generated["subject"], "email_num": next_etapa})
+            _notion_patch(page_id, patch)
+            _cache = {"data": None, "ts": 0.0}
+        return jsonify({"ok": True, "subject": generated["subject"], "email_num": next_etapa, "prueba": es_prueba})
 
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500

@@ -1306,10 +1306,11 @@ async function loadCampanas() {
     const canPause = r.campana_email === 'Activa';
 
     const btnH = 'padding:3px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;';
+    const safeEmail   = (r.email||'').replace(/'/g,"\\'");
     const btnIniciar  = canStart ? `<button style="${btnH}background:rgba(201,169,110,.12);border-color:rgba(201,169,110,.3);color:var(--gold)"
-                          onclick="enableCampaign('${r.notion_id}',this)">Habilitar</button>` : '';
+                          onclick="enableCampaign('${r.notion_id}','${safeEmail}',this)">Habilitar</button>` : '';
     const btnSiguiente= canNext  ? `<button style="${btnH}background:rgba(80,128,255,.1);border-color:rgba(80,128,255,.3);color:var(--blue);margin-left:4px"
-                          onclick="sendNext('${r.notion_id}',this)">Enviar #${(r.email_etapa||0)+1}</button>` : '';
+                          onclick="sendNext('${r.notion_id}','${safeEmail}',this)">Enviar #${(r.email_etapa||0)+1}</button>` : '';
     const btnPausar   = canPause ? `<button style="${btnH}background:transparent;border-color:var(--border);color:var(--text3);margin-left:4px"
                           onclick="pauseCampaign('${r.notion_id}',this)">Pausar</button>` : '';
 
@@ -1327,34 +1328,56 @@ async function loadCampanas() {
   }).join('');
 }
 
-async function enableCampaign(notionId, btn) {
-  btn.disabled = true; btn.textContent = 'Generando…';
+async function enableCampaign(notionId, clinicEmail, btn) {
+  const testEmail = prompt(
+    `Email #1 se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (o deja vacío para enviar al real):`,
+    ''
+  );
+  if (testEmail === null) return; // canceló
+
+  const destino = testEmail.trim() || clinicEmail;
+  const esPrueba = !!testEmail.trim();
+
+  btn.disabled = true;
+  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
+
   const r    = await fetch('/api/enable-campaign', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({notion_id: notionId}),
+    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim() || null}),
   });
   const data = await r.json();
   if (data.ok) {
-    btn.textContent = '✓ Enviado';
+    btn.textContent = esPrueba ? `✓ Prueba → ${destino}` : '✓ Enviado';
     btn.style.color = 'var(--green)';
-    setTimeout(() => loadCampanas(), 1500);
+    if (!esPrueba) setTimeout(() => loadCampanas(), 1500);
+    else btn.disabled = false;
   } else {
     btn.disabled = false; btn.textContent = 'Habilitar';
     alert('Error: ' + (data.error || 'desconocido'));
   }
 }
 
-async function sendNext(notionId, btn) {
-  btn.disabled = true; btn.textContent = 'Generando…';
+async function sendNext(notionId, clinicEmail, btn) {
+  const testEmail = prompt(
+    `Siguiente email se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (o deja vacío para enviar al real):`,
+    ''
+  );
+  if (testEmail === null) return;
+
+  const esPrueba = !!testEmail.trim();
+  btn.disabled = true;
+  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
+
   const r    = await fetch('/api/send-next-email', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({notion_id: notionId}),
+    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim() || null}),
   });
   const data = await r.json();
   if (data.ok) {
-    btn.textContent = '✓ Enviado';
+    btn.textContent = esPrueba ? `✓ Prueba enviada` : '✓ Enviado';
     btn.style.color = 'var(--green)';
-    setTimeout(() => loadCampanas(), 1500);
+    if (!esPrueba) setTimeout(() => loadCampanas(), 1500);
+    else btn.disabled = false;
   } else {
     btn.disabled = false;
     alert('Error: ' + (data.error || 'desconocido'));
