@@ -39,6 +39,7 @@ _pipeline_state: dict = {
     "last_finished":  None,
     "error":          None,
 }
+_stop_requested: bool = False
 
 
 def _require_auth(f):
@@ -308,19 +309,63 @@ def api_pipeline():
     })
 
 
+def _parse_run_progress() -> dict:
+    start_iso = _pipeline_state.get("last_started", "")
+    total     = int(os.getenv("MAX_CLINICS_PER_RUN", "20"))
+    empty     = {"created": 0, "updated": 0, "errors": 0, "processed": 0, "segment": "", "total": total}
+    if not start_iso or not LOG_FILE.exists():
+        return empty
+    try:
+        start_dt = datetime.fromisoformat(start_iso).replace(tzinfo=timezone.utc)
+    except Exception:
+        return empty
+
+    run_lines = []
+    for raw in LOG_FILE.read_text().splitlines():
+        if raw.startswith("[") and " UTC]" in raw:
+            try:
+                ts = datetime.strptime(raw[1:20], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                if ts >= start_dt - timedelta(seconds=5):
+                    run_lines.append(raw)
+            except Exception:
+                pass
+        elif run_lines:
+            run_lines.append(raw)
+
+    created = sum(1 for l in run_lines if "  ✓ " in l)
+    updated = sum(1 for l in run_lines if "  ↻ " in l)
+    errors  = sum(1 for l in run_lines if "  ✗ " in l)
+
+    segment = ""
+    for l in reversed(run_lines):
+        if "── " in l and " / " in l and "UTC" not in l:
+            segment = l.replace("──", "").strip()
+            break
+
+    return {
+        "created":   created,
+        "updated":   updated,
+        "errors":    errors,
+        "processed": created + updated,
+        "segment":   segment,
+        "total":     total,
+    }
+
+
 def _run_pipeline_bg():
-    global _pipeline_state, _cache
-    _pipeline_state["running"]       = True
+    global _pipeline_state, _cache, _stop_requested
+    _stop_requested              = False
+    _pipeline_state["running"]   = True
     _pipeline_state["last_started"]  = datetime.now(timezone.utc).isoformat()
     _pipeline_state["error"]         = None
     try:
         from pipeline.orchestrator import run_pipeline
-        run_pipeline()
+        run_pipeline(stop_flag=lambda: _stop_requested)
         _cache = {"data": None, "ts": 0.0}
     except Exception as e:
         _pipeline_state["error"] = str(e)
     finally:
-        _pipeline_state["running"]      = False
+        _pipeline_state["running"]       = False
         _pipeline_state["last_finished"] = datetime.now(timezone.utc).isoformat()
 
 
@@ -333,6 +378,14 @@ def api_run_pipeline():
     return jsonify({"ok": True, "status": "started"})
 
 
+@app.route("/api/stop-pipeline", methods=["POST"])
+@_require_auth
+def api_stop_pipeline():
+    global _stop_requested
+    _stop_requested = True
+    return jsonify({"ok": True})
+
+
 @app.route("/api/pipeline-status")
 @_require_auth
 def api_pipeline_status():
@@ -341,6 +394,7 @@ def api_pipeline_status():
         "last_started":   _pipeline_state["last_started"],
         "last_finished":  _pipeline_state["last_finished"],
         "error":          _pipeline_state["error"],
+        "progress":       _parse_run_progress() if _pipeline_state["running"] else {},
         "log":            get_log(20),
     })
 

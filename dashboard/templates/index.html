@@ -103,19 +103,57 @@ header {
   color: var(--green);
   cursor: not-allowed;
 }
+.btn-stop {
+  background: rgba(255,80,112,0.08);
+  border-color: rgba(255,80,112,0.3);
+  color: var(--red);
+}
+.btn-stop:hover { background: rgba(255,80,112,0.15); border-color: rgba(255,80,112,0.5); color: var(--red); }
 
 .action-bar {
-  display: flex; align-items: center; gap: 10px;
   margin-bottom: 24px;
-  padding: 14px 18px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--r);
+  overflow: hidden;
 }
-.action-bar-left { display: flex; gap: 10px; flex: 1; }
+.action-bar-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+}
+.action-bar-left { display: flex; gap: 10px; flex: 1; align-items: center; }
 .action-bar-status { font-size: 0.75rem; color: var(--text3); display: flex; align-items: center; gap: 8px; }
-.running-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1s infinite; }
+.running-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1s infinite; flex-shrink:0; }
 .error-msg { color: var(--red); font-size: 0.72rem; }
+
+/* progress panel */
+.progress-panel {
+  border-top: 1px solid var(--border);
+  padding: 14px 18px;
+  display: none;
+}
+.progress-panel.visible { display: block; }
+.progress-top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.progress-segment { font-size: 0.78rem; color: var(--text2); font-weight: 500; }
+.progress-fraction { font-size: 0.75rem; color: var(--text3); }
+.progress-bar-outer {
+  height: 8px; background: rgba(255,255,255,0.06);
+  border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+}
+.progress-bar-inner {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--green), var(--teal));
+  transition: width .5s ease;
+}
+.progress-stats { display: flex; gap: 18px; }
+.progress-stat { font-size: 0.72rem; }
+.ps-num { font-weight: 600; margin-right: 4px; }
+.ps-new    { color: var(--green); }
+.ps-upd    { color: var(--blue); }
+.ps-err    { color: var(--red); }
 
 /* ── Section label ── */
 .section-label {
@@ -392,22 +430,46 @@ tbody td a:hover { color: var(--gold); }
 
   <!-- ── Action bar ── -->
   <div class="action-bar">
-    <div class="action-bar-left">
-      <button class="btn btn-primary" id="btn-collect" onclick="startCollection()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-        </svg>
-        Nueva Recolección
-      </button>
-      <button class="btn" id="btn-refresh-data" onclick="forceRefresh()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 4v6h6M23 20v-6h-6"/>
-          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-        </svg>
-        Actualizar Datos
-      </button>
+    <div class="action-bar-top">
+      <div class="action-bar-left">
+        <button class="btn btn-primary" id="btn-collect" onclick="startCollection()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          Nueva Recolección
+        </button>
+        <button class="btn btn-stop" id="btn-stop" onclick="stopCollection()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+          </svg>
+          Detener
+        </button>
+        <button class="btn" id="btn-refresh-data" onclick="forceRefresh()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 4v6h6M23 20v-6h-6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+          Actualizar Datos
+        </button>
+      </div>
+      <div class="action-bar-status" id="action-status"></div>
     </div>
-    <div class="action-bar-status" id="action-status"></div>
+    <!-- progress panel (visible while running) -->
+    <div class="progress-panel" id="progress-panel">
+      <div class="progress-top">
+        <span class="progress-segment" id="prog-segment">Iniciando…</span>
+        <span class="progress-fraction" id="prog-fraction">0 / 20</span>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="prog-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-stats">
+        <div class="progress-stat ps-new"><span class="ps-num" id="prog-created">0</span>nuevas</div>
+        <div class="progress-stat ps-upd"><span class="ps-num" id="prog-updated">0</span>actualizadas</div>
+        <div class="progress-stat ps-err"><span class="ps-num" id="prog-errors">0</span>errores</div>
+        <div class="progress-stat" style="color:var(--text3);margin-left:auto">~<span id="prog-eta">—</span> restantes</div>
+      </div>
+    </div>
   </div>
 
   <!-- ── KPIs ── -->
@@ -666,31 +728,72 @@ async function refreshAll() {
 function showLoader(v) { document.getElementById('loader').classList.toggle('show', v); }
 
 // ── Acciones ──────────────────────────────────────────────────
+const SECS_PER_CLINIC = 20; // ~20 segundos por clínica
+
 async function startCollection() {
-  const btn = document.getElementById('btn-collect');
-  const res = await fetch('/api/run-pipeline', {method:'POST'});
+  const res  = await fetch('/api/run-pipeline', {method:'POST'});
   const data = await res.json();
-  if (!data.ok) {
-    setStatus(`<span class="error-msg">${data.error}</span>`);
-    return;
-  }
-  btn.classList.add('running');
-  btn.disabled = true;
-  btn.innerHTML = `<div class="running-dot"></div> Recolectando…`;
+  if (!data.ok) { setStatus(`<span class="error-msg">${data.error}</span>`); return; }
+  setRunningUI(true);
   startPolling();
+}
+
+async function stopCollection() {
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('btn-stop').textContent = 'Deteniendo…';
+  await fetch('/api/stop-pipeline', {method:'POST'});
+  setStatus('<span style="color:var(--orange)">Deteniendo — espera que termine la clínica actual…</span>');
 }
 
 async function forceRefresh() {
   const btn = document.getElementById('btn-refresh-data');
-  btn.classList.add('spinning');
-  btn.disabled = true;
+  btn.classList.add('spinning'); btn.disabled = true;
   await fetch('/api/refresh', {method:'POST'});
   await loadAll();
-  btn.classList.remove('spinning');
-  btn.disabled = false;
+  btn.classList.remove('spinning'); btn.disabled = false;
   updateTimestamp();
   setStatus('Datos actualizados desde Notion');
   setTimeout(() => setStatus(''), 4000);
+}
+
+function setRunningUI(on) {
+  const btnCollect = document.getElementById('btn-collect');
+  const btnStop    = document.getElementById('btn-stop');
+  const panel      = document.getElementById('progress-panel');
+  if (on) {
+    btnCollect.classList.add('running'); btnCollect.disabled = true;
+    btnCollect.innerHTML = `<div class="running-dot"></div> Recolectando…`;
+    btnStop.style.display = '';
+    btnStop.disabled = false;
+    btnStop.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Detener`;
+    panel.classList.add('visible');
+  } else {
+    btnCollect.classList.remove('running'); btnCollect.disabled = false;
+    btnCollect.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Nueva Recolección`;
+    btnStop.style.display = 'none';
+    panel.classList.remove('visible');
+  }
+}
+
+function updateProgressUI(p) {
+  if (!p || !p.total) return;
+  const pct = Math.min(100, Math.round(p.processed / p.total * 100));
+  document.getElementById('prog-bar').style.width      = pct + '%';
+  document.getElementById('prog-fraction').textContent = `${p.processed} / ${p.total}`;
+  document.getElementById('prog-created').textContent  = p.created  + ' ';
+  document.getElementById('prog-updated').textContent  = p.updated  + ' ';
+  document.getElementById('prog-errors').textContent   = p.errors   + ' ';
+  const seg = p.segment || 'Iniciando…';
+  document.getElementById('prog-segment').textContent  = seg;
+  const remaining = p.total - p.processed;
+  const eta = remaining > 0 ? formatEta(remaining * SECS_PER_CLINIC) : 'Terminando';
+  document.getElementById('prog-eta').textContent = eta;
+}
+
+function formatEta(secs) {
+  if (secs < 60)  return secs + 's';
+  const m = Math.floor(secs / 60), s = secs % 60;
+  return `${m}m ${s}s`;
 }
 
 function startPolling() {
@@ -699,42 +802,28 @@ function startPolling() {
     const res  = await fetch('/api/pipeline-status');
     const data = await res.json();
     if (data.running) {
-      const last = data.log?.[0] || '';
-      setStatus(`<span class="running-dot"></span> ${last || 'Procesando…'}`);
+      updateProgressUI(data.progress);
+      setStatus(`<span class="running-dot"></span> Pipeline activo`);
     } else {
-      clearInterval(statusPoller);
-      statusPoller = null;
-      const btn = document.getElementById('btn-collect');
-      btn.classList.remove('running');
-      btn.disabled = false;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Nueva Recolección`;
+      clearInterval(statusPoller); statusPoller = null;
+      setRunningUI(false);
       if (data.error) {
         setStatus(`<span class="error-msg">Error: ${data.error}</span>`);
       } else {
         setStatus('Recolección completada — actualizando datos…');
-        await loadAll();
-        updateTimestamp();
+        await loadAll(); updateTimestamp();
         setTimeout(() => setStatus(''), 5000);
       }
     }
   }, 3000);
 }
 
-function setStatus(html) {
-  document.getElementById('action-status').innerHTML = html;
-}
+function setStatus(html) { document.getElementById('action-status').innerHTML = html; }
 
-// check if pipeline was running on page load
 async function checkPipelineOnLoad() {
   const res  = await fetch('/api/pipeline-status');
   const data = await res.json();
-  if (data.running) {
-    const btn = document.getElementById('btn-collect');
-    btn.classList.add('running');
-    btn.disabled = true;
-    btn.innerHTML = `<div class="running-dot"></div> Recolectando…`;
-    startPolling();
-  }
+  if (data.running) { setRunningUI(true); updateProgressUI(data.progress); startPolling(); }
 }
 function updateTimestamp() {
   const now = new Date();

@@ -182,7 +182,7 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
     return action
 
 
-def run_pipeline() -> None:
+def run_pipeline(stop_flag=None) -> None:
     log("=" * 55)
     log("PIPELINE INICIADO")
     log(f"Tanda máxima: {MAX_PER_RUN} clínicas nuevas")
@@ -218,6 +218,12 @@ def run_pipeline() -> None:
     run_start = datetime.now(timezone.utc).isoformat()
 
     while run_stats["created"] + run_stats["updated"] < MAX_PER_RUN:
+        if stop_flag and stop_flag():
+            log("PIPELINE DETENIDO POR EL USUARIO.")
+            save_progress(state)
+            _print_summary(run_stats, run_start)
+            return
+
         target = next_pending(state)
         if not target:
             log("Todos los mercados procesados. Pipeline completo.")
@@ -258,6 +264,13 @@ def run_pipeline() -> None:
         log(f"  {len(clinics)} clínicas encontradas en esta página")
 
         for clinic in clinics:
+            if stop_flag and stop_flag():
+                log("PIPELINE DETENIDO POR EL USUARIO.")
+                entry["last_run"] = run_start
+                save_progress(state)
+                _print_summary(run_stats, run_start)
+                return
+
             if run_stats["created"] + run_stats["updated"] >= MAX_PER_RUN:
                 log(f"  Tanda de {MAX_PER_RUN} alcanzada — pausando hasta próxima ejecución.")
                 # Marca progreso parcial: la próxima ejecución re-busca esta página
