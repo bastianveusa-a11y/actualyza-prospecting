@@ -13,10 +13,11 @@ from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
 
+import requests as http
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from flask import Flask, jsonify, render_template, request, Response
-from notion_client import Client
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -77,15 +78,23 @@ def _prop(page: dict, name: str, kind: str):
 
 
 def fetch_clinics() -> list:
-    notion  = Client(auth=NOTION_TOKEN)
+    headers = {
+        "Authorization":  f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type":   "application/json",
+    }
     results = []
     cursor  = None
     while True:
-        kwargs = {"database_id": NOTION_DB_ID, "page_size": 100}
+        body = {"page_size": 100}
         if cursor:
-            kwargs["start_cursor"] = cursor
-        resp = notion.databases.query(**kwargs)
-        for page in resp["results"]:
+            body["start_cursor"] = cursor
+        resp = http.post(
+            f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+            headers=headers,
+            json=body,
+        ).json()
+        for page in resp.get("results", []):
             results.append({
                 "nombre":    _prop(page, "Nombre",          "title"),
                 "ciudad":    _prop(page, "Ciudad",          "select"),
