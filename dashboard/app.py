@@ -593,12 +593,15 @@ def api_enable_campaign():
     clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
     if not clinic:
         return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
-    if not clinic.get("email"):
-        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
 
     test_email = (data.get("test_email") or "").strip()
-    destino    = test_email or clinic["email"]
     es_prueba  = bool(test_email)
+
+    # En modo prueba el destino es el correo de prueba; en real necesita correo de la clínica
+    if not es_prueba and not clinic.get("email"):
+        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
+
+    destino = test_email or clinic["email"]
 
     try:
         from modules.claude_writer import write_email
@@ -649,11 +652,13 @@ def api_send_next_email():
     clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
     if not clinic:
         return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
-    if not clinic.get("email"):
-        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
 
     test_email    = (data.get("test_email") or "").strip()
     es_prueba     = bool(test_email)
+    es_prueba     = bool(test_email)
+    if not es_prueba and not clinic.get("email"):
+        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
+
     current_etapa = int(clinic.get("email_etapa") or 0)
     next_etapa    = current_etapa + 1
     if next_etapa > 4:
