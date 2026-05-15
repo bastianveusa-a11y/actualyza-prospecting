@@ -1227,6 +1227,97 @@ def webhook_resend():
     return jsonify({"ok": True})
 
 
+# ── Cal.com webhook ───────────────────────────────────────────
+
+@app.route("/webhook/cal", methods=["POST"])
+def webhook_cal():
+    global _cache
+    payload     = request.json or {}
+    trigger     = payload.get("triggerEvent", "")
+    data        = payload.get("payload", {})
+    attendees   = data.get("attendees", [])
+    attendee    = attendees[0] if attendees else {}
+    booker_email = attendee.get("email", "").lower().strip()
+    start_time   = data.get("startTime", "")
+
+    if not booker_email:
+        return jsonify({"ok": True})
+
+    clinics = get_clinics()
+    clinic  = next((c for c in clinics if (c.get("email") or "").lower() == booker_email), None)
+
+    if trigger == "BOOKING_CREATED":
+        props = {"Etapa": {"select": {"name": "Reunión agendada"}}}
+        if start_time:
+            try:
+                meet_date = start_time[:10]  # YYYY-MM-DD
+                props["Próximo Email"] = {"date": {"start": meet_date}}
+            except Exception:
+                pass
+        if clinic:
+            _notion_patch(clinic["notion_id"], props)
+            _cache = {"data": None, "ts": 0.0}
+        else:
+            print(f"  ⚠ Cal booking: clínica no encontrada para {booker_email}")
+
+    elif trigger in ("BOOKING_CANCELLED", "BOOKING_RESCHEDULED"):
+        if clinic:
+            etapa = "En proceso" if trigger == "BOOKING_CANCELLED" else "Reunión agendada"
+            _notion_patch(clinic["notion_id"], {"Etapa": {"select": {"name": etapa}}})
+            _cache = {"data": None, "ts": 0.0}
+
+    return jsonify({"ok": True})
+
+
+@app.route("/api/send-booking-link", methods=["POST"])
+@_require_auth
+def api_send_booking_link():
+    """Envía el link de Cal.com directamente a un lead caliente."""
+    global _cache
+    data    = request.json or {}
+    page_id = data.get("notion_id", "").strip()
+    if not page_id:
+        return jsonify({"ok": False, "error": "notion_id requerido"}), 400
+
+    clinics = get_clinics()
+    clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
+    if not clinic:
+        return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
+    if not clinic.get("email"):
+        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
+
+    booking_url = os.getenv("CAL_BOOKING_URL", "https://cal.com/actualyza/amy-ai-demo")
+
+    subject  = "Quick question — when works for a 15-min call?"
+    body_text = (
+        f"Hi,\n\nI'd love to show you exactly how AMY AI works for "
+        f"{_cat_label_plain(clinic.get('categoria', ''))} clinics — takes 15 minutes.\n\n"
+        f"Pick a time that works for you: {booking_url}\n\nBest,\nAlicia"
+    )
+    body_html = (
+        f"<p>Hi,</p>"
+        f"<p>I'd love to show you exactly how AMY AI works for "
+        f"{_cat_label_plain(clinic.get('categoria', ''))} clinics — takes 15 minutes.</p>"
+        f"<p>Pick a time that works for you: "
+        f"<a href='{booking_url}'>{booking_url}</a></p>"
+    )
+
+    from modules.email_sender import send_campaign_email
+    result = send_campaign_email(
+        to_email  = clinic["email"],
+        subject   = subject,
+        body_html = body_html,
+        body_text = body_text,
+        notion_id = page_id,
+        email_num = 5,  # fuera de secuencia — no afecta etapa
+    )
+    return jsonify({"ok": result["ok"], "error": result.get("error")})
+
+
+def _cat_label_plain(cat: str) -> str:
+    return {"dental": "dental", "estetica": "esthetic", "medspa": "med spa", "wellness": "wellness"}.get(cat, "medical")
+
+
 # ── Unsubscribe ───────────────────────────────────────────────
 
 @app.route("/unsubscribe")

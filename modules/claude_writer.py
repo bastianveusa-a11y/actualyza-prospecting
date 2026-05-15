@@ -75,7 +75,7 @@ Clinic info:
 - City: {ciudad}
 - Running Meta Ads: {ads_status}
 
-They read the first email but didn't reply. Reference that you sent something recently without being weird about it. Go one level deeper on the specific pain — the cost of slow response time in their specialty. Invite a 15-minute call.""",
+They read the first email but didn't reply. Reference that you sent something recently without being weird about it. Go one level deeper on the specific pain — the cost of slow response time in their specialty. Invite a 15-minute call and include this booking link naturally in the email: {booking_url}""",
 
     # Email 3 — Day 7: Social proof / specific pain
     """Email #3 in a 4-email sequence. Two previous emails sent.
@@ -86,7 +86,7 @@ Clinic info:
 - City: {ciudad}
 - Running Meta Ads: {ads_status}
 
-This is the "proof" email. Use a brief, realistic mini-story about a similar {categoria} clinic in a comparable market that improved their lead conversion with faster follow-up. Keep it to 2-3 sentences — not a case study, just a reference. Connect directly to their situation. Ask if this pattern sounds familiar.""",
+This is the "proof" email. Use a brief, realistic mini-story about a similar {categoria} clinic in a comparable market that improved their lead conversion with faster follow-up. Keep it to 2-3 sentences — not a case study, just a reference. Connect directly to their situation. Include this booking link as a soft CTA: {booking_url}""",
 
     # Email 4 — Day 12: Last touch
     """Email #4 — the final email in the sequence. Last contact before stopping.
@@ -95,8 +95,9 @@ Clinic info:
 - Name: {name}
 - Type: {categoria} clinic
 - City: {ciudad}
+- Booking link: {booking_url}
 
-Write a respectful, short "last note" email. 2 paragraphs max. Acknowledge this is the last email. Leave the door open gracefully — if the timing isn't right now, they can reach out when it is. No pressure. Short and human.""",
+Write a respectful, short "last note" email. 2 paragraphs max. Acknowledge this is the last email. Include the booking link as the primary CTA — make it easy for them to grab time if they're ever ready. No pressure. Short and human.""",
 ]
 
 _ADS_STATUS = {
@@ -111,6 +112,7 @@ def write_email(
     clinic: dict,
     email_num: int,
     previous_opened: bool = False,
+    booking_url: str = "",
 ) -> dict:
     """
     Genera un email personalizado para el paso email_num de la secuencia (1–4).
@@ -128,14 +130,17 @@ def write_email(
     ads_raw = clinic.get("corre_anuncios") or clinic.get("inversion") or ""
     ads_status = _ADS_STATUS.get(ads_raw, _ADS_STATUS[""])
 
+    cal_url = booking_url or os.getenv("CAL_BOOKING_URL", "https://cal.com/actualyza/amy-ai-demo")
+
     prompt = prompt_template.format(
-        name      = clinic.get("nombre", "the clinic"),
-        categoria = _cat_label(clinic.get("categoria", "")),
-        ciudad    = clinic.get("ciudad", ""),
-        rating    = clinic.get("rating") or "not available",
-        reviews   = clinic.get("reviews") or "0",
-        ads_status= ads_status,
-        has_owner = "yes" if clinic.get("dueno") else "no",
+        name        = clinic.get("nombre", "the clinic"),
+        categoria   = _cat_label(clinic.get("categoria", "")),
+        ciudad      = clinic.get("ciudad", ""),
+        rating      = clinic.get("rating") or "not available",
+        reviews     = clinic.get("reviews") or "0",
+        ads_status  = ads_status,
+        has_owner   = "yes" if clinic.get("dueno") else "no",
+        booking_url = cal_url,
     )
 
     msg = _client().messages.create(
