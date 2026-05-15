@@ -564,9 +564,52 @@ def api_generate_creative():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-# ── Creative assets (auto-generated, cached) ──────────────────────────────────
+# ── Creative assets (persistidos en Notion, refresh mensual) ──────────────────
+
+_NOTION_ASSETS_PAGE_TITLE = "actualyza-creative-assets-config"
+_ASSETS_MAX_AGE_DAYS      = 30
+
+def _notion_get_assets_page() -> dict | None:
+    """Busca la página de config de assets en Notion."""
+    try:
+        r = http.post(
+            "https://api.notion.com/v1/search",
+            headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"},
+            json={"query": _NOTION_ASSETS_PAGE_TITLE, "filter": {"value": "page", "property": "object"}},
+            timeout=10,
+        )
+        for result in r.json().get("results", []):
+            title = result.get("properties", {}).get("title", {}).get("title", [])
+            if title and _NOTION_ASSETS_PAGE_TITLE in (title[0].get("plain_text", "")):
+                return result
+    except Exception:
+        pass
+    return None
+
 
 def _load_assets() -> dict:
+    """Carga assets desde Notion (fuente de verdad) con fallback a archivo local."""
+    # 1. Intentar desde Notion
+    try:
+        page = _notion_get_assets_page()
+        if page:
+            # El contenido JSON está en el primer bloque de código de la página
+            blocks = http.get(
+                f"https://api.notion.com/v1/blocks/{page['id']}/children",
+                headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"},
+                timeout=10,
+            ).json().get("results", [])
+            for block in blocks:
+                if block.get("type") == "code":
+                    text = block["code"]["rich_text"]
+                    if text:
+                        data = json.loads(text[0]["plain_text"])
+                        # Cache local para evitar llamadas repetidas
+                        _save_local_assets(data)
+                        return data
+    except Exception:
+        pass
+    # 2. Fallback al archivo local
     if ASSETS_FILE.exists():
         try:
             return json.loads(ASSETS_FILE.read_text())
@@ -575,21 +618,83 @@ def _load_assets() -> dict:
     return {}
 
 
-def _save_assets(data: dict) -> None:
+def _save_local_assets(data: dict) -> None:
     ASSETS_FILE.parent.mkdir(exist_ok=True)
     ASSETS_FILE.write_text(json.dumps(data, indent=2))
 
 
-def _generate_all_assets_bg():
-    """Genera los 8 creativos en background al arrancar el servidor."""
+def _save_assets(data: dict) -> None:
+    """Guarda assets en Notion (persistente) y localmente (cache)."""
+    _save_local_assets(data)
+    # Guardar en Notion
+    try:
+        import datetime
+        data["_saved_at"] = datetime.datetime.utcnow().isoformat()
+        content_json      = json.dumps(data, indent=2)
+        page = _notion_get_assets_page()
+        if page:
+            # Actualizar bloque de código existente
+            blocks = http.get(
+                f"https://api.notion.com/v1/blocks/{page['id']}/children",
+                headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"},
+                timeout=10,
+            ).json().get("results", [])
+            for block in blocks:
+                if block.get("type") == "code":
+                    http.patch(
+                        f"https://api.notion.com/v1/blocks/{block['id']}",
+                        headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"},
+                        json={"code": {"rich_text": [{"type": "text", "text": {"content": content_json}}], "language": "json"}},
+                        timeout=10,
+                    )
+                    return
+        # Crear página nueva si no existe
+        http.post(
+            "https://api.notion.com/v1/pages",
+            headers={"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"},
+            json={
+                "parent":     {"database_id": NOTION_DB_ID},
+                "properties": {"Nombre": {"title": [{"text": {"content": _NOTION_ASSETS_PAGE_TITLE}}]}},
+                "children": [{
+                    "object": "block", "type": "code",
+                    "code": {"rich_text": [{"type": "text", "text": {"content": content_json}}], "language": "json"},
+                }],
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        print(f"  ⚠ No se pudo guardar assets en Notion: {e}")
+
+
+def _assets_need_refresh(assets: dict) -> bool:
+    """Retorna True si los assets faltan o tienen más de 30 días."""
+    import datetime
+    all_keys = {f"{c}_{n}" for c in CATEGORIES for n in EMAIL_NUMS}
+    if not all_keys.issubset(assets.keys()):
+        return True
+    saved_at = assets.get("_saved_at")
+    if not saved_at:
+        return True
+    age = datetime.datetime.utcnow() - datetime.datetime.fromisoformat(saved_at)
+    return age.days >= _ASSETS_MAX_AGE_DAYS
+
+
+def _generate_all_assets_bg(force: bool = False):
+    """
+    Genera los 8 creativos en background.
+    Solo genera si faltan o tienen más de 30 días (a menos que force=True).
+    """
     import threading
     def _run():
         existing = _load_assets()
-        changed  = False
+        if not force and not _assets_need_refresh(existing):
+            print("  ✓ Creativos vigentes — próximo refresh en menos de 30 días")
+            return
+        print("  ⟳ Generando creativos (Flux + Canva)…")
         for cat in CATEGORIES:
             for num in EMAIL_NUMS:
                 key = f"{cat}_{num}"
-                if key in existing:
+                if not force and key in existing and existing.get("_saved_at"):
                     continue
                 try:
                     from modules.image_gen  import generate_background
@@ -602,14 +707,13 @@ def _generate_all_assets_bg():
                             asset_id  = upload_asset_from_url(img_url, name=f"flux-{cat}-e{num}")
                             design_id = create_banner_design(asset_id, cat, num)
                             img_url   = export_design(design_id)
-                        except Exception:
-                            pass
+                        except Exception as ce:
+                            print(f"    Canva falló para {key}: {ce}")
                     existing[key] = img_url
-                    changed = True
                     _save_assets(existing)
-                    print(f"  ✓ Creativo generado: {key}")
+                    print(f"  ✓ {key}")
                 except Exception as e:
-                    print(f"  ✗ Error generando {key}: {e}")
+                    print(f"  ✗ Error {key}: {e}")
     threading.Thread(target=_run, daemon=True).start()
 
 
@@ -632,9 +736,8 @@ def api_creative_assets():
 @app.route("/api/regenerate-assets", methods=["POST"])
 @_require_auth
 def api_regenerate_assets():
-    """Fuerza la regeneración de todos los creativos."""
-    _save_assets({})
-    _generate_all_assets_bg()
+    """Fuerza la regeneración de todos los creativos (ignora caché de 30 días)."""
+    _generate_all_assets_bg(force=True)
     return jsonify({"ok": True, "message": "Regenerando en background…"})
 
 
