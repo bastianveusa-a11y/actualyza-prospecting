@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Prospecting Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080910;
+  --bg2:       #0d0e1a;
+  --bg3:       #12131f;
+  --card:      rgba(255,255,255,0.03);
+  --border:    rgba(255,255,255,0.07);
+  --border-h:  rgba(201,169,110,0.3);
+  --gold:      #c9a96e;
+  --gold-l:    #e8c97a;
+  --gold-d:    #9a7840;
+  --text:      #eeeef8;
+  --text2:     #7878a0;
+  --text3:     #50506a;
+  --blue:      #5080ff;
+  --green:     #40c898;
+  --orange:    #ff9050;
+  --red:       #ff5070;
+  --purple:    #b060f0;
+  --teal:      #40d0c0;
+  --r:         12px;
+  --r-sm:      8px;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* ── Layout ── */
+.shell { max-width: 1440px; margin: 0 auto; padding: 24px 28px 48px; }
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.logo-text span { color: var(--gold); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.status-dot {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: var(--text2);
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.ts { font-size: 0.78rem; color: var(--text3); }
+
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text2);
+  font-size: 0.8rem; font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:hover {
+  border-color: var(--border-h);
+  color: var(--gold);
+  background: rgba(201,169,110,0.06);
+}
+.btn svg { width: 14px; height: 14px; }
+.btn.spinning svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Section titles ── */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+
+/* ── KPI Cards ── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .25s, transform .2s;
+}
+.kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+  pointer-events: none;
+}
+.kpi:hover {
+  border-color: var(--border-h);
+  transform: translateY(-2px);
+}
+.kpi-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.kpi-val {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--gold-l) 0%, var(--gold) 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+.kpi-label {
+  font-size: 0.82rem;
+  color: var(--text2);
+  font-weight: 400;
+}
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 4px;
+}
+.kpi-accent { position: absolute; bottom: 0; right: 0; opacity: 0.06; font-size: 5rem; line-height: 1; pointer-events: none; }
+
+/* ── Charts row ── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+  transition: border-color .25s;
+}
+.card:hover { border-color: rgba(255,255,255,0.1); }
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .pill {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.chart-wrap {
+  position: relative;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chart-wrap canvas { max-height: 200px; }
+
+/* donut center stat */
+.donut-center {
+  position: absolute;
+  text-align: center;
+  pointer-events: none;
+}
+.donut-center .big { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+.donut-center .sm  { font-size: 0.7rem; color: var(--text2); }
+
+/* legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 16px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Middle row ── */
+.mid-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ── Pipeline ── */
+.pipeline-items { display: flex; flex-direction: column; gap: 12px; }
+.pipe-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pipe-label {
+  font-size: 0.78rem;
+  color: var(--text2);
+  width: 110px;
+  flex-shrink: 0;
+}
+.pipe-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pipe-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+.pipe-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.pipe-pct {
+  font-size: 0.7rem;
+  color: var(--text3);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Budget ── */
+.budget-items { display: flex; flex-direction: column; gap: 18px; }
+.budget-row {}
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.budget-name {
+  font-size: 0.78rem;
+  color: var(--text2);
+  font-weight: 500;
+}
+.budget-nums {
+  font-size: 0.72rem;
+  color: var(--text3);
+}
+.budget-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.budget-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+.budget-warning { color: var(--orange) !important; }
+.budget-danger  { color: var(--red) !important; }
+
+/* ── Table ── */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+.table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.table-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+select.filter-sel, input.filter-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text2);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+select.filter-sel:focus, input.filter-input:focus {
+  border-color: var(--border-h);
+  color: var(--text);
+}
+select.filter-sel option { background: #1a1b2e; }
+input.filter-input { width: 180px; }
+input.filter-input::placeholder { color: var(--text3); }
+
+.tbl-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 0 12px 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color .2s;
+}
+thead th:hover { color: var(--gold); }
+thead th.sort-asc::after  { content: ' ↑'; color: var(--gold); }
+thead th.sort-desc::after { content: ' ↓'; color: var(--gold); }
+
+tbody tr {
+  border-top: 1px solid rgba(255,255,255,0.04);
+  transition: background .15s;
+}
+tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody td {
+  padding: 11px 12px;
+  font-size: 0.8rem;
+  color: var(--text2);
+  vertical-align: middle;
+}
+tbody td.td-name {
+  font-weight: 500;
+  color: var(--text);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+tbody td a {
+  color: inherit;
+  text-decoration: none;
+}
+tbody td a:hover { color: var(--gold); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.b-miami    { background: rgba(80,128,255,0.15); color: #80a8ff; }
+.b-orlando  { background: rgba(64,200,152,0.15); color: #60d0a8; }
+.b-dallas   { background: rgba(201,169,110,0.15); color: var(--gold-l); }
+.b-dental   { background: rgba(80,128,255,0.12); color: #80a8ff; }
+.b-estetica { background: rgba(176,96,240,0.12); color: #d080ff; }
+.b-medspa   { background: rgba(64,208,192,0.12); color: #50d8c8; }
+.b-wellness { background: rgba(128,208,96,0.12); color: #90d870; }
+
+.inv-alta   { background: rgba(255,80,112,0.15); color: #ff7090; }
+.inv-media  { background: rgba(255,144,80,0.15); color: #ffb070; }
+.inv-baja   { background: rgba(80,128,255,0.12); color: #80a8ff; }
+.inv-sin    { background: rgba(120,120,160,0.12); color: #9090b8; }
+
+.etapa-nc   { background: rgba(120,120,160,0.1); color: #8080a8; }
+.etapa-ep   { background: rgba(255,200,60,0.1);  color: #ffd060; }
+.etapa-ct   { background: rgba(80,128,255,0.12); color: #80a8ff; }
+.etapa-rs   { background: rgba(64,200,152,0.15); color: #60d0a8; }
+
+.rating-val { font-weight: 600; color: var(--gold); }
+
+.tbl-empty {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text3);
+  font-size: 0.85rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+.page-btns { display: flex; gap: 6px; }
+.page-btn {
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all .2s;
+}
+.page-btn:hover:not(:disabled) { border-color: var(--border-h); color: var(--gold); }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+.page-btn.active { background: rgba(201,169,110,0.1); border-color: var(--border-h); color: var(--gold); }
+
+/* ── Log ── */
+.log-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 24px;
+}
+.log-entries {
+  max-height: 240px;
+  overflow-y: auto;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+.log-line { color: var(--text3); }
+.log-line.ok   { color: #60c890; }
+.log-line.upd  { color: #80a8ff; }
+.log-line.err  { color: #ff7090; }
+.log-line.head { color: var(--gold); font-weight: 600; }
+
+/* ── Spinner overlay ── */
+#loader {
+  position: fixed; inset: 0;
+  background: rgba(8,9,16,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+#loader.show { opacity: 1; pointer-events: all; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(201,169,110,0.2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  .charts-row .card:last-child { grid-column: span 2; }
+}
+@media (max-width: 780px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .charts-row, .mid-row { grid-template-columns: 1fr; }
+  .charts-row .card:last-child { grid-column: auto; }
+}
+</style>
+</head>
+
+<body>
+<div id="loader"><div class="spinner"></div></div>
+
+<div class="shell">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="logo-text">Actual<span>yza</span></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot"></div>
+        <span>Sistema activo</span>
+      </div>
+      <div class="ts" id="ts-label">—</div>
+      <button class="btn" id="refresh-btn" onclick="refreshAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- ── KPIs ── -->
+  <div class="section-label">Indicadores Clave</div>
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-icon" style="background:rgba(201,169,110,0.12)">🏥</div>
+      <div class="kpi-val" id="kpi-total">—</div>
+      <div class="kpi-label">Prospectos totales</div>
+      <div class="kpi-sub">Miami · Orlando · Dallas</div>
+      <div class="kpi-accent">🏥</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:rgba(64,200,152,0.12)">👤</div>
+      <div class="kpi-val" id="kpi-dueno">—</div>
+      <div class="kpi-label">Con dueño identificado</div>
+      <div class="kpi-sub" id="kpi-dueno-pct">vía Sunbiz</div>
+      <div class="kpi-accent">👤</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:rgba(255,80,112,0.12)">📣</div>
+      <div class="kpi-val" id="kpi-alta">—</div>
+      <div class="kpi-label">Alta / Media inversión Meta</div>
+      <div class="kpi-sub">leads calientes</div>
+      <div class="kpi-accent">📣</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:rgba(80,128,255,0.12)">📬</div>
+      <div class="kpi-val" id="kpi-nocontact">—</div>
+      <div class="kpi-label">Sin contactar</div>
+      <div class="kpi-sub">listos para outreach</div>
+      <div class="kpi-accent">📬</div>
+    </div>
+  </div>
+
+  <!-- ── Charts row ── -->
+  <div class="charts-row">
+
+    <!-- Ciudad -->
+    <div class="card">
+      <div class="card-title">Por ciudad</div>
+      <div class="chart-wrap">
+        <canvas id="chart-ciudad"></canvas>
+        <div class="donut-center">
+          <div class="big" id="city-total">—</div>
+          <div class="sm">clínicas</div>
+        </div>
+      </div>
+      <div class="legend" id="legend-ciudad"></div>
+    </div>
+
+    <!-- Meta -->
+    <div class="card">
+      <div class="card-title">Inversión Meta</div>
+      <div class="chart-wrap">
+        <canvas id="chart-meta"></canvas>
+        <div class="donut-center">
+          <div class="big" id="meta-alta">—</div>
+          <div class="sm">alta/media</div>
+        </div>
+      </div>
+      <div class="legend" id="legend-meta"></div>
+    </div>
+
+    <!-- Categorías -->
+    <div class="card">
+      <div class="card-title">
+        Clínicas por categoría
+        <span class="pill" style="background:rgba(201,169,110,0.1);color:var(--gold)">por ciudad</span>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-cats"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Mid row: Pipeline + Budget ── -->
+  <div class="mid-row">
+
+    <!-- Pipeline -->
+    <div class="card">
+      <div class="card-title">Embudo de pipeline</div>
+      <div class="pipeline-items" id="pipeline-rows"></div>
+    </div>
+
+    <!-- Budget -->
+    <div class="card">
+      <div class="card-title">
+        Presupuesto de APIs
+        <span class="pill" style="background:rgba(64,200,152,0.1);color:var(--green)" id="budget-month">—</span>
+      </div>
+      <div class="budget-items" id="budget-rows"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Table ── -->
+  <div class="table-card">
+    <div class="table-header-row">
+      <div class="table-title">Prospectos</div>
+      <div class="filters">
+        <input class="filter-input" id="f-search" placeholder="Buscar por nombre…" oninput="applyFilters()">
+        <select class="filter-sel" id="f-ciudad" onchange="applyFilters()">
+          <option value="">Todas las ciudades</option>
+          <option>Miami</option>
+          <option>Orlando</option>
+          <option>Dallas</option>
+        </select>
+        <select class="filter-sel" id="f-cat" onchange="applyFilters()">
+          <option value="">Todas las categorías</option>
+          <option value="dental">Dental</option>
+          <option value="estetica">Estética</option>
+          <option value="medspa">Med Spa</option>
+          <option value="wellness">Wellness</option>
+        </select>
+        <select class="filter-sel" id="f-inv" onchange="applyFilters()">
+          <option value="">Toda inversión</option>
+          <option>Alta</option>
+          <option>Media</option>
+          <option>Baja</option>
+          <option>Sin anuncios</option>
+        </select>
+        <select class="filter-sel" id="f-etapa" onchange="applyFilters()">
+          <option value="">Todas las etapas</option>
+          <option>No contactado</option>
+          <option>En proceso</option>
+          <option>Contactado</option>
+          <option>Respondió</option>
+        </select>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('nombre')">Nombre</th>
+            <th onclick="sortBy('ciudad')">Ciudad</th>
+            <th onclick="sortBy('categoria')">Categoría</th>
+            <th onclick="sortBy('rating')">Rating</th>
+            <th onclick="sortBy('anuncios')">Anuncios</th>
+            <th onclick="sortBy('inversion')">Inversión Meta</th>
+            <th onclick="sortBy('dueno')">Dueño</th>
+            <th onclick="sortBy('etapa')">Etapa</th>
+            <th>Links</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body">
+          <tr><td colspan="9" class="tbl-empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="tbl-count">—</span>
+      <div class="page-btns" id="page-btns"></div>
+    </div>
+  </div>
+
+  <!-- ── Log ── -->
+  <div class="log-card">
+    <div class="card-title" style="margin-bottom:14px">Actividad reciente</div>
+    <div class="log-entries" id="log-entries">
+      <div class="log-line">Cargando…</div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+let allClinics = [];
+let filtered   = [];
+let sortField  = 'anuncios';
+let sortAsc    = false;
+let page       = 1;
+const PAGE_SIZE = 25;
+
+let chartCiudad = null;
+let chartMeta   = null;
+let chartCats   = null;
+
+// ── Colors ───────────────────────────────────────────────────
+const C = {
+  gold:    '#c9a96e',
+  goldL:   '#e8c97a',
+  blue:    '#5080ff',
+  green:   '#40c898',
+  orange:  '#ff9050',
+  red:     '#ff5070',
+  purple:  '#b060f0',
+  teal:    '#40d0c0',
+  muted:   '#505080',
+};
+
+const CITY_COLORS = {
+  'Miami':   C.blue,
+  'Orlando': C.green,
+  'Dallas':  C.gold,
+};
+const INV_COLORS = {
+  'Alta':        C.red,
+  'Media':       C.orange,
+  'Baja':        C.blue,
+  'Sin anuncios': C.muted,
+};
+const CAT_COLORS = {
+  'dental':    C.blue,
+  'estetica':  C.purple,
+  'medspa':    C.teal,
+  'wellness':  '#80d060',
+};
+const PIPE_COLORS = ['#8080a8','#ffd060','#5080ff','#40c898'];
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateTimestamp();
+  loadAll();
+});
+
+async function loadAll() {
+  showLoader(true);
+  try {
+    const [stats, clinics, budget, log] = await Promise.all([
+      fetch('/api/stats').then(r => r.json()),
+      fetch('/api/clinics').then(r => r.json()),
+      fetch('/api/budget').then(r => r.json()),
+      fetch('/api/log').then(r => r.json()),
+    ]);
+    renderKPIs(stats);
+    renderCharts(stats);
+    renderPipeline(stats);
+    renderBudget(budget);
+    renderLog(log);
+    allClinics = clinics;
+    applyFilters();
+  } catch(e) {
+    console.error(e);
+  }
+  showLoader(false);
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  await fetch('/api/refresh', {method:'POST'});
+  await loadAll();
+  btn.classList.remove('spinning');
+  updateTimestamp();
+}
+
+function showLoader(v) {
+  document.getElementById('loader').classList.toggle('show', v);
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('ts-label').textContent =
+    'Actualizado ' + now.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ── KPIs ─────────────────────────────────────────────────────
+function renderKPIs(s) {
+  setText('kpi-total',     s.total ?? '—');
+  setText('kpi-dueno',     s.con_dueno ?? '—');
+  setText('kpi-dueno-pct', s.pct_dueno != null ? s.pct_dueno + '% cobertura Sunbiz' : 'vía Sunbiz');
+  setText('kpi-alta',      s.alta_media ?? '—');
+  setText('kpi-nocontact', s.sin_contactar ?? '—');
+}
+
+// ── Charts ───────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#1a1b2e',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
+      titleColor: '#eeeef8',
+      bodyColor: '#7878a0',
+      padding: 10,
+    },
+  },
+};
+
+function renderCharts(s) {
+  // Ciudad donut
+  const ciudades = s.por_ciudad || {};
+  const cLabels  = Object.keys(ciudades);
+  const cVals    = cLabels.map(k => ciudades[k]);
+  const cColors  = cLabels.map(k => CITY_COLORS[k] || C.muted);
+
+  setText('city-total', s.total ?? '—');
+  if (chartCiudad) chartCiudad.destroy();
+  chartCiudad = new Chart(document.getElementById('chart-ciudad'), {
+    type: 'doughnut',
+    data: { labels: cLabels, datasets: [{ data: cVals, backgroundColor: cColors, borderWidth: 0, hoverOffset: 6 }] },
+    options: { ...CHART_DEFAULTS, cutout: '68%' },
+  });
+  renderLegend('legend-ciudad', cLabels, cColors, cVals);
+
+  // Meta donut
+  const inv = s.por_inversion || {};
+  const iOrder = ['Alta','Media','Baja','Sin anuncios'];
+  const iLabels = iOrder.filter(k => inv[k] != null);
+  const iVals   = iLabels.map(k => inv[k] || 0);
+  const iColors = iLabels.map(k => INV_COLORS[k] || C.muted);
+
+  const altaMedia = (inv['Alta'] || 0) + (inv['Media'] || 0);
+  setText('meta-alta', altaMedia);
+  if (chartMeta) chartMeta.destroy();
+  chartMeta = new Chart(document.getElementById('chart-meta'), {
+    type: 'doughnut',
+    data: { labels: iLabels, datasets: [{ data: iVals, backgroundColor: iColors, borderWidth: 0, hoverOffset: 6 }] },
+    options: { ...CHART_DEFAULTS, cutout: '68%' },
+  });
+  renderLegend('legend-meta', iLabels, iColors, iVals);
+
+  // Categories bar
+  const cats = ['dental','estetica','medspa','wellness'];
+  const cities = ['Miami','Orlando','Dallas'];
+  const allClinicsData = window._clinicsCache || [];
+
+  // Count per city per category from stats
+  const catData = cats.map(cat => {
+    const total = (s.por_categoria || {})[cat] || 0;
+    return total;
+  });
+
+  if (chartCats) chartCats.destroy();
+  chartCats = new Chart(document.getElementById('chart-cats'), {
+    type: 'bar',
+    data: {
+      labels: ['Dental','Estética','Med Spa','Wellness'],
+      datasets: [{
+        data: catData,
+        backgroundColor: cats.map(c => CAT_COLORS[c] + 'cc'),
+        borderColor:     cats.map(c => CAT_COLORS[c]),
+        borderWidth: 1,
+        borderRadius: 6,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7878a0', font: {size:11} } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7878a0', font: {size:11} } },
+      },
+    },
+  });
+}
+
+function renderLegend(id, labels, colors, vals) {
+  const el = document.getElementById(id);
+  const total = vals.reduce((a,b) => a+b, 0);
+  el.innerHTML = labels.map((l, i) => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <span>${l}</span>
+      <span style="color:#50506a">${vals[i]}</span>
+    </div>
+  `).join('');
+}
+
+// ── Pipeline ─────────────────────────────────────────────────
+function renderPipeline(s) {
+  const etapas = [
+    {label: 'No contactado', key: 'No contactado', color: PIPE_COLORS[0]},
+    {label: 'En proceso',    key: 'En proceso',    color: PIPE_COLORS[1]},
+    {label: 'Contactado',    key: 'Contactado',    color: PIPE_COLORS[2]},
+    {label: 'Respondió',     key: 'Respondió',     color: PIPE_COLORS[3]},
+  ];
+  const total = s.total || 1;
+  const por = s.por_etapa || {};
+  const el = document.getElementById('pipeline-rows');
+  el.innerHTML = etapas.map(e => {
+    const count = por[e.key] || 0;
+    const pct   = Math.round(count / total * 100);
+    return `
+      <div class="pipe-row">
+        <div class="pipe-label">${e.label}</div>
+        <div class="pipe-bar-wrap">
+          <div class="pipe-bar" style="width:${pct}%;background:${e.color}"></div>
+        </div>
+        <div class="pipe-count">${count}</div>
+        <div class="pipe-pct">${pct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Budget ───────────────────────────────────────────────────
+function renderBudget(budget) {
+  const names = {
+    'google_places': 'Google Places',
+    'sunbiz':        'Sunbiz',
+    'meta_scraping': 'Meta Scraping',
+  };
+  const month = new Date().toLocaleString('es', {month:'long', year:'numeric'});
+  document.getElementById('budget-month').textContent = month;
+
+  const el = document.getElementById('budget-rows');
+  el.innerHTML = Object.entries(budget).map(([key, b]) => {
+    let barColor = C.green;
+    let cls = '';
+    if (b.pct >= 80) { barColor = C.red;    cls = 'budget-danger';  }
+    else if (b.pct >= 60) { barColor = C.orange; cls = 'budget-warning'; }
+    return `
+      <div class="budget-row">
+        <div class="budget-header">
+          <span class="budget-name ${cls}">${names[key] || key}</span>
+          <span class="budget-nums">${b.count} / ${b.limit} — ${b.remaining} restantes</span>
+        </div>
+        <div class="budget-bar-wrap">
+          <div class="budget-bar" style="width:${b.pct}%;background:${barColor}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Table ─────────────────────────────────────────────────────
+function applyFilters() {
+  const search = document.getElementById('f-search').value.toLowerCase();
+  const ciudad = document.getElementById('f-ciudad').value;
+  const cat    = document.getElementById('f-cat').value;
+  const inv    = document.getElementById('f-inv').value;
+  const etapa  = document.getElementById('f-etapa').value;
+
+  filtered = allClinics.filter(c => {
+    if (search && !c.nombre.toLowerCase().includes(search)) return false;
+    if (ciudad && c.ciudad !== ciudad) return false;
+    if (cat    && c.categoria !== cat) return false;
+    if (inv    && c.inversion !== inv) return false;
+    if (etapa  && c.etapa !== etapa)   return false;
+    return true;
+  });
+
+  sortFiltered();
+  page = 1;
+  renderTable();
+}
+
+const INV_ORDER = {'Alta':4,'Media':3,'Baja':2,'Sin anuncios':1,'':0};
+function sortFiltered() {
+  filtered.sort((a, b) => {
+    let av = a[sortField] ?? '';
+    let bv = b[sortField] ?? '';
+    if (sortField === 'inversion') { av = INV_ORDER[av]||0; bv = INV_ORDER[bv]||0; }
+    if (typeof av === 'number') return sortAsc ? av-bv : bv-av;
+    return sortAsc
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+  });
+}
+
+function sortBy(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = false; }
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+  });
+  // Mark current
+  const ths = document.querySelectorAll('thead th');
+  const fields = ['nombre','ciudad','categoria','rating','anuncios','inversion','dueno','etapa',''];
+  const idx = fields.indexOf(field);
+  if (idx >= 0 && ths[idx]) ths[idx].classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+  sortFiltered();
+  renderTable();
+}
+
+function renderTable() {
+  const total  = filtered.length;
+  const pages  = Math.ceil(total / PAGE_SIZE);
+  const start  = (page-1) * PAGE_SIZE;
+  const slice  = filtered.slice(start, start + PAGE_SIZE);
+
+  const tbody = document.getElementById('tbl-body');
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="tbl-empty">Sin resultados para los filtros seleccionados</td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(c => {
+      const cBadge = cityBadge(c.ciudad);
+      const catBadge = catBadgeF(c.categoria);
+      const invBadge = invBadgeF(c.inversion);
+      const etBadge  = etapaBadge(c.etapa);
+      const rating   = c.rating ? `<span class="rating-val">${c.rating}</span> <span style="color:var(--text3);font-size:.7rem">(${c.reviews})</span>` : '—';
+      const dueno    = c.dueno ? escHtml(c.dueno) : '<span style="color:var(--text3)">—</span>';
+      const links = [
+        c.maps  ? `<a href="${c.maps}" target="_blank" title="Google Maps">🗺</a>` : '',
+        c.web   ? `<a href="${c.web}"  target="_blank" title="Web">🌐</a>` : '',
+        c.sunbiz? `<a href="${c.sunbiz}" target="_blank" title="Sunbiz">⚖️</a>` : '',
+      ].filter(Boolean).join(' ');
+
+      return `<tr>
+        <td class="td-name">${escHtml(c.nombre)}</td>
+        <td>${cBadge}</td>
+        <td>${catBadge}</td>
+        <td>${rating}</td>
+        <td style="text-align:center">${c.anuncios || 0}</td>
+        <td>${invBadge}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dueno}</td>
+        <td>${etBadge}</td>
+        <td style="white-space:nowrap">${links || '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // count
+  document.getElementById('tbl-count').textContent =
+    `${total} resultado${total !== 1 ? 's' : ''}` +
+    (total !== allClinics.length ? ` de ${allClinics.length}` : '');
+
+  // pagination
+  const pb = document.getElementById('page-btns');
+  if (pages <= 1) { pb.innerHTML = ''; return; }
+  let btns = '';
+  btns += `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹</button>`;
+  const near = 2;
+  for (let i=1; i<=pages; i++) {
+    if (i===1 || i===pages || Math.abs(i-page)<=near) {
+      btns += `<button class="page-btn${i===page?' active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i-page)===near+1) {
+      btns += `<span style="color:var(--text3);padding:0 4px">…</span>`;
+    }
+  }
+  btns += `<button class="page-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>›</button>`;
+  pb.innerHTML = btns;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE);
+  if (p < 1 || p > pages) return;
+  page = p;
+  renderTable();
+  document.querySelector('.table-card').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── Badge helpers ─────────────────────────────────────────────
+function cityBadge(city) {
+  const cls = {'Miami':'b-miami','Orlando':'b-orlando','Dallas':'b-dallas'}[city]||'';
+  return `<span class="badge ${cls}">${city||'—'}</span>`;
+}
+function catBadgeF(cat) {
+  const map = {dental:'Dental',estetica:'Estética',medspa:'Med Spa',wellness:'Wellness'};
+  const cls = `b-${cat}`;
+  return `<span class="badge ${cls}">${map[cat]||cat||'—'}</span>`;
+}
+function invBadgeF(inv) {
+  const cls = {'Alta':'inv-alta','Media':'inv-media','Baja':'inv-baja','Sin anuncios':'inv-sin'}[inv]||'inv-sin';
+  return `<span class="badge ${cls}">${inv||'—'}</span>`;
+}
+function etapaBadge(etapa) {
+  const cls = {
+    'No contactado':'etapa-nc',
+    'En proceso':'etapa-ep',
+    'Contactado':'etapa-ct',
+    'Respondió':'etapa-rs',
+  }[etapa]||'etapa-nc';
+  return `<span class="badge ${cls}">${etapa||'—'}</span>`;
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function renderLog(lines) {
+  const el = document.getElementById('log-entries');
+  if (!lines.length) { el.innerHTML = '<div class="log-line">Sin actividad registrada.</div>'; return; }
+  el.innerHTML = lines.map(line => {
+    let cls = 'log-line';
+    if (line.includes('✓') || line.includes('FINALIZADO')) cls += ' ok';
+    else if (line.includes('↻')) cls += ' upd';
+    else if (line.includes('✗') || line.includes('ERROR')) cls += ' err';
+    else if (line.includes('===') || line.includes('PIPELINE')) cls += ' head';
+    return `<div class="${cls}">${escHtml(line)}</div>`;
+  }).join('');
+  el.scrollTop = 0;
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
