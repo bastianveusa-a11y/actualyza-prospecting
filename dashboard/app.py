@@ -91,14 +91,14 @@ def _completeness(c: dict) -> int:
     score = 0
     if c.get("telefono"):  score += 10
     if c.get("web"):       score += 10
+    if c.get("email"):     score += 15
     if c.get("dueno"):     score += 20
-    if c.get("entidad"):   score += 10
+    if c.get("entidad"):   score +=  5
     if c.get("sunbiz"):    score += 10
-    if c.get("maps"):      score += 10
+    if c.get("maps"):      score +=  5
     if c.get("direccion"): score +=  5
     if c.get("rating", 0) > 0: score += 10
     if c.get("inversion") not in ("", None): score += 10
-    if c.get("zip"):       score +=  5
     return min(100, score)
 
 
@@ -146,6 +146,7 @@ def fetch_clinics() -> list:
                 "maps":        _prop(page, "Google Maps",     "url"),
                 "direccion":   _prop(page, "Dirección",       "rich_text"),
                 "zip":         _prop(page, "ZIP",             "rich_text"),
+                "email":       _prop(page, "Email Contacto",  "email"),
                 "last_edited": page.get("last_edited_time", ""),
             }
             c["completeness"] = _completeness(c)
@@ -185,8 +186,9 @@ def compute_stats(clinics: list) -> dict:
     por_inversion = count_by("inversion")
     por_etapa     = count_by("etapa")
 
-    con_dueno    = sum(1 for c in clinics if c["dueno"])
-    alta_media   = (por_inversion.get("Alta", 0) + por_inversion.get("Media", 0))
+    con_dueno     = sum(1 for c in clinics if c["dueno"])
+    con_email     = sum(1 for c in clinics if c.get("email"))
+    alta_media    = (por_inversion.get("Alta", 0) + por_inversion.get("Media", 0))
     sin_contactar = por_etapa.get("No contactado", 0)
 
     ratings   = [c["rating"] for c in clinics if c["rating"]]
@@ -201,6 +203,8 @@ def compute_stats(clinics: list) -> dict:
         "total":            total,
         "con_dueno":        con_dueno,
         "pct_dueno":        round(con_dueno / total * 100) if total else 0,
+        "con_email":        con_email,
+        "pct_email":        round(con_email / total * 100) if total else 0,
         "alta_media":       alta_media,
         "sin_contactar":    sin_contactar,
         "avg_rating":       avg_rating,

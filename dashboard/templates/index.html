@@ -500,7 +500,7 @@ tbody td a:hover { color: var(--gold); }
       <div class="kpi-icon" style="background:rgba(64,208,192,0.12)">📊</div>
       <div class="kpi-val" id="kpi-completeness">—</div>
       <div class="kpi-label">Completitud promedio</div>
-      <div class="kpi-sub">datos por clínica</div>
+      <div class="kpi-sub" id="kpi-email-sub">— con correo</div>
       <div class="kpi-bar-wrap">
         <div class="kpi-bar" id="kpi-completeness-bar" style="width:0%;background:var(--teal)"></div>
       </div>
@@ -635,13 +635,14 @@ tbody td a:hover { color: var(--gold); }
             <th onclick="sortBy('anuncios')">Anuncios</th>
             <th onclick="sortBy('inversion')">Inversión Meta</th>
             <th onclick="sortBy('dueno')">Dueño</th>
+            <th onclick="sortBy('email')">Correo</th>
             <th onclick="sortBy('completeness')">Datos</th>
             <th onclick="sortBy('etapa')">Etapa</th>
             <th>Links</th>
           </tr>
         </thead>
         <tbody id="tbl-body">
-          <tr><td colspan="11" class="tbl-empty">Cargando…</td></tr>
+          <tr><td colspan="12" class="tbl-empty">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -841,6 +842,7 @@ function renderKPIs(s) {
 
   const pct = s.avg_completeness ?? 0;
   setText('kpi-completeness', pct + '%');
+  setText('kpi-email-sub', (s.con_email ?? '—') + ' con correo (' + (s.pct_email ?? 0) + '%)');
   const bar = document.getElementById('kpi-completeness-bar');
   if (bar) {
     bar.style.width = pct + '%';
@@ -1081,7 +1083,7 @@ function renderTable() {
 
   const tbody = document.getElementById('tbl-body');
   if (!slice.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="tbl-empty">Sin resultados para los filtros seleccionados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="tbl-empty">Sin resultados para los filtros seleccionados</td></tr>`;
   } else {
     tbody.innerHTML = slice.map(c => {
       const rating = c.rating ? `<span class="rating-val">${c.rating}</span> <span style="color:var(--text3);font-size:.7rem">(${c.reviews})</span>` : '—';
@@ -1094,6 +1096,9 @@ function renderTable() {
 
       const pct = c.completeness || 0;
       const barColor = pct >= 70 ? C.green : pct >= 45 ? C.orange : C.blue;
+      const emailCell = c.email
+        ? `<a href="mailto:${escHtml(c.email)}" title="${escHtml(c.email)}" style="color:var(--green);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block">✓ ${escHtml(c.email)}</a>`
+        : `<span style="color:var(--text3);font-size:.72rem">Sin correo</span>`;
 
       return `<tr>
         <td>${scoreBadge(c.lead_score || 0)}</td>
@@ -1103,7 +1108,8 @@ function renderTable() {
         <td>${rating}</td>
         <td style="text-align:center">${c.anuncios || 0}</td>
         <td>${invBadgeF(c.inversion)}</td>
-        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dueno}</td>
+        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dueno}</td>
+        <td style="max-width:170px">${emailCell}</td>
         <td>
           <div class="mini-bar-wrap">
             <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>

@@ -23,6 +23,7 @@ from modules.google_places import search_clinics, CATEGORIES
 from modules.meta_ads import count_ads_for_page
 from modules.notion_db import upsert_clinic, ensure_db_schema
 from modules.sunbiz import lookup_clinic as sunbiz_lookup
+from modules.email_scraper import scrape_email
 from modules.api_budget import increment, check, print_report, BudgetExceeded
 
 # ── Config desde .env ─────────────────────────────────────────
@@ -34,6 +35,7 @@ MAX_PER_RUN   = int(os.getenv("MAX_CLINICS_PER_RUN", "20"))
 PLACES_DELAY  = 1.2   # segundos entre calls a Google Places
 META_DELAY    = 2.5   # segundos entre calls a Meta
 SUNBIZ_DELAY  = 3.5   # segundos entre calls a Sunbiz (Cloudflare)
+EMAIL_DELAY   = 1.5   # segundos entre requests al sitio web de la clínica
 
 # Orden de procesamiento
 CITIES = [
@@ -163,6 +165,13 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
         clinic["agente_registrado"] = sunbiz.get("agente_registrado", "")
         clinic["sunbiz_url"]        = sunbiz.get("sunbiz_url", "")
         clinic["match_score"]       = sunbiz.get("match_score", 0.0)
+
+    # Email de contacto desde el sitio web
+    if clinic.get("web") and not clinic.get("email_contacto"):
+        email_result = scrape_email(clinic["web"], delay=EMAIL_DELAY)
+        if email_result.get("email"):
+            clinic["email_contacto"] = email_result["email"]
+            log(f"    📧 {email_result['email']}")
 
     # Guardar en Notion
     result = upsert_clinic(NOTION_TOKEN, NOTION_DB_ID, clinic)
