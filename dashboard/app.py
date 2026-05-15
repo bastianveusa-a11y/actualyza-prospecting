@@ -405,6 +405,12 @@ def api_run_pipeline():
     return jsonify({"ok": True, "status": "started"})
 
 
+@app.route("/campaigns")
+@_require_auth
+def campaigns_page():
+    return render_template("campaigns.html")
+
+
 @app.route("/meta-token")
 @_require_auth
 def meta_token_page():

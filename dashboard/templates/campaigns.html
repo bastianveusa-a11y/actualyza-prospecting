@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Campañas de Email</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080910;
+  --bg2:       #0d0e1a;
+  --bg3:       #12131f;
+  --card:      rgba(255,255,255,0.03);
+  --border:    rgba(255,255,255,0.07);
+  --border-h:  rgba(201,169,110,0.3);
+  --gold:      #c9a96e;
+  --gold-l:    #e8c97a;
+  --gold-d:    #9a7840;
+  --text:      #eeeef8;
+  --text2:     #7878a0;
+  --text3:     #50506a;
+  --blue:      #5080ff;
+  --green:     #40c898;
+  --orange:    #ff9050;
+  --red:       #ff5070;
+  --purple:    #b060f0;
+  --teal:      #40d0c0;
+  --r:         12px;
+  --r-sm:      8px;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.shell { max-width: 1280px; margin: 0 auto; padding: 24px 28px 48px; }
+
+/* Header */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 32px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.logo-text span { color: var(--gold); }
+.logo-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: all .2s; font-family: 'Inter', sans-serif;
+  text-decoration: none;
+}
+.btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
+.btn svg { width: 14px; height: 14px; }
+.btn.spinning svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Section label */
+.section-label {
+  font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 14px;
+}
+
+/* Cards */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px 24px;
+  transition: border-color .25s;
+}
+.card-title {
+  font-size: 0.85rem; font-weight: 600; color: var(--text);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+}
+
+/* Funnel */
+.funnel-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 28px 32px; margin-bottom: 24px; }
+.funnel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.funnel-title { font-size: 1rem; font-weight: 600; }
+.funnel-subtitle { font-size: 0.75rem; color: var(--text3); }
+
+.funnel-rows { display: flex; flex-direction: column; gap: 4px; }
+
+.funnel-row {
+  display: grid;
+  grid-template-columns: 200px 60px 1fr 60px;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+}
+.funnel-row.connector { padding: 0; height: 16px; display: flex; align-items: center; padding-left: 200px; }
+.connector-line { flex: 1; display: flex; align-items: center; gap: 8px; padding-left: 76px; }
+.connector-arrow { font-size: 0.65rem; color: var(--text3); }
+.connector-rate {
+  font-size: 0.68rem; font-weight: 600; padding: 1px 7px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); color: var(--text3);
+}
+.connector-rate.good  { background: rgba(64,200,152,0.12); color: var(--green); }
+.connector-rate.ok    { background: rgba(201,169,110,0.12); color: var(--gold); }
+.connector-rate.warn  { background: rgba(255,80,112,0.1);  color: var(--red); }
+
+.f-label { font-size: 0.8rem; color: var(--text2); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.f-icon { font-size: 0.9rem; }
+.f-count { font-size: 1.4rem; font-weight: 700; color: var(--text); text-align: right; line-height: 1; }
+.f-bar-wrap { height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; }
+.f-bar { height: 100%; border-radius: 5px; transition: width 1s ease; }
+.f-pct { font-size: 0.72rem; color: var(--text3); text-align: right; }
+
+/* Stats bar */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--r);
+  overflow: hidden; margin-bottom: 24px;
+}
+.stat-cell {
+  background: var(--card); padding: 18px 22px;
+}
+.stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 0.72rem; color: var(--text2); }
+
+/* Test email zone */
+.test-zone {
+  margin-bottom: 24px; padding: 18px 22px;
+  background: rgba(201,169,110,0.04);
+  border: 1px solid rgba(201,169,110,0.15);
+  border-radius: var(--r);
+}
+.test-zone-title { font-size: 0.78rem; font-weight: 600; color: var(--gold); margin-bottom: 12px; }
+.test-inputs { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.test-input-group { display: flex; flex-direction: column; gap: 4px; }
+.test-input-group label { font-size: 0.7rem; color: var(--text2); }
+.test-input-group.grow { flex: 1; min-width: 180px; }
+.field {
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-size: 0.8rem; padding: 7px 10px; outline: none;
+  font-family: 'Inter', sans-serif; width: 100%;
+  transition: border-color .2s;
+}
+.field:focus { border-color: var(--border-h); }
+.field option { background: #1a1b2e; }
+.btn-send-test {
+  padding: 8px 18px; border-radius: var(--r-sm);
+  border: 1px solid rgba(201,169,110,0.3);
+  background: rgba(201,169,110,0.1); color: var(--gold);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; white-space: nowrap;
+  transition: all .2s;
+}
+.btn-send-test:hover { background: rgba(201,169,110,0.18); border-color: rgba(201,169,110,0.5); }
+.btn-send-test:disabled { opacity: .5; cursor: not-allowed; }
+#test-result { margin-top: 8px; font-size: 0.75rem; display: none; }
+
+/* Table */
+.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 24px; }
+.table-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.table-title { font-size: 0.85rem; font-weight: 600; }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left; font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text3); padding: 0 10px 12px; white-space: nowrap;
+}
+thead th:first-child { padding-left: 0; }
+tbody tr { border-top: 1px solid rgba(255,255,255,0.04); transition: background .15s; }
+tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody td { padding: 10px 10px; font-size: 0.79rem; color: var(--text2); vertical-align: middle; }
+tbody td:first-child { padding-left: 0; }
+.td-name { font-weight: 500; color: var(--text); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbl-empty { text-align: center; padding: 48px 0; color: var(--text3); font-size: 0.85rem; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; white-space: nowrap; }
+.b-miami    { background: rgba(80,128,255,0.15);  color: #80a8ff; }
+.b-orlando  { background: rgba(64,200,152,0.15);  color: #60d0a8; }
+.b-dallas   { background: rgba(201,169,110,0.15); color: var(--gold-l); }
+.score-badge { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 22px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+.score-high { background: rgba(64,200,152,0.18);  color: #50d8a8; }
+.score-mid  { background: rgba(255,144,80,0.18);  color: #ffb070; }
+.score-low-b{ background: rgba(80,128,255,0.15);  color: #80a8ff; }
+.score-low  { background: rgba(120,120,160,0.12); color: #9090b8; }
+
+/* action btn inside table */
+.act-btn {
+  padding: 3px 10px; border-radius: 5px; font-size: 0.7rem;
+  font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+  border: 1px solid; transition: all .15s;
+}
+.act-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Loader */
+#loader { position: fixed; inset: 0; background: rgba(8,9,16,0.7); display: flex; align-items: center; justify-content: center; z-index: 999; opacity: 0; pointer-events: none; transition: opacity .3s; }
+#loader.show { opacity: 1; pointer-events: all; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(201,169,110,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+
+@media (max-width: 900px) {
+  .funnel-row { grid-template-columns: 150px 48px 1fr 48px; gap: 10px; }
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .shell { padding: 16px 16px 40px; }
+  .funnel-row { grid-template-columns: 120px 40px 1fr 40px; gap: 8px; }
+  .test-inputs { flex-direction: column; }
+}
+</style>
+</head>
+
+<body>
+<div id="loader"><div class="spinner"></div></div>
+
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="logo-text">Actual<span>yza</span></div>
+        <div class="logo-sub">Campañas de Email · AMY AI</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Dashboard
+      </a>
+      <button class="btn" id="refresh-btn" onclick="refreshAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Funnel -->
+  <div class="section-label">Embudo de captación</div>
+  <div class="funnel-card">
+    <div class="funnel-header">
+      <div>
+        <div class="funnel-title">¿Dónde están los leads en el funnel?</div>
+        <div class="funnel-subtitle" style="margin-top:4px">Cada etapa muestra cuántos leads llegaron ahí · % de conversión respecto a etapa anterior</div>
+      </div>
+      <div id="funnel-updated" style="font-size:.72rem;color:var(--text3)"></div>
+    </div>
+    <div class="funnel-rows" id="funnel-rows">
+      <div class="tbl-empty">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-cell">
+      <div class="stat-num" id="s-enviados" style="color:var(--text)">—</div>
+      <div class="stat-label">Emails enviados</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="s-abiertos" style="color:var(--green)">—</div>
+      <div class="stat-label">Aperturas registradas</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="s-activas" style="color:var(--gold)">—</div>
+      <div class="stat-label">Secuencias activas</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="s-sin-email" style="color:var(--text3)">—</div>
+      <div class="stat-label">Sin correo (no elegibles)</div>
+    </div>
+  </div>
+
+  <!-- Test email zone -->
+  <div class="test-zone">
+    <div class="test-zone-title">Enviar email de prueba — sin afectar Notion</div>
+    <div class="test-inputs">
+      <div class="test-input-group grow">
+        <label>Tu correo de prueba</label>
+        <input id="test-email-input" type="email" placeholder="bastian@ejemplo.com" class="field">
+      </div>
+      <div class="test-input-group grow">
+        <label>Clínica base (para personalizar)</label>
+        <select id="test-clinic-select" class="field">
+          <option value="">Cargando…</option>
+        </select>
+      </div>
+      <div class="test-input-group" style="min-width:150px">
+        <label>Email #</label>
+        <select id="test-email-num" class="field">
+          <option value="1">Email 1 — Introducción</option>
+          <option value="2">Email 2 — Seguimiento</option>
+          <option value="3">Email 3 — Caso de éxito</option>
+          <option value="4">Email 4 — Cierre</option>
+        </select>
+      </div>
+      <button class="btn-send-test" onclick="sendTestEmail(this)">Enviar prueba</button>
+    </div>
+    <div id="test-result"></div>
+  </div>
+
+  <!-- Campaigns table -->
+  <div class="table-card">
+    <div class="table-header-row">
+      <div class="table-title">Leads en campaña <span style="color:var(--text3);font-size:.75rem;font-weight:400">— solo leads con correo, por score</span></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Clínica</th>
+            <th>Ciudad</th>
+            <th>Score</th>
+            <th>Correo</th>
+            <th>Anuncios</th>
+            <th>Campaña</th>
+            <th>Etapa</th>
+            <th>Abiertos</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="camp-body">
+          <tr><td colspan="9" class="tbl-empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+let allClinics = [];
+let campRows   = [];
+
+const C = {
+  gold:'#c9a96e', goldL:'#e8c97a', blue:'#5080ff', green:'#40c898',
+  orange:'#ff9050', red:'#ff5070', purple:'#b060f0', teal:'#40d0c0', muted:'#505080',
+};
+
+document.addEventListener('DOMContentLoaded', loadAll);
+
+async function loadAll() {
+  showLoader(true);
+  try {
+    [allClinics, campRows] = await Promise.all([
+      fetch('/api/clinics').then(r => r.json()),
+      fetch('/api/campaigns').then(r => r.json()),
+    ]);
+    renderFunnel(allClinics);
+    renderStats(campRows);
+    populateTestClinicSelect();
+    renderCampTable(campRows);
+    document.getElementById('funnel-updated').textContent =
+      'Actualizado ' + new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) { console.error(e); }
+  showLoader(false);
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  await fetch('/api/refresh', {method:'POST'});
+  await loadAll();
+  btn.classList.remove('spinning');
+}
+
+function showLoader(v) { document.getElementById('loader').classList.toggle('show', v); }
+
+// ── Funnel ────────────────────────────────────────────────────
+function renderFunnel(clinics) {
+  const total      = clinics.length;
+  const conEmail   = clinics.filter(c => c.email).length;
+  const activas    = clinics.filter(c => ['Activa','Pausada'].includes(c.campana_email)).length;
+  const e1sent     = clinics.filter(c => (c.email_etapa||0) >= 1 || c.campana_email === 'Completada').length;
+  const abrieron   = clinics.filter(c => (c.email_abiertos||0) > 0).length;
+  const e2sent     = clinics.filter(c => (c.email_etapa||0) >= 2 || c.campana_email === 'Completada').length;
+  const e3sent     = clinics.filter(c => (c.email_etapa||0) >= 3 || c.campana_email === 'Completada').length;
+  const completadas= clinics.filter(c => c.campana_email === 'Completada').length;
+  const respondio  = clinics.filter(c => c.etapa === 'Respondió').length;
+
+  const stages = [
+    { label: 'Total leads',        icon: '🏥', count: total,      color: C.muted,  prev: null },
+    { label: 'Con correo',         icon: '📬', count: conEmail,   color: C.blue,   prev: total },
+    { label: 'Campaña habilitada', icon: '🚀', count: activas + completadas, color: C.gold, prev: conEmail },
+    { label: 'Email 1 enviado',    icon: '✉️',  count: e1sent,     color: C.orange, prev: conEmail },
+    { label: 'Abrieron algún email',icon:'👁',  count: abrieron,   color: C.teal,   prev: e1sent },
+    { label: 'Email 2 enviado',    icon: '✉️',  count: e2sent,     color: C.orange, prev: e1sent },
+    { label: 'Email 3 enviado',    icon: '✉️',  count: e3sent,     color: C.orange, prev: e2sent },
+    { label: 'Secuencia completa', icon: '✅', count: completadas, color: C.purple, prev: e3sent },
+    { label: 'Respondieron',       icon: '🎯', count: respondio,  color: C.green,  prev: activas + completadas },
+  ];
+
+  const el = document.getElementById('funnel-rows');
+  if (!total) {
+    el.innerHTML = '<div class="tbl-empty">Sin leads en Notion todavía — corre el pipeline primero.</div>';
+    return;
+  }
+
+  const rows = stages.map((s, i) => {
+    const pct    = total > 0 ? Math.round(s.count / total * 100) : 0;
+    const barW   = total > 0 ? (s.count / total * 100).toFixed(1) : 0;
+    const convPct = (s.prev && s.prev > 0) ? Math.round(s.count / s.prev * 100) : null;
+
+    let connHtml = '';
+    if (i > 0) {
+      const rate = (s.prev && s.prev > 0) ? Math.round(s.count / s.prev * 100) : 0;
+      const rateCls = rate >= 70 ? 'good' : rate >= 40 ? 'ok' : 'warn';
+      connHtml = `<div class="funnel-row connector">
+        <div class="connector-line">
+          <span class="connector-arrow">↓</span>
+          <span class="connector-rate ${rateCls}">${rate}% conversión</span>
+        </div>
+      </div>`;
+    }
+
+    return connHtml + `<div class="funnel-row">
+      <div class="f-label"><span class="f-icon">${s.icon}</span>${s.label}</div>
+      <div class="f-count">${s.count}</div>
+      <div class="f-bar-wrap">
+        <div class="f-bar" style="width:${barW}%;background:${s.color}"></div>
+      </div>
+      <div class="f-pct">${pct}%</div>
+    </div>`;
+  });
+
+  el.innerHTML = rows.join('');
+}
+
+// ── Stats bar ─────────────────────────────────────────────────
+function renderStats(rows) {
+  const totalEnviados = rows.reduce((s,r) => s+(r.email_enviados||0), 0);
+  const totalAbiertos = rows.reduce((s,r) => s+(r.email_abiertos||0), 0);
+  const activas       = rows.filter(r => r.campana_email === 'Activa').length;
+  const sinEmail      = allClinics.filter(c => !c.email).length;
+
+  setText('s-enviados',  totalEnviados);
+  setText('s-abiertos',  totalAbiertos);
+  setText('s-activas',   activas);
+  setText('s-sin-email', sinEmail);
+}
+
+// ── Test email ────────────────────────────────────────────────
+function populateTestClinicSelect() {
+  const sel = document.getElementById('test-clinic-select');
+  if (!allClinics.length) return;
+  sel.innerHTML = allClinics
+    .slice().sort((a,b) => (b.lead_score||0)-(a.lead_score||0))
+    .map(c => `<option value="${c.notion_id}">${escHtml(c.nombre)} — ${c.ciudad||''}</option>`)
+    .join('');
+}
+
+async function sendTestEmail(btn) {
+  const email    = document.getElementById('test-email-input').value.trim();
+  const notionId = document.getElementById('test-clinic-select').value;
+  const emailNum = parseInt(document.getElementById('test-email-num').value);
+  const result   = document.getElementById('test-result');
+
+  result.style.display = 'none';
+  if (!email)    { showTestMsg('Ingresa tu correo de prueba.', false); return; }
+  if (!notionId) { showTestMsg('Selecciona una clínica.', false); return; }
+
+  btn.disabled = true; btn.textContent = 'Generando con Claude…';
+
+  try {
+    const endpoint = emailNum === 1 ? '/api/enable-campaign' : '/api/send-next-email';
+    const r    = await fetch(endpoint, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({notion_id: notionId, test_email: email}),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showTestMsg(`✓ Enviado a ${email} — Asunto: "${data.subject}"`, true);
+    } else {
+      showTestMsg('Error: ' + (data.error || 'desconocido'), false);
+    }
+  } catch(e) {
+    showTestMsg('Error de conexión: ' + e.message, false);
+  }
+  btn.disabled = false; btn.textContent = 'Enviar prueba';
+}
+
+function showTestMsg(msg, ok) {
+  const el = document.getElementById('test-result');
+  el.style.display = 'block';
+  el.style.color   = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent   = msg;
+}
+
+// ── Campaigns table ───────────────────────────────────────────
+function renderCampTable(rows) {
+  const body = document.getElementById('camp-body');
+
+  const campEstado = {
+    'No iniciada': `<span style="color:var(--text3)">No iniciada</span>`,
+    'Activa':      `<span style="color:var(--green)">Activa</span>`,
+    'Pausada':     `<span style="color:var(--orange)">Pausada</span>`,
+    'Completada':  `<span style="color:var(--blue)">Completada</span>`,
+    'Cancelada':   `<span style="color:var(--red)">Cancelada</span>`,
+  };
+
+  if (!rows.length) {
+    const todos = allClinics.slice().sort((a,b) => (b.lead_score||0)-(a.lead_score||0));
+    if (!todos.length) {
+      body.innerHTML = '<tr><td colspan="9" class="tbl-empty">Sin leads en Notion — corre el pipeline primero.</td></tr>';
+      return;
+    }
+    body.innerHTML = todos.map(c => `<tr>
+      <td class="td-name">${escHtml(c.nombre)}</td>
+      <td>${cityBadge(c.ciudad)}</td>
+      <td>${scoreBadge(c.lead_score||0)}</td>
+      <td style="font-size:.72rem;color:var(--red)">Sin correo — correr pipeline</td>
+      <td colspan="5" style="color:var(--text3);font-size:.72rem;text-align:center">—</td>
+    </tr>`).join('');
+    return;
+  }
+
+  const BH = 'act-btn';
+
+  body.innerHTML = rows.map(r => {
+    const estado   = campEstado[r.campana_email] || campEstado['No iniciada'];
+    const etapa    = r.email_etapa ? `${r.email_etapa}/4` : '—';
+    const abiertos = r.email_abiertos || 0;
+    const abrioIcon= abiertos > 0 ? `<span style="color:var(--green)">✓ ${abiertos}</span>` : '—';
+    const ads = r.corre_anuncios === 'Sí' ? `<span style="color:var(--green)">Sí</span>`
+              : r.corre_anuncios === 'No' ? `<span style="color:var(--text3)">No</span>`
+              : `<span style="color:var(--text3)">?</span>`;
+
+    const canStart = !r.campana_email || r.campana_email === 'No iniciada';
+    const canNext  = r.campana_email === 'Activa' && (r.email_etapa||0) < 4;
+    const canPause = r.campana_email === 'Activa';
+
+    const safe = (r.email||'').replace(/'/g,"\\'");
+    const btnI = canStart
+      ? `<button class="${BH}" style="background:rgba(201,169,110,.12);border-color:rgba(201,169,110,.3);color:var(--gold)"
+           onclick="enableCampaign('${r.notion_id}','${safe}',this)">Habilitar</button>` : '';
+    const btnN = canNext
+      ? `<button class="${BH}" style="background:rgba(80,128,255,.1);border-color:rgba(80,128,255,.3);color:var(--blue);margin-left:4px"
+           onclick="sendNext('${r.notion_id}','${safe}',this)">Enviar #${(r.email_etapa||0)+1}</button>` : '';
+    const btnP = canPause
+      ? `<button class="${BH}" style="background:transparent;border-color:var(--border);color:var(--text3);margin-left:4px"
+           onclick="pauseCampaign('${r.notion_id}',this)">Pausar</button>` : '';
+
+    return `<tr>
+      <td class="td-name">${escHtml(r.nombre)}</td>
+      <td>${cityBadge(r.ciudad)}</td>
+      <td>${scoreBadge(r.lead_score||0)}</td>
+      <td style="font-size:.72rem;color:var(--text2)">${escHtml(r.email||'')}</td>
+      <td style="text-align:center">${ads}</td>
+      <td style="font-size:.72rem">${estado}</td>
+      <td style="text-align:center;color:var(--text2);font-size:.78rem">${etapa}</td>
+      <td style="text-align:center">${abrioIcon}</td>
+      <td style="text-align:right;white-space:nowrap">${btnI}${btnN}${btnP}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function enableCampaign(notionId, clinicEmail, btn) {
+  const testEmail = prompt(
+    `Email #1 se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (deja vacío para enviar al real):`, ''
+  );
+  if (testEmail === null) return;
+  const esPrueba = !!testEmail.trim();
+  btn.disabled = true;
+  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
+
+  const r    = await fetch('/api/enable-campaign', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim()||null}),
+  });
+  const data = await r.json();
+  if (data.ok) {
+    btn.textContent = esPrueba ? `✓ Prueba enviada` : '✓ Enviado';
+    btn.style.color = 'var(--green)';
+    if (!esPrueba) setTimeout(() => loadAll(), 1500);
+    else btn.disabled = false;
+  } else {
+    btn.disabled = false; btn.textContent = 'Habilitar';
+    alert('Error: ' + (data.error||'desconocido'));
+  }
+}
+
+async function sendNext(notionId, clinicEmail, btn) {
+  const testEmail = prompt(
+    `Siguiente email se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (deja vacío para enviar al real):`, ''
+  );
+  if (testEmail === null) return;
+  const esPrueba = !!testEmail.trim();
+  btn.disabled = true;
+  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
+
+  const r    = await fetch('/api/send-next-email', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim()||null}),
+  });
+  const data = await r.json();
+  if (data.ok) {
+    btn.textContent = esPrueba ? '✓ Prueba enviada' : '✓ Enviado';
+    btn.style.color = 'var(--green)';
+    if (!esPrueba) setTimeout(() => loadAll(), 1500);
+    else btn.disabled = false;
+  } else {
+    btn.disabled = false;
+    alert('Error: ' + (data.error||'desconocido'));
+  }
+}
+
+async function pauseCampaign(notionId, btn) {
+  btn.disabled = true;
+  await fetch('/api/pause-campaign', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId}),
+  });
+  await fetch('/api/refresh', {method:'POST'});
+  loadAll();
+}
+
+// ── Badge helpers ─────────────────────────────────────────────
+function scoreBadge(score) {
+  let cls = 'score-low';
+  if (score >= 70) cls = 'score-high';
+  else if (score >= 45) cls = 'score-mid';
+  else if (score >= 20) cls = 'score-low-b';
+  return `<span class="score-badge ${cls}">${score}</span>`;
+}
+function cityBadge(city) {
+  const cls = {Miami:'b-miami',Orlando:'b-orlando',Dallas:'b-dallas'}[city]||'';
+  return `<span class="badge ${cls}">${city||'—'}</span>`;
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function setText(id, val) { const el = document.getElementById(id); if(el) el.textContent = val; }
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

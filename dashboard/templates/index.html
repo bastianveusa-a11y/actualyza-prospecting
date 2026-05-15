@@ -418,6 +418,13 @@ tbody td a:hover { color: var(--gold); }
         <span>Sistema activo</span>
       </div>
       <div class="ts" id="ts-label">—</div>
+      <a href="/campaigns" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid rgba(201,169,110,0.25);background:rgba(201,169,110,0.06);color:var(--gold);font-size:.8rem;font-weight:500;text-decoration:none;transition:all .2s"
+         onmouseover="this.style.background='rgba(201,169,110,0.14)'" onmouseout="this.style.background='rgba(201,169,110,0.06)'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+          <path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>
+        </svg>
+        Campañas
+      </a>
       <button class="btn" id="refresh-btn" onclick="refreshAll()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M1 4v6h6M23 20v-6h-6"/>
@@ -673,83 +680,6 @@ tbody td a:hover { color: var(--gold); }
     </div>
   </div>
 
-  <!-- ── Campañas de Email ── -->
-  <div class="card" id="campanas-section" style="margin-top:24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div class="card-title">Campañas de Email</div>
-      <span style="font-size:.75rem;color:var(--text3)">Solo leads con correo · ordenados por score</span>
-    </div>
-
-    <!-- ── Zona de prueba ── -->
-    <div style="margin-bottom:20px;padding:16px 18px;background:rgba(201,169,110,0.05);border:1px solid rgba(201,169,110,0.2);border-radius:8px">
-      <div style="font-size:.78rem;font-weight:600;color:var(--gold);margin-bottom:10px">Enviar email de prueba</div>
-      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Tu correo de prueba</label>
-          <input id="test-email-input" type="email" placeholder="bastian@ejemplo.com"
-            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
-                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
-        </div>
-        <div style="flex:1;min-width:180px">
-          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Clínica base (para personalizar)</label>
-          <select id="test-clinic-select"
-            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
-                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
-            <option value="">Cargando…</option>
-          </select>
-        </div>
-        <div style="min-width:120px">
-          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Email #</label>
-          <select id="test-email-num"
-            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
-                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
-            <option value="1">Email 1 — Introducción</option>
-            <option value="2">Email 2 — Seguimiento</option>
-            <option value="3">Email 3 — Caso de éxito</option>
-            <option value="4">Email 4 — Cierre</option>
-          </select>
-        </div>
-        <button onclick="sendTestEmail(this)"
-          style="padding:8px 18px;border-radius:6px;border:1px solid rgba(201,169,110,0.3);
-                 background:rgba(201,169,110,0.1);color:var(--gold);font-size:.8rem;
-                 font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
-          Enviar prueba
-        </button>
-      </div>
-      <div id="test-result" style="margin-top:8px;font-size:.75rem;display:none"></div>
-    </div>
-
-    <!-- Stats bar -->
-    <div style="display:flex;gap:24px;margin-bottom:18px;padding:14px 18px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--border)">
-      <div><div style="font-size:1.3rem;font-weight:700" id="camp-enviados">—</div><div style="font-size:.72rem;color:var(--text2)">Emails enviados</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)" id="camp-abiertos">—</div><div style="font-size:.72rem;color:var(--text2)">Abiertos</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--gold)" id="camp-activas">—</div><div style="font-size:.72rem;color:var(--text2)">Secuencias activas</div></div>
-      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)" id="camp-sin-email">—</div><div style="font-size:.72rem;color:var(--text2)">Sin correo (no elegibles)</div></div>
-    </div>
-
-    <!-- Table -->
-    <div style="overflow-x:auto">
-      <table style="width:100%">
-        <thead>
-          <tr>
-            <th style="text-align:left">Clínica</th>
-            <th>Ciudad</th>
-            <th>Score</th>
-            <th>Correo</th>
-            <th>¿Anuncios?</th>
-            <th>Campaña</th>
-            <th>Etapa</th>
-            <th>Abiertos</th>
-            <th style="text-align:right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="camp-body">
-          <tr><td colspan="9" class="tbl-empty">Cargando…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
 </div>
 
 <script>
@@ -803,8 +733,6 @@ async function loadAll() {
     renderLog(log);
     allClinics = clinics;
     applyFilters();
-    populateTestClinicSelect();
-    loadCampanas();
   } catch(e) { console.error(e); }
   showLoader(false);
 }
@@ -1299,192 +1227,8 @@ async function setAds(notionId, value) {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({notion_id: notionId, corre_anuncios: value}),
   });
-  loadClinics();
-}
-
-// ── Campañas ──────────────────────────────────────────────────
-function populateTestClinicSelect() {
-  const sel = document.getElementById('test-clinic-select');
-  if (!allClinics.length) return;
-  sel.innerHTML = allClinics
-    .slice().sort((a,b)=>(b.lead_score||0)-(a.lead_score||0))
-    .map(c => `<option value="${c.notion_id}">${escHtml(c.nombre)} — ${c.ciudad||''}</option>`)
-    .join('');
-}
-
-async function sendTestEmail(btn) {
-  const email    = document.getElementById('test-email-input').value.trim();
-  const notionId = document.getElementById('test-clinic-select').value;
-  const emailNum = parseInt(document.getElementById('test-email-num').value);
-  const result   = document.getElementById('test-result');
-
-  if (!email) { result.style.display='block'; result.style.color='var(--red)'; result.textContent='Ingresa tu correo de prueba.'; return; }
-  if (!notionId) { result.style.display='block'; result.style.color='var(--red)'; result.textContent='Selecciona una clínica.'; return; }
-
-  btn.disabled = true; btn.textContent = 'Generando con Claude…';
-  result.style.display = 'none';
-
-  try {
-    const endpoint = emailNum === 1 ? '/api/enable-campaign' : '/api/send-next-email';
-    const r    = await fetch(endpoint, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({notion_id: notionId, test_email: email}),
-    });
-    const data = await r.json();
-    result.style.display = 'block';
-    if (data.ok) {
-      result.style.color = 'var(--green)';
-      result.textContent = `✓ Enviado a ${email} — Asunto: "${data.subject}"`;
-    } else {
-      result.style.color = 'var(--red)';
-      result.textContent = 'Error: ' + (data.error || 'desconocido');
-    }
-  } catch(e) {
-    result.style.display = 'block'; result.style.color = 'var(--red)';
-    result.textContent = 'Error de conexión: ' + e.message;
-  }
-  btn.disabled = false; btn.textContent = 'Enviar prueba';
-}
-
-async function loadCampanas() {
-  const r    = await fetch('/api/campaigns');
-  const rows = await r.json();
-
-  const totalEnviados = rows.reduce((s,r)=> s+(r.email_enviados||0), 0);
-  const totalAbiertos = rows.reduce((s,r)=> s+(r.email_abiertos||0), 0);
-  const activas       = rows.filter(r=> r.campana_email==='Activa').length;
-  const sinEmail      = allClinics.filter(c=> !c.email).length;
-
-  document.getElementById('camp-enviados').textContent = totalEnviados;
-  document.getElementById('camp-abiertos').textContent = totalAbiertos;
-  document.getElementById('camp-activas').textContent  = activas;
-  document.getElementById('camp-sin-email').textContent= sinEmail;
-
-  const campEstado = {
-    'No iniciada': `<span style="color:var(--text3);font-size:.72rem">No iniciada</span>`,
-    'Activa':      `<span style="color:var(--green);font-size:.72rem">Activa</span>`,
-    'Pausada':     `<span style="color:var(--orange);font-size:.72rem">Pausada</span>`,
-    'Completada':  `<span style="color:var(--blue);font-size:.72rem">Completada</span>`,
-    'Cancelada':   `<span style="color:var(--red);font-size:.72rem">Cancelada</span>`,
-  };
-
-  const body = document.getElementById('camp-body');
-  if (!rows.length) {
-    // Mostrar todos los leads aunque no tengan email, para que el usuario vea el estado
-    const todos = allClinics.slice().sort((a,b)=>(b.lead_score||0)-(a.lead_score||0));
-    if (!todos.length) {
-      body.innerHTML = '<tr><td colspan="9" class="tbl-empty">Sin leads en Notion todavía — corre el pipeline primero.</td></tr>';
-      return;
-    }
-    body.innerHTML = todos.map(c => `<tr>
-      <td style="font-weight:500">${escHtml(c.nombre)}</td>
-      <td style="text-align:center">${c.ciudad||'—'}</td>
-      <td style="text-align:center">${scoreBadge(c.lead_score||0)}</td>
-      <td style="font-size:.72rem;color:var(--red)">Sin correo — correr pipeline</td>
-      <td colspan="5" style="color:var(--text3);font-size:.72rem;text-align:center">—</td>
-    </tr>`).join('');
-    return;
-  }
-
-  body.innerHTML = rows.map(r => {
-    const estado  = campEstado[r.campana_email] || campEstado['No iniciada'];
-    const etapa   = r.email_etapa ? `${r.email_etapa}/4` : '—';
-    const abiertos= r.email_abiertos || 0;
-    const abrioIcon = abiertos > 0 ? `<span style="color:var(--green)">✓ ${abiertos}</span>` : '—';
-    const ads     = r.corre_anuncios === 'Sí' ? `<span style="color:var(--green)">Sí</span>`
-                  : r.corre_anuncios === 'No' ? `<span style="color:var(--text3)">No</span>`
-                  : `<span style="color:var(--text3)">?</span>`;
-
-    const canStart = !r.campana_email || r.campana_email === 'No iniciada';
-    const canNext  = r.campana_email === 'Activa' && (r.email_etapa||0) < 4;
-    const canPause = r.campana_email === 'Activa';
-
-    const btnH = 'padding:3px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;';
-    const safeEmail   = (r.email||'').replace(/'/g,"\\'");
-    const btnIniciar  = canStart ? `<button style="${btnH}background:rgba(201,169,110,.12);border-color:rgba(201,169,110,.3);color:var(--gold)"
-                          onclick="enableCampaign('${r.notion_id}','${safeEmail}',this)">Habilitar</button>` : '';
-    const btnSiguiente= canNext  ? `<button style="${btnH}background:rgba(80,128,255,.1);border-color:rgba(80,128,255,.3);color:var(--blue);margin-left:4px"
-                          onclick="sendNext('${r.notion_id}','${safeEmail}',this)">Enviar #${(r.email_etapa||0)+1}</button>` : '';
-    const btnPausar   = canPause ? `<button style="${btnH}background:transparent;border-color:var(--border);color:var(--text3);margin-left:4px"
-                          onclick="pauseCampaign('${r.notion_id}',this)">Pausar</button>` : '';
-
-    return `<tr>
-      <td style="font-weight:500">${escHtml(r.nombre)}</td>
-      <td style="text-align:center">${r.ciudad||'—'}</td>
-      <td style="text-align:center">${scoreBadge(r.lead_score||0)}</td>
-      <td style="font-size:.72rem;color:var(--text2)">${escHtml(r.email||'')}</td>
-      <td style="text-align:center">${ads}</td>
-      <td style="text-align:center">${estado}</td>
-      <td style="text-align:center;color:var(--text2);font-size:.78rem">${etapa}</td>
-      <td style="text-align:center">${abrioIcon}</td>
-      <td style="text-align:right;white-space:nowrap">${btnIniciar}${btnSiguiente}${btnPausar}</td>
-    </tr>`;
-  }).join('');
-}
-
-async function enableCampaign(notionId, clinicEmail, btn) {
-  const testEmail = prompt(
-    `Email #1 se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (o deja vacío para enviar al real):`,
-    ''
-  );
-  if (testEmail === null) return; // canceló
-
-  const destino = testEmail.trim() || clinicEmail;
-  const esPrueba = !!testEmail.trim();
-
-  btn.disabled = true;
-  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
-
-  const r    = await fetch('/api/enable-campaign', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim() || null}),
-  });
-  const data = await r.json();
-  if (data.ok) {
-    btn.textContent = esPrueba ? `✓ Prueba → ${destino}` : '✓ Enviado';
-    btn.style.color = 'var(--green)';
-    if (!esPrueba) setTimeout(() => loadCampanas(), 1500);
-    else btn.disabled = false;
-  } else {
-    btn.disabled = false; btn.textContent = 'Habilitar';
-    alert('Error: ' + (data.error || 'desconocido'));
-  }
-}
-
-async function sendNext(notionId, clinicEmail, btn) {
-  const testEmail = prompt(
-    `Siguiente email se enviará a:\n${clinicEmail}\n\nPara probar, escribe otro correo (o deja vacío para enviar al real):`,
-    ''
-  );
-  if (testEmail === null) return;
-
-  const esPrueba = !!testEmail.trim();
-  btn.disabled = true;
-  btn.textContent = esPrueba ? 'Enviando prueba…' : 'Generando…';
-
-  const r    = await fetch('/api/send-next-email', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({notion_id: notionId, test_email: testEmail.trim() || null}),
-  });
-  const data = await r.json();
-  if (data.ok) {
-    btn.textContent = esPrueba ? `✓ Prueba enviada` : '✓ Enviado';
-    btn.style.color = 'var(--green)';
-    if (!esPrueba) setTimeout(() => loadCampanas(), 1500);
-    else btn.disabled = false;
-  } else {
-    btn.disabled = false;
-    alert('Error: ' + (data.error || 'desconocido'));
-  }
-}
-
-async function pauseCampaign(notionId, btn) {
-  btn.disabled = true;
-  await fetch('/api/pause-campaign', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({notion_id: notionId}),
-  });
-  loadCampanas();
+  allClinics = await fetch('/api/clinics').then(r => r.json());
+  applyFilters();
 }
 
 // ── Log ───────────────────────────────────────────────────────
