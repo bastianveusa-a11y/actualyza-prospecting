@@ -72,6 +72,19 @@ DB_SCHEMA = {
     "Sunbiz URL":       {"url": {}},
     "Sunbiz Score":     {"number": {"format": "number"}},
     "Notas":            {"rich_text": {}},
+    # ── Campaña de email ──────────────────────────────────────
+    "Campaña Email":    {"select": {"options": [
+        {"name": "No iniciada", "color": "gray"},
+        {"name": "Activa",      "color": "green"},
+        {"name": "Pausada",     "color": "yellow"},
+        {"name": "Completada",  "color": "blue"},
+        {"name": "Cancelada",   "color": "red"},
+    ]}},
+    "Email Etapa":      {"number": {"format": "number"}},
+    "Email Enviados":   {"number": {"format": "number"}},
+    "Email Abiertos":   {"number": {"format": "number"}},
+    "Último Email":     {"date": {}},
+    "Próximo Email":    {"date": {}},
 }
 
 
@@ -236,6 +249,20 @@ def _build_properties(data: dict) -> dict:
         props["Sunbiz Score"] = {"number": float(data["match_score"])}
     if "notas" in data:
         props["Notas"] = {"rich_text": txt(data["notas"])}
+
+    # ── Campaña de email ──────────────────────────────────────
+    if "campana_email" in data:
+        props["Campaña Email"] = {"select": {"name": data["campana_email"]}}
+    if "email_etapa" in data and data["email_etapa"] is not None:
+        props["Email Etapa"] = {"number": int(data["email_etapa"])}
+    if "email_enviados" in data and data["email_enviados"] is not None:
+        props["Email Enviados"] = {"number": int(data["email_enviados"])}
+    if "email_abiertos" in data and data["email_abiertos"] is not None:
+        props["Email Abiertos"] = {"number": int(data["email_abiertos"])}
+    if "ultimo_email" in data and data["ultimo_email"]:
+        props["Último Email"] = {"date": {"start": data["ultimo_email"]}}
+    if "proximo_email" in data and data["proximo_email"]:
+        props["Próximo Email"] = {"date": {"start": data["proximo_email"]}}
 
     return props
 

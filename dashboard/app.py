@@ -147,10 +147,15 @@ def fetch_clinics() -> list:
                 "maps":        _prop(page, "Google Maps",     "url"),
                 "direccion":   _prop(page, "Dirección",       "rich_text"),
                 "zip":         _prop(page, "ZIP",             "rich_text"),
-                "email":          _prop(page, "Email Contacto",    "email"),
-                "facebook_page":  _prop(page, "Página Facebook",   "url"),
-                "corre_anuncios": _prop(page, "¿Corre Anuncios?",  "select"),
-                "last_edited":    page.get("last_edited_time", ""),
+                "email":           _prop(page, "Email Contacto",   "email"),
+                "facebook_page":   _prop(page, "Página Facebook",  "url"),
+                "corre_anuncios":  _prop(page, "¿Corre Anuncios?", "select"),
+                "campana_email":   _prop(page, "Campaña Email",    "select"),
+                "email_etapa":     _prop(page, "Email Etapa",      "number"),
+                "email_enviados":  _prop(page, "Email Enviados",   "number"),
+                "email_abiertos":  _prop(page, "Email Abiertos",   "number"),
+                "notion_id":       page["id"],
+                "last_edited":     page.get("last_edited_time", ""),
             }
             # Link directo a Meta Ad Library para esta clínica
             fb = c["facebook_page"]
@@ -513,6 +518,241 @@ def api_refresh():
     global _cache
     _cache = {"data": None, "ts": 0.0}
     return jsonify({"ok": True})
+
+
+# ── Notion PATCH helper ───────────────────────────────────────
+
+def _notion_patch(page_id: str, properties: dict) -> bool:
+    r = http.patch(
+        f"https://api.notion.com/v1/pages/{page_id}",
+        headers={
+            "Authorization":  f"Bearer {NOTION_TOKEN}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type":   "application/json",
+        },
+        json={"properties": properties},
+    )
+    return r.status_code == 200
+
+
+# ── Clinic update (ads Sí/No, etapa, etc.) ───────────────────
+
+@app.route("/api/update-clinic", methods=["PATCH"])
+@_require_auth
+def api_update_clinic():
+    global _cache
+    data      = request.json or {}
+    page_id   = data.get("notion_id", "").strip()
+    if not page_id:
+        return jsonify({"ok": False, "error": "notion_id requerido"}), 400
+
+    props = {}
+    if "corre_anuncios" in data:
+        val = data["corre_anuncios"]   # "Sí" | "No" | "Sin verificar"
+        props["¿Corre Anuncios?"] = {"select": {"name": val}}
+        inv_map = {"Sí": "Baja", "No": "Sin anuncios", "Sin verificar": "Sin anuncios"}
+        if val in inv_map and "inversion_meta" not in data:
+            props["Inversión Meta"] = {"select": {"name": inv_map[val]}}
+    if "inversion_meta" in data:
+        props["Inversión Meta"] = {"select": {"name": data["inversion_meta"]}}
+    if "etapa" in data:
+        props["Etapa"] = {"select": {"name": data["etapa"]}}
+
+    ok = _notion_patch(page_id, props)
+    if ok:
+        _cache = {"data": None, "ts": 0.0}
+    return jsonify({"ok": ok})
+
+
+# ── Campaigns ─────────────────────────────────────────────────
+
+@app.route("/api/campaigns")
+@_require_auth
+def api_campaigns():
+    clinics = get_clinics()
+    campos  = ["notion_id", "nombre", "ciudad", "categoria", "email",
+               "corre_anuncios", "campana_email", "email_etapa",
+               "email_enviados", "email_abiertos", "lead_score"]
+    rows = [{k: c.get(k) for k in campos} for c in clinics if c.get("email")]
+    rows.sort(key=lambda r: r.get("lead_score", 0), reverse=True)
+    return jsonify(rows)
+
+
+@app.route("/api/enable-campaign", methods=["POST"])
+@_require_auth
+def api_enable_campaign():
+    global _cache
+    data    = request.json or {}
+    page_id = data.get("notion_id", "").strip()
+    if not page_id:
+        return jsonify({"ok": False, "error": "notion_id requerido"}), 400
+
+    # Buscar la clínica en cache
+    clinics = get_clinics()
+    clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
+    if not clinic:
+        return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
+    if not clinic.get("email"):
+        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
+
+    # Generar y enviar Email 1
+    try:
+        from modules.claude_writer import write_email
+        from modules.email_sender  import send_campaign_email
+
+        generated = write_email(clinic, email_num=1)
+        result    = send_campaign_email(
+            to_email  = clinic["email"],
+            subject   = generated["subject"],
+            body_html = generated["body_html"],
+            body_text = generated["body_text"],
+            notion_id = page_id,
+            email_num = 1,
+        )
+        if not result["ok"]:
+            return jsonify({"ok": False, "error": result["error"]}), 500
+
+        # Actualizar Notion
+        from datetime import date, timedelta
+        hoy       = date.today().isoformat()
+        proximo   = (date.today() + timedelta(days=3)).isoformat()
+        _notion_patch(page_id, {
+            "Campaña Email": {"select": {"name": "Activa"}},
+            "Email Etapa":   {"number": 1},
+            "Email Enviados":{"number": 1},
+            "Último Email":  {"date":   {"start": hoy}},
+            "Próximo Email": {"date":   {"start": proximo}},
+        })
+        _cache = {"data": None, "ts": 0.0}
+        return jsonify({"ok": True, "subject": generated["subject"], "email_num": 1})
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/send-next-email", methods=["POST"])
+@_require_auth
+def api_send_next_email():
+    global _cache
+    data    = request.json or {}
+    page_id = data.get("notion_id", "").strip()
+    if not page_id:
+        return jsonify({"ok": False, "error": "notion_id requerido"}), 400
+
+    clinics = get_clinics()
+    clinic  = next((c for c in clinics if c["notion_id"] == page_id), None)
+    if not clinic:
+        return jsonify({"ok": False, "error": "Clínica no encontrada"}), 404
+    if not clinic.get("email"):
+        return jsonify({"ok": False, "error": "Sin email de contacto"}), 400
+
+    current_etapa = int(clinic.get("email_etapa") or 0)
+    next_etapa    = current_etapa + 1
+    if next_etapa > 4:
+        return jsonify({"ok": False, "error": "Secuencia completa (4 emails enviados)"}), 400
+
+    prev_opened = (clinic.get("email_abiertos") or 0) > 0
+
+    try:
+        from modules.claude_writer import write_email
+        from modules.email_sender  import send_campaign_email
+        from datetime import date, timedelta
+
+        generated = write_email(clinic, email_num=next_etapa, previous_opened=prev_opened)
+        result    = send_campaign_email(
+            to_email  = clinic["email"],
+            subject   = generated["subject"],
+            body_html = generated["body_html"],
+            body_text = generated["body_text"],
+            notion_id = page_id,
+            email_num = next_etapa,
+        )
+        if not result["ok"]:
+            return jsonify({"ok": False, "error": result["error"]}), 500
+
+        enviados  = int(clinic.get("email_enviados") or 0) + 1
+        days_next = [0, 3, 5, 7][min(next_etapa - 1, 3)]
+        hoy       = date.today().isoformat()
+        proximo   = (date.today() + timedelta(days=days_next)).isoformat() if next_etapa < 4 else None
+
+        patch = {
+            "Email Etapa":    {"number": next_etapa},
+            "Email Enviados": {"number": enviados},
+            "Último Email":   {"date":   {"start": hoy}},
+        }
+        if next_etapa == 4:
+            patch["Campaña Email"] = {"select": {"name": "Completada"}}
+        if proximo:
+            patch["Próximo Email"] = {"date": {"start": proximo}}
+
+        _notion_patch(page_id, patch)
+        _cache = {"data": None, "ts": 0.0}
+        return jsonify({"ok": True, "subject": generated["subject"], "email_num": next_etapa})
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/pause-campaign", methods=["POST"])
+@_require_auth
+def api_pause_campaign():
+    global _cache
+    page_id = (request.json or {}).get("notion_id", "").strip()
+    ok = _notion_patch(page_id, {"Campaña Email": {"select": {"name": "Pausada"}}})
+    if ok:
+        _cache = {"data": None, "ts": 0.0}
+    return jsonify({"ok": ok})
+
+
+# ── Resend webhook (open / click tracking) ────────────────────
+
+@app.route("/webhook/resend", methods=["POST"])
+def webhook_resend():
+    global _cache
+    payload = request.json or {}
+    ev_type = payload.get("type", "")
+    ev_data = payload.get("data", {})
+
+    notion_id = None
+    email_num = None
+    for tag in ev_data.get("tags", []):
+        if tag.get("name") == "notion_id":
+            notion_id = tag["value"]
+        if tag.get("name") == "email_num":
+            email_num = tag["value"]
+
+    if not notion_id:
+        return jsonify({"ok": True})
+
+    if ev_type == "email.opened":
+        # Incrementa contador de aperturas en Notion
+        clinics  = get_clinics()
+        clinic   = next((c for c in clinics if c["notion_id"] == notion_id), None)
+        abiertos = int(clinic.get("email_abiertos") or 0) + 1 if clinic else 1
+        _notion_patch(notion_id, {"Email Abiertos": {"number": abiertos}})
+        _cache = {"data": None, "ts": 0.0}
+
+    elif ev_type == "email.clicked":
+        # Marca como lead caliente — mover a "En proceso"
+        _notion_patch(notion_id, {"Etapa": {"select": {"name": "En proceso"}}})
+        _cache = {"data": None, "ts": 0.0}
+
+    elif ev_type in ("email.bounced", "email.complained"):
+        _notion_patch(notion_id, {"Campaña Email": {"select": {"name": "Cancelada"}}})
+        _cache = {"data": None, "ts": 0.0}
+
+    return jsonify({"ok": True})
+
+
+# ── Unsubscribe ───────────────────────────────────────────────
+
+@app.route("/unsubscribe")
+def unsubscribe():
+    page_id = request.args.get("id", "").strip()
+    if page_id:
+        _notion_patch(page_id, {"Campaña Email": {"select": {"name": "Cancelada"}}})
+    return "<html><body style='font-family:Arial;text-align:center;padding:60px'>" \
+           "<h2>Unsubscribed</h2><p>You won't receive further emails from AMY AI.</p></body></html>"
 
 
 if __name__ == "__main__":

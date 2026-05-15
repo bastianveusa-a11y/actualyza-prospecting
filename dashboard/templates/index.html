@@ -673,6 +673,44 @@ tbody td a:hover { color: var(--gold); }
     </div>
   </div>
 
+  <!-- ── Campañas de Email ── -->
+  <div class="card" id="campanas-section" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div class="card-title">Campañas de Email</div>
+      <span style="font-size:.75rem;color:var(--text3)">Solo leads con correo · ordenados por score</span>
+    </div>
+
+    <!-- Stats bar -->
+    <div style="display:flex;gap:24px;margin-bottom:18px;padding:14px 18px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--border)">
+      <div><div style="font-size:1.3rem;font-weight:700" id="camp-enviados">—</div><div style="font-size:.72rem;color:var(--text2)">Emails enviados</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--green)" id="camp-abiertos">—</div><div style="font-size:.72rem;color:var(--text2)">Abiertos</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--gold)" id="camp-activas">—</div><div style="font-size:.72rem;color:var(--text2)">Secuencias activas</div></div>
+      <div><div style="font-size:1.3rem;font-weight:700;color:var(--blue)" id="camp-sin-email">—</div><div style="font-size:.72rem;color:var(--text2)">Sin correo (no elegibles)</div></div>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-x:auto">
+      <table style="width:100%">
+        <thead>
+          <tr>
+            <th style="text-align:left">Clínica</th>
+            <th>Ciudad</th>
+            <th>Score</th>
+            <th>Correo</th>
+            <th>¿Anuncios?</th>
+            <th>Campaña</th>
+            <th>Etapa</th>
+            <th>Abiertos</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="camp-body">
+          <tr><td colspan="9" class="tbl-empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -726,6 +764,7 @@ async function loadAll() {
     renderLog(log);
     allClinics = clinics;
     applyFilters();
+    loadCampanas();
   } catch(e) { console.error(e); }
   showLoader(false);
 }
@@ -1198,11 +1237,137 @@ function etapaBadge(etapa) {
 }
 function adsCell(c) {
   const n = c.anuncios || 0;
-  const v = c.corre_anuncios; // "Sí" | "No" | "Sin verificar" | ""
-  if (n > 0)       return `<span style="color:var(--green);font-weight:600">Sí (${n})</span>`;
-  if (v === 'Sí')  return `<span style="color:var(--green);font-weight:600">Sí</span>`;
-  if (v === 'No')  return `<span style="color:var(--text3)">No</span>`;
-  return `<span style="color:var(--text3);font-size:.75rem" title="Verificar con 📢">?</span>`;
+  const v = c.corre_anuncios;
+  const id = c.notion_id;
+
+  let display = '';
+  if (n > 0)       display = `<span style="color:var(--green);font-weight:600;margin-right:6px">Sí (${n})</span>`;
+  else if (v==='Sí')  display = `<span style="color:var(--green);font-weight:600;margin-right:6px">Sí</span>`;
+  else if (v==='No')  display = `<span style="color:var(--text3);margin-right:6px">No</span>`;
+  else                display = `<span style="color:var(--text3);font-size:.75rem;margin-right:6px" title="Verificar con 📢">?</span>`;
+
+  const btnStyle = 'padding:2px 8px;border-radius:4px;border:1px solid;font-size:.68rem;font-weight:600;cursor:pointer;font-family:inherit;';
+  const btnSi  = `<button style="${btnStyle}border-color:rgba(64,200,152,.4);background:rgba(64,200,152,.1);color:var(--green)"
+                   onclick="setAds('${id}','Sí')">Sí</button>`;
+  const btnNo  = `<button style="${btnStyle}border-color:var(--border);background:transparent;color:var(--text3);margin-left:4px"
+                   onclick="setAds('${id}','No')">No</button>`;
+  return display + btnSi + btnNo;
+}
+
+async function setAds(notionId, value) {
+  await fetch('/api/update-clinic', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId, corre_anuncios: value}),
+  });
+  loadClinics();
+}
+
+// ── Campañas ──────────────────────────────────────────────────
+async function loadCampanas() {
+  const r    = await fetch('/api/campaigns');
+  const rows = await r.json();
+
+  const totalEnviados = rows.reduce((s,r)=> s+(r.email_enviados||0), 0);
+  const totalAbiertos = rows.reduce((s,r)=> s+(r.email_abiertos||0), 0);
+  const activas       = rows.filter(r=> r.campana_email==='Activa').length;
+  const sinEmail      = allClinics.filter(c=> !c.email).length;
+
+  document.getElementById('camp-enviados').textContent = totalEnviados;
+  document.getElementById('camp-abiertos').textContent = totalAbiertos;
+  document.getElementById('camp-activas').textContent  = activas;
+  document.getElementById('camp-sin-email').textContent= sinEmail;
+
+  const campEstado = {
+    'No iniciada': `<span style="color:var(--text3);font-size:.72rem">No iniciada</span>`,
+    'Activa':      `<span style="color:var(--green);font-size:.72rem">Activa</span>`,
+    'Pausada':     `<span style="color:var(--orange);font-size:.72rem">Pausada</span>`,
+    'Completada':  `<span style="color:var(--blue);font-size:.72rem">Completada</span>`,
+    'Cancelada':   `<span style="color:var(--red);font-size:.72rem">Cancelada</span>`,
+  };
+
+  const body = document.getElementById('camp-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9" class="tbl-empty">Sin leads con correo electrónico todavía.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(r => {
+    const estado  = campEstado[r.campana_email] || campEstado['No iniciada'];
+    const etapa   = r.email_etapa ? `${r.email_etapa}/4` : '—';
+    const abiertos= r.email_abiertos || 0;
+    const abrioIcon = abiertos > 0 ? `<span style="color:var(--green)">✓ ${abiertos}</span>` : '—';
+    const ads     = r.corre_anuncios === 'Sí' ? `<span style="color:var(--green)">Sí</span>`
+                  : r.corre_anuncios === 'No' ? `<span style="color:var(--text3)">No</span>`
+                  : `<span style="color:var(--text3)">?</span>`;
+
+    const canStart = !r.campana_email || r.campana_email === 'No iniciada';
+    const canNext  = r.campana_email === 'Activa' && (r.email_etapa||0) < 4;
+    const canPause = r.campana_email === 'Activa';
+
+    const btnH = 'padding:3px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;';
+    const btnIniciar  = canStart ? `<button style="${btnH}background:rgba(201,169,110,.12);border-color:rgba(201,169,110,.3);color:var(--gold)"
+                          onclick="enableCampaign('${r.notion_id}',this)">Habilitar</button>` : '';
+    const btnSiguiente= canNext  ? `<button style="${btnH}background:rgba(80,128,255,.1);border-color:rgba(80,128,255,.3);color:var(--blue);margin-left:4px"
+                          onclick="sendNext('${r.notion_id}',this)">Enviar #${(r.email_etapa||0)+1}</button>` : '';
+    const btnPausar   = canPause ? `<button style="${btnH}background:transparent;border-color:var(--border);color:var(--text3);margin-left:4px"
+                          onclick="pauseCampaign('${r.notion_id}',this)">Pausar</button>` : '';
+
+    return `<tr>
+      <td style="font-weight:500">${escHtml(r.nombre)}</td>
+      <td style="text-align:center">${r.ciudad||'—'}</td>
+      <td style="text-align:center">${scoreBadge(r.lead_score||0)}</td>
+      <td style="font-size:.72rem;color:var(--text2)">${escHtml(r.email||'')}</td>
+      <td style="text-align:center">${ads}</td>
+      <td style="text-align:center">${estado}</td>
+      <td style="text-align:center;color:var(--text2);font-size:.78rem">${etapa}</td>
+      <td style="text-align:center">${abrioIcon}</td>
+      <td style="text-align:right;white-space:nowrap">${btnIniciar}${btnSiguiente}${btnPausar}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function enableCampaign(notionId, btn) {
+  btn.disabled = true; btn.textContent = 'Generando…';
+  const r    = await fetch('/api/enable-campaign', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId}),
+  });
+  const data = await r.json();
+  if (data.ok) {
+    btn.textContent = '✓ Enviado';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => loadCampanas(), 1500);
+  } else {
+    btn.disabled = false; btn.textContent = 'Habilitar';
+    alert('Error: ' + (data.error || 'desconocido'));
+  }
+}
+
+async function sendNext(notionId, btn) {
+  btn.disabled = true; btn.textContent = 'Generando…';
+  const r    = await fetch('/api/send-next-email', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId}),
+  });
+  const data = await r.json();
+  if (data.ok) {
+    btn.textContent = '✓ Enviado';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => loadCampanas(), 1500);
+  } else {
+    btn.disabled = false;
+    alert('Error: ' + (data.error || 'desconocido'));
+  }
+}
+
+async function pauseCampaign(notionId, btn) {
+  btn.disabled = true;
+  await fetch('/api/pause-campaign', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId}),
+  });
+  loadCampanas();
 }
 
 // ── Log ───────────────────────────────────────────────────────
