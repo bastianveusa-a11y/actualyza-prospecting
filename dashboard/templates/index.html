@@ -680,6 +680,45 @@ tbody td a:hover { color: var(--gold); }
       <span style="font-size:.75rem;color:var(--text3)">Solo leads con correo · ordenados por score</span>
     </div>
 
+    <!-- ── Zona de prueba ── -->
+    <div style="margin-bottom:20px;padding:16px 18px;background:rgba(201,169,110,0.05);border:1px solid rgba(201,169,110,0.2);border-radius:8px">
+      <div style="font-size:.78rem;font-weight:600;color:var(--gold);margin-bottom:10px">Enviar email de prueba</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Tu correo de prueba</label>
+          <input id="test-email-input" type="email" placeholder="bastian@ejemplo.com"
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
+                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
+        </div>
+        <div style="flex:1;min-width:180px">
+          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Clínica base (para personalizar)</label>
+          <select id="test-clinic-select"
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
+                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
+            <option value="">Cargando…</option>
+          </select>
+        </div>
+        <div style="min-width:120px">
+          <label style="font-size:.72rem;color:var(--text2);display:block;margin-bottom:4px">Email #</label>
+          <select id="test-email-num"
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;
+                   color:var(--text);font-size:.8rem;padding:7px 10px;outline:none;font-family:inherit">
+            <option value="1">Email 1 — Introducción</option>
+            <option value="2">Email 2 — Seguimiento</option>
+            <option value="3">Email 3 — Caso de éxito</option>
+            <option value="4">Email 4 — Cierre</option>
+          </select>
+        </div>
+        <button onclick="sendTestEmail(this)"
+          style="padding:8px 18px;border-radius:6px;border:1px solid rgba(201,169,110,0.3);
+                 background:rgba(201,169,110,0.1);color:var(--gold);font-size:.8rem;
+                 font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
+          Enviar prueba
+        </button>
+      </div>
+      <div id="test-result" style="margin-top:8px;font-size:.75rem;display:none"></div>
+    </div>
+
     <!-- Stats bar -->
     <div style="display:flex;gap:24px;margin-bottom:18px;padding:14px 18px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--border)">
       <div><div style="font-size:1.3rem;font-weight:700" id="camp-enviados">—</div><div style="font-size:.72rem;color:var(--text2)">Emails enviados</div></div>
@@ -764,6 +803,7 @@ async function loadAll() {
     renderLog(log);
     allClinics = clinics;
     applyFilters();
+    populateTestClinicSelect();
     loadCampanas();
   } catch(e) { console.error(e); }
   showLoader(false);
@@ -1263,6 +1303,49 @@ async function setAds(notionId, value) {
 }
 
 // ── Campañas ──────────────────────────────────────────────────
+function populateTestClinicSelect() {
+  const sel = document.getElementById('test-clinic-select');
+  if (!allClinics.length) return;
+  sel.innerHTML = allClinics
+    .slice().sort((a,b)=>(b.lead_score||0)-(a.lead_score||0))
+    .map(c => `<option value="${c.notion_id}">${escHtml(c.nombre)} — ${c.ciudad||''}</option>`)
+    .join('');
+}
+
+async function sendTestEmail(btn) {
+  const email    = document.getElementById('test-email-input').value.trim();
+  const notionId = document.getElementById('test-clinic-select').value;
+  const emailNum = parseInt(document.getElementById('test-email-num').value);
+  const result   = document.getElementById('test-result');
+
+  if (!email) { result.style.display='block'; result.style.color='var(--red)'; result.textContent='Ingresa tu correo de prueba.'; return; }
+  if (!notionId) { result.style.display='block'; result.style.color='var(--red)'; result.textContent='Selecciona una clínica.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Generando con Claude…';
+  result.style.display = 'none';
+
+  try {
+    const endpoint = emailNum === 1 ? '/api/enable-campaign' : '/api/send-next-email';
+    const r    = await fetch(endpoint, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({notion_id: notionId, test_email: email}),
+    });
+    const data = await r.json();
+    result.style.display = 'block';
+    if (data.ok) {
+      result.style.color = 'var(--green)';
+      result.textContent = `✓ Enviado a ${email} — Asunto: "${data.subject}"`;
+    } else {
+      result.style.color = 'var(--red)';
+      result.textContent = 'Error: ' + (data.error || 'desconocido');
+    }
+  } catch(e) {
+    result.style.display = 'block'; result.style.color = 'var(--red)';
+    result.textContent = 'Error de conexión: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Enviar prueba';
+}
+
 async function loadCampanas() {
   const r    = await fetch('/api/campaigns');
   const rows = await r.json();
