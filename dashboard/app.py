@@ -33,7 +33,11 @@ DASH_USER       = os.getenv("DASHBOARD_USER", "actualyza")
 DASH_PASS       = os.getenv("DASHBOARD_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
 LOG_FILE        = Path(__file__).parent.parent / "data" / "runs.log"
+ASSETS_FILE     = Path(__file__).parent.parent / "data" / "creative_assets.json"
 NEXT_RUN_DAYS   = 7
+
+CATEGORIES = ["dental", "estetica", "medspa", "wellness"]
+EMAIL_NUMS  = [2, 3]
 
 _pipeline_state: dict = {
     "running":        False,
@@ -560,6 +564,80 @@ def api_generate_creative():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+# ── Creative assets (auto-generated, cached) ──────────────────────────────────
+
+def _load_assets() -> dict:
+    if ASSETS_FILE.exists():
+        try:
+            return json.loads(ASSETS_FILE.read_text())
+        except Exception:
+            pass
+    return {}
+
+
+def _save_assets(data: dict) -> None:
+    ASSETS_FILE.parent.mkdir(exist_ok=True)
+    ASSETS_FILE.write_text(json.dumps(data, indent=2))
+
+
+def _generate_all_assets_bg():
+    """Genera los 8 creativos en background al arrancar el servidor."""
+    import threading
+    def _run():
+        existing = _load_assets()
+        changed  = False
+        for cat in CATEGORIES:
+            for num in EMAIL_NUMS:
+                key = f"{cat}_{num}"
+                if key in existing:
+                    continue
+                try:
+                    from modules.image_gen  import generate_background
+                    from modules.canva_api  import is_authorized, upload_asset_from_url, create_banner_design, export_design
+                    from modules.api_budget import increment
+                    increment("flux_images", 1)
+                    img_url = generate_background(cat, num)
+                    if is_authorized():
+                        try:
+                            asset_id  = upload_asset_from_url(img_url, name=f"flux-{cat}-e{num}")
+                            design_id = create_banner_design(asset_id, cat, num)
+                            img_url   = export_design(design_id)
+                        except Exception:
+                            pass
+                    existing[key] = img_url
+                    changed = True
+                    _save_assets(existing)
+                    print(f"  ✓ Creativo generado: {key}")
+                except Exception as e:
+                    print(f"  ✗ Error generando {key}: {e}")
+    threading.Thread(target=_run, daemon=True).start()
+
+
+@app.route("/api/creative-assets")
+@_require_auth
+def api_creative_assets():
+    """Retorna las URLs de creativos generados por categoría."""
+    assets = _load_assets()
+    # Estructura: { "dental": {"2": url, "3": url}, ... }
+    result = {}
+    for cat in CATEGORIES:
+        result[cat] = {}
+        for num in EMAIL_NUMS:
+            key = f"{cat}_{num}"
+            if key in assets:
+                result[cat][str(num)] = assets[key]
+    return jsonify({"ok": True, "assets": result})
+
+
+@app.route("/api/regenerate-assets", methods=["POST"])
+@_require_auth
+def api_regenerate_assets():
+    """Fuerza la regeneración de todos los creativos."""
+    _save_assets({})
+    _generate_all_assets_bg()
+    return jsonify({"ok": True, "message": "Regenerando en background…"})
+
+
 # ── Canva OAuth ───────────────────────────────────────────────────────────────
 
 @app.route("/oauth/canva")
@@ -983,6 +1061,8 @@ def unsubscribe():
     return "<html><body style='font-family:Arial;text-align:center;padding:60px'>" \
            "<h2>Unsubscribed</h2><p>You won't receive further emails from AMY AI.</p></body></html>"
 
+
+_generate_all_assets_bg()  # genera creativos al arrancar si faltan
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5055))
