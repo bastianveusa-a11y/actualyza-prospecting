@@ -568,8 +568,69 @@ def api_generate_creative():
 
 # ── Creative assets (persistidos en Notion, refresh mensual) ──────────────────
 
-_NOTION_ASSETS_PAGE_TITLE = "actualyza-creative-assets-config"
-_ASSETS_MAX_AGE_DAYS      = 30
+_NOTION_ASSETS_PAGE_TITLE  = "actualyza-creative-assets-config"
+_CANVA_TOKEN_NOTION_TITLE  = "actualyza-canva-token-config"
+_ASSETS_MAX_AGE_DAYS       = 30
+
+
+def _backup_canva_token() -> None:
+    """Guarda el token de Canva en Notion para sobrevivir redeploys de Railway."""
+    from modules.canva_api import TOKEN_FILE
+    if not TOKEN_FILE.exists():
+        return
+    try:
+        content = TOKEN_FILE.read_text()
+        hdrs = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+        r = http.post("https://api.notion.com/v1/search", headers=hdrs,
+                      json={"query": _CANVA_TOKEN_NOTION_TITLE, "filter": {"value": "page", "property": "object"}},
+                      timeout=10)
+        for result in r.json().get("results", []):
+            t = result.get("properties", {}).get("title", {}).get("title", [])
+            if t and _CANVA_TOKEN_NOTION_TITLE in t[0].get("plain_text", ""):
+                blocks = http.get(f"https://api.notion.com/v1/blocks/{result['id']}/children",
+                                  headers=hdrs, timeout=10).json().get("results", [])
+                for block in blocks:
+                    if block.get("type") == "code":
+                        http.patch(f"https://api.notion.com/v1/blocks/{block['id']}",
+                                   headers=hdrs, timeout=10,
+                                   json={"code": {"rich_text": [{"type": "text", "text": {"content": content}}], "language": "json"}})
+                        return
+                return
+        http.post("https://api.notion.com/v1/pages", headers=hdrs, timeout=10,
+                  json={"parent": {"type": "workspace", "workspace": True},
+                        "properties": {"title": {"title": [{"text": {"content": _CANVA_TOKEN_NOTION_TITLE}}]}},
+                        "children": [{"object": "block", "type": "code",
+                                      "code": {"rich_text": [{"type": "text", "text": {"content": content}}], "language": "json"}}]})
+    except Exception as e:
+        print(f"  ⚠ No se pudo respaldar token Canva: {e}")
+
+
+def _restore_canva_token() -> None:
+    """Restaura token de Canva desde Notion si el archivo local no existe (redeploy)."""
+    from modules.canva_api import TOKEN_FILE
+    if TOKEN_FILE.exists():
+        return
+    try:
+        hdrs = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+        r = http.post("https://api.notion.com/v1/search", headers=hdrs,
+                      json={"query": _CANVA_TOKEN_NOTION_TITLE, "filter": {"value": "page", "property": "object"}},
+                      timeout=10)
+        for result in r.json().get("results", []):
+            t = result.get("properties", {}).get("title", {}).get("title", [])
+            if t and _CANVA_TOKEN_NOTION_TITLE in t[0].get("plain_text", ""):
+                blocks = http.get(f"https://api.notion.com/v1/blocks/{result['id']}/children",
+                                  headers={k: v for k, v in hdrs.items() if k != "Content-Type"},
+                                  timeout=10).json().get("results", [])
+                for block in blocks:
+                    if block.get("type") == "code":
+                        text = block["code"]["rich_text"]
+                        if text:
+                            TOKEN_FILE.parent.mkdir(exist_ok=True)
+                            TOKEN_FILE.write_text(text[0]["plain_text"])
+                            print("  ✓ Token Canva restaurado desde Notion")
+                            return
+    except Exception as e:
+        print(f"  ⚠ No se pudo restaurar token Canva: {e}")
 
 def _notion_get_assets_page() -> dict | None:
     """Busca la página de config de assets en Notion."""
@@ -719,7 +780,9 @@ def _generate_all_assets_bg(force: bool = False):
                     except Exception as ce:
                         print(f"    Composición falló para {key}: {ce}")
                     existing[key] = img_url
-                    _save_assets(existing)
+                    # Solo persiste en Notion si es URL de CDN (no path local efímero)
+                    if not img_url.startswith("/static/"):
+                        _save_assets(existing)
                     print(f"  ✓ {key}")
                 except Exception as e:
                     print(f"  ✗ Error {key}: {e}")
@@ -791,6 +854,7 @@ def canva_oauth_callback():
                               "https://actualyza-prospecting-production.up.railway.app/oauth/canva/callback")
     try:
         exchange_code(code, client_id, client_secret, redirect_uri, verifier)
+        _backup_canva_token()  # persiste en Notion para sobrevivir redeploys
         return redirect("/creatives?canva=connected")
     except Exception as e:
         return f"Error al obtener token: {e}", 500
@@ -1174,6 +1238,7 @@ def unsubscribe():
            "<h2>Unsubscribed</h2><p>You won't receive further emails from AMY AI.</p></body></html>"
 
 
+_restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan
 
 if __name__ == "__main__":
