@@ -382,6 +382,83 @@ def api_run_pipeline():
     return jsonify({"ok": True, "status": "started"})
 
 
+@app.route("/meta-token")
+@_require_auth
+def meta_token_page():
+    return render_template("meta_token.html")
+
+
+@app.route("/api/exchange-meta-token", methods=["POST"])
+@_require_auth
+def api_exchange_meta_token():
+    short_token = (request.json or {}).get("token", "").strip()
+    if not short_token:
+        return jsonify({"ok": False, "error": "Token vacío"}), 400
+
+    app_id     = os.getenv("META_APP_ID", "")
+    app_secret = os.getenv("META_APP_SECRET", "")
+    if not app_id or not app_secret:
+        return jsonify({"ok": False, "error": "META_APP_ID o META_APP_SECRET no configurados"}), 500
+
+    # Verificar que el token corto funciona
+    verify = http.get(
+        "https://graph.facebook.com/v21.0/ads_archive",
+        params={
+            "access_token":          short_token,
+            "ad_reached_countries":  '["US"]',
+            "ad_active_status":      "ACTIVE",
+            "search_terms":          "test",
+            "limit":                 1,
+            "fields":                "id",
+        },
+        timeout=10,
+    ).json()
+    if "error" in verify:
+        return jsonify({"ok": False, "error": verify["error"].get("message", "Token inválido")}), 400
+
+    # Intercambiar por token de 60 días
+    exchange = http.get(
+        "https://graph.facebook.com/oauth/access_token",
+        params={
+            "grant_type":       "fb_exchange_token",
+            "client_id":        app_id,
+            "client_secret":    app_secret,
+            "fb_exchange_token": short_token,
+        },
+        timeout=10,
+    ).json()
+
+    if "error" in exchange:
+        return jsonify({"ok": False, "error": exchange["error"].get("message", "Error al intercambiar")}), 400
+
+    long_token = exchange.get("access_token", "")
+    expires_in = exchange.get("expires_in", 0)
+    days = round(expires_in / 86400) if expires_in else 60
+
+    return jsonify({"ok": True, "token": long_token, "days": days})
+
+
+@app.route("/api/check-meta-token")
+@_require_auth
+def api_check_meta_token():
+    token = os.getenv("META_USER_TOKEN", "")
+    if not token:
+        return jsonify({"ok": False, "status": "sin_token"})
+    r = http.get(
+        "https://graph.facebook.com/v21.0/ads_archive",
+        params={
+            "access_token": token, "ad_reached_countries": '["US"]',
+            "ad_active_status": "ACTIVE", "search_terms": "test",
+            "limit": 1, "fields": "id",
+        },
+        timeout=10,
+    ).json()
+    if "error" in r:
+        msg = r["error"].get("message", "")
+        return jsonify({"ok": False, "status": "expirado", "error": msg})
+    return jsonify({"ok": True, "status": "activo"})
+
+
 @app.route("/api/reset-progress", methods=["POST"])
 @_require_auth
 def api_reset_progress():
