@@ -1112,9 +1112,10 @@ function renderTable() {
       const rating = c.rating ? `<span class="rating-val">${c.rating}</span> <span style="color:var(--text3);font-size:.7rem">(${c.reviews})</span>` : '—';
       const dueno  = c.dueno ? escHtml(c.dueno) : '<span style="color:var(--text3)">—</span>';
       const links  = [
-        c.maps  ? `<a href="${c.maps}"   target="_blank" title="Maps">🗺</a>` : '',
-        c.web   ? `<a href="${c.web}"    target="_blank" title="Web">🌐</a>` : '',
-        c.sunbiz? `<a href="${c.sunbiz}" target="_blank" title="Sunbiz">⚖️</a>` : '',
+        c.maps         ? `<a href="${c.maps}"         target="_blank" title="Google Maps">🗺</a>` : '',
+        c.web          ? `<a href="${c.web}"           target="_blank" title="Sitio web">🌐</a>` : '',
+        c.sunbiz       ? `<a href="${c.sunbiz}"        target="_blank" title="Sunbiz">⚖️</a>` : '',
+        c.meta_ads_url ? `<a href="${c.meta_ads_url}"  target="_blank" title="Ver anuncios en Meta Ad Library">📢</a>` : '',
       ].filter(Boolean).join(' ');
 
       const pct = c.completeness || 0;

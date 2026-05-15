@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import requests as http
 
@@ -146,9 +147,25 @@ def fetch_clinics() -> list:
                 "maps":        _prop(page, "Google Maps",     "url"),
                 "direccion":   _prop(page, "Dirección",       "rich_text"),
                 "zip":         _prop(page, "ZIP",             "rich_text"),
-                "email":       _prop(page, "Email Contacto",  "email"),
-                "last_edited": page.get("last_edited_time", ""),
+                "email":        _prop(page, "Email Contacto",  "email"),
+                "facebook_page":_prop(page, "Página Facebook", "url"),
+                "last_edited":  page.get("last_edited_time", ""),
             }
+            # Link directo a Meta Ad Library para esta clínica
+            fb = c["facebook_page"]
+            if fb:
+                slug = fb.rstrip('/').split('/')[-1].split('?')[0]
+                c["meta_ads_url"] = (
+                    f"https://www.facebook.com/ads/library/"
+                    f"?active_status=active&ad_type=all&country=US"
+                    f"&q={quote_plus(slug)}&search_type=page"
+                )
+            else:
+                c["meta_ads_url"] = (
+                    f"https://www.facebook.com/ads/library/"
+                    f"?active_status=active&ad_type=all&country=US"
+                    f"&q={quote_plus(c['nombre'])}&search_type=keyword_unordered"
+                )
             c["completeness"] = _completeness(c)
             c["lead_score"]   = _lead_score(c)
             results.append(c)
