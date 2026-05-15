@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 
@@ -30,6 +30,7 @@ DASH_USER       = os.getenv("DASHBOARD_USER", "actualyza")
 DASH_PASS       = os.getenv("DASHBOARD_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
 LOG_FILE        = Path(__file__).parent.parent / "data" / "runs.log"
+NEXT_RUN_DAYS   = 7
 
 
 def _require_auth(f):
@@ -77,6 +78,29 @@ def _prop(page: dict, name: str, kind: str):
     return ""
 
 
+def _completeness(c: dict) -> int:
+    score = 0
+    if c.get("telefono"):  score += 10
+    if c.get("web"):       score += 10
+    if c.get("dueno"):     score += 20
+    if c.get("entidad"):   score += 10
+    if c.get("sunbiz"):    score += 10
+    if c.get("maps"):      score += 10
+    if c.get("direccion"): score +=  5
+    if c.get("rating", 0) > 0: score += 10
+    if c.get("inversion") not in ("", None): score += 10
+    if c.get("zip"):       score +=  5
+    return min(100, score)
+
+
+def _lead_score(c: dict) -> int:
+    inv  = {"Alta": 40, "Media": 30, "Baja": 15, "Sin anuncios": 5}.get(c.get("inversion", ""), 0)
+    own  = 25 if c.get("dueno") else 0
+    cmp_ = round(c.get("completeness", 0) * 0.20)
+    rat  = round(min(15.0, (c.get("rating", 0) / 5.0) * 15))
+    return inv + own + cmp_ + rat
+
+
 def fetch_clinics() -> list:
     headers = {
         "Authorization":  f"Bearer {NOTION_TOKEN}",
@@ -95,25 +119,29 @@ def fetch_clinics() -> list:
             json=body,
         ).json()
         for page in resp.get("results", []):
-            results.append({
-                "nombre":    _prop(page, "Nombre",          "title"),
-                "ciudad":    _prop(page, "Ciudad",          "select"),
-                "categoria": _prop(page, "Categoría",       "select"),
-                "etapa":     _prop(page, "Etapa",           "select"),
-                "inversion": _prop(page, "Inversión Meta",  "select"),
-                "anuncios":  _prop(page, "Anuncios Activos","number"),
-                "rating":    _prop(page, "Rating",          "number"),
-                "reviews":   _prop(page, "Reviews",         "number"),
-                "telefono":  _prop(page, "Teléfono",        "phone_number"),
-                "web":       _prop(page, "Web",             "url"),
-                "dueno":     _prop(page, "Dueño / Manager", "rich_text"),
-                "entidad":   _prop(page, "Entidad Legal",   "rich_text"),
-                "sunbiz":    _prop(page, "Sunbiz URL",      "url"),
-                "score":     _prop(page, "Sunbiz Score",    "number"),
-                "maps":      _prop(page, "Google Maps",     "url"),
-                "direccion": _prop(page, "Dirección",       "rich_text"),
-                "zip":       _prop(page, "ZIP",             "rich_text"),
-            })
+            c = {
+                "nombre":      _prop(page, "Nombre",          "title"),
+                "ciudad":      _prop(page, "Ciudad",          "select"),
+                "categoria":   _prop(page, "Categoría",       "select"),
+                "etapa":       _prop(page, "Etapa",           "select"),
+                "inversion":   _prop(page, "Inversión Meta",  "select"),
+                "anuncios":    _prop(page, "Anuncios Activos","number"),
+                "rating":      _prop(page, "Rating",          "number"),
+                "reviews":     _prop(page, "Reviews",         "number"),
+                "telefono":    _prop(page, "Teléfono",        "phone_number"),
+                "web":         _prop(page, "Web",             "url"),
+                "dueno":       _prop(page, "Dueño / Manager", "rich_text"),
+                "entidad":     _prop(page, "Entidad Legal",   "rich_text"),
+                "sunbiz":      _prop(page, "Sunbiz URL",      "url"),
+                "score":       _prop(page, "Sunbiz Score",    "number"),
+                "maps":        _prop(page, "Google Maps",     "url"),
+                "direccion":   _prop(page, "Dirección",       "rich_text"),
+                "zip":         _prop(page, "ZIP",             "rich_text"),
+                "last_edited": page.get("last_edited_time", ""),
+            }
+            c["completeness"] = _completeness(c)
+            c["lead_score"]   = _lead_score(c)
+            results.append(c)
         if not resp.get("has_more"):
             break
         cursor = resp["next_cursor"]
@@ -155,26 +183,24 @@ def compute_stats(clinics: list) -> dict:
     ratings   = [c["rating"] for c in clinics if c["rating"]]
     avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 0
 
-    # Top prospects: mayor inversión primero, luego rating
-    _inv_order = {"Alta": 4, "Media": 3, "Baja": 2, "Sin anuncios": 1, "": 0}
-    top = sorted(
-        clinics,
-        key=lambda c: (_inv_order.get(c["inversion"], 0), c["rating"]),
-        reverse=True,
-    )[:50]
+    completeness_vals = [c.get("completeness", 0) for c in clinics]
+    avg_completeness  = round(sum(completeness_vals) / len(completeness_vals)) if completeness_vals else 0
+
+    top = sorted(clinics, key=lambda c: c.get("lead_score", 0), reverse=True)[:50]
 
     return {
-        "total":          total,
-        "con_dueno":      con_dueno,
-        "pct_dueno":      round(con_dueno / total * 100) if total else 0,
-        "alta_media":     alta_media,
-        "sin_contactar":  sin_contactar,
-        "avg_rating":     avg_rating,
-        "por_ciudad":     por_ciudad,
-        "por_categoria":  por_categoria,
-        "por_inversion":  por_inversion,
-        "por_etapa":      por_etapa,
-        "top":            top,
+        "total":            total,
+        "con_dueno":        con_dueno,
+        "pct_dueno":        round(con_dueno / total * 100) if total else 0,
+        "alta_media":       alta_media,
+        "sin_contactar":    sin_contactar,
+        "avg_rating":       avg_rating,
+        "avg_completeness": avg_completeness,
+        "por_ciudad":       por_ciudad,
+        "por_categoria":    por_categoria,
+        "por_inversion":    por_inversion,
+        "por_etapa":        por_etapa,
+        "top":              top,
     }
 
 
@@ -239,6 +265,40 @@ def api_budget():
 @_require_auth
 def api_log():
     return jsonify(get_log())
+
+@app.route("/api/pipeline")
+@_require_auth
+def api_pipeline():
+    clinics  = get_clinics()
+    times    = [c["last_edited"] for c in clinics if c.get("last_edited")]
+    last_run = max(times) if times else None
+
+    next_run_iso = None
+    if last_run:
+        try:
+            last_dt      = datetime.fromisoformat(last_run.replace("Z", "+00:00"))
+            next_dt      = last_dt + timedelta(days=NEXT_RUN_DAYS)
+            next_run_iso = next_dt.isoformat()
+        except Exception:
+            pass
+
+    cities = ["Miami", "Orlando", "Dallas"]
+    cats   = ["dental", "estetica", "medspa", "wellness"]
+    segs   = {}
+    for c in clinics:
+        key = f"{c['ciudad']}/{c['categoria']}"
+        segs[key] = segs.get(key, 0) + 1
+    seg_done  = sum(1 for city in cities for cat in cats if segs.get(f"{city}/{cat}", 0) > 0)
+    seg_total = len(cities) * len(cats)
+
+    return jsonify({
+        "last_run":  last_run,
+        "next_run":  next_run_iso,
+        "seg_done":  seg_done,
+        "seg_total": seg_total,
+        "segs":      segs,
+    })
+
 
 @app.route("/api/refresh", methods=["POST"])
 @_require_auth
