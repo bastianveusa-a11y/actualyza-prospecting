@@ -8,14 +8,26 @@ Flujo:
   4. Exportar como PNG y retornar URL pública
 """
 
-import os
-import time
-import requests
-from pathlib import Path
+import base64
+import hashlib
 import json
+import os
+import secrets
+import time
+from pathlib import Path
+
+import requests
 
 CANVA_API_BASE  = "https://api.canva.com/rest/v1"
 TOKEN_FILE      = Path(__file__).parent.parent / "data" / "canva_token.json"
+
+# Scopes registrados en la integración de Canva
+CANVA_SCOPES = (
+    "asset:write asset:read design:content:write design:content:read "
+    "design:permission:read design:permission:write "
+    "folder:read folder:write folder:permission:read folder:permission:write "
+    "comment:read comment:write profile:read"
+)
 
 # Text overlays por categoría y email_num
 _OVERLAYS = {
@@ -54,20 +66,30 @@ _OVERLAYS = {
 }
 
 
-def get_oauth_url(client_id: str, redirect_uri: str, state: str = "") -> str:
-    params = {
-        "response_type": "code",
-        "client_id":     client_id,
-        "redirect_uri":  redirect_uri,
-        "scope":         "asset:write design:content:write design:content:read",
-        "state":         state,
-    }
+def generate_pkce() -> tuple[str, str]:
+    """Genera code_verifier y code_challenge para PKCE (S256)."""
+    verifier  = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+    digest    = hashlib.sha256(verifier.encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return verifier, challenge
+
+
+def get_oauth_url(client_id: str, redirect_uri: str, code_challenge: str, state: str = "") -> str:
     from urllib.parse import urlencode
+    params = {
+        "response_type":        "code",
+        "client_id":            client_id,
+        "redirect_uri":         redirect_uri,
+        "scope":                CANVA_SCOPES,
+        "state":                state,
+        "code_challenge_method": "S256",
+        "code_challenge":       code_challenge,
+    }
     return f"https://www.canva.com/api/oauth/authorize?{urlencode(params)}"
 
 
-def exchange_code(code: str, client_id: str, client_secret: str, redirect_uri: str) -> dict:
-    """Intercambia el authorization code por access + refresh tokens."""
+def exchange_code(code: str, client_id: str, client_secret: str, redirect_uri: str, code_verifier: str) -> dict:
+    """Intercambia el authorization code por access + refresh tokens (con PKCE)."""
     r = requests.post(
         "https://api.canva.com/rest/v1/oauth/token",
         data={
@@ -76,6 +98,7 @@ def exchange_code(code: str, client_id: str, client_secret: str, redirect_uri: s
             "redirect_uri":  redirect_uri,
             "client_id":     client_id,
             "client_secret": client_secret,
+            "code_verifier": code_verifier,
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=30,

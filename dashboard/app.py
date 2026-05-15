@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = Flask(__name__, template_folder="templates")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
 
 NOTION_TOKEN    = os.getenv("NOTION_TOKEN", "")
 NOTION_DB_ID    = os.getenv("NOTION_DATABASE_ID", "")
@@ -564,20 +565,24 @@ def api_generate_creative():
 @app.route("/oauth/canva")
 @_require_auth
 def canva_oauth_start():
-    """Inicia el flujo OAuth de Canva."""
-    from modules.canva_api import get_oauth_url
+    """Inicia el flujo OAuth con PKCE (requerido por Canva)."""
+    from modules.canva_api import get_oauth_url, generate_pkce
+    from flask import session
     client_id    = os.getenv("CANVA_CLIENT_ID", "")
     redirect_uri = os.getenv("CANVA_REDIRECT_URI",
                              "https://actualyza-prospecting-production.up.railway.app/oauth/canva/callback")
     if not client_id:
         return "CANVA_CLIENT_ID no configurado en Railway", 500
-    url = get_oauth_url(client_id, redirect_uri, state="actualyza")
+    verifier, challenge = generate_pkce()
+    session["canva_code_verifier"] = verifier
+    url = get_oauth_url(client_id, redirect_uri, code_challenge=challenge, state="actualyza")
     return redirect(url)
 
 
 @app.route("/oauth/canva/callback")
 def canva_oauth_callback():
-    """Recibe el code de Canva y lo intercambia por access token."""
+    """Recibe el code de Canva y lo intercambia por access token (con PKCE)."""
+    from flask import session
     code  = request.args.get("code", "")
     error = request.args.get("error", "")
     if error:
@@ -585,13 +590,17 @@ def canva_oauth_callback():
     if not code:
         return "Código de autorización faltante", 400
 
+    verifier = session.pop("canva_code_verifier", "")
+    if not verifier:
+        return "Sesión expirada — vuelve a intentar conectar Canva", 400
+
     from modules.canva_api import exchange_code
     client_id     = os.getenv("CANVA_CLIENT_ID", "")
     client_secret = os.getenv("CANVA_CLIENT_SECRET", "")
     redirect_uri  = os.getenv("CANVA_REDIRECT_URI",
                               "https://actualyza-prospecting-production.up.railway.app/oauth/canva/callback")
     try:
-        exchange_code(code, client_id, client_secret, redirect_uri)
+        exchange_code(code, client_id, client_secret, redirect_uri, verifier)
         return redirect("/creatives?canva=connected")
     except Exception as e:
         return f"Error al obtener token: {e}", 500
