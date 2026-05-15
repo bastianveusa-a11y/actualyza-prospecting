@@ -8,6 +8,7 @@ import base64
 import json
 import os
 import sys
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -31,6 +32,13 @@ DASH_PASS       = os.getenv("DASHBOARD_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
 LOG_FILE        = Path(__file__).parent.parent / "data" / "runs.log"
 NEXT_RUN_DAYS   = 7
+
+_pipeline_state: dict = {
+    "running":        False,
+    "last_started":   None,
+    "last_finished":  None,
+    "error":          None,
+}
 
 
 def _require_auth(f):
@@ -297,6 +305,43 @@ def api_pipeline():
         "seg_done":  seg_done,
         "seg_total": seg_total,
         "segs":      segs,
+    })
+
+
+def _run_pipeline_bg():
+    global _pipeline_state, _cache
+    _pipeline_state["running"]       = True
+    _pipeline_state["last_started"]  = datetime.now(timezone.utc).isoformat()
+    _pipeline_state["error"]         = None
+    try:
+        from pipeline.orchestrator import run_pipeline
+        run_pipeline()
+        _cache = {"data": None, "ts": 0.0}
+    except Exception as e:
+        _pipeline_state["error"] = str(e)
+    finally:
+        _pipeline_state["running"]      = False
+        _pipeline_state["last_finished"] = datetime.now(timezone.utc).isoformat()
+
+
+@app.route("/api/run-pipeline", methods=["POST"])
+@_require_auth
+def api_run_pipeline():
+    if _pipeline_state["running"]:
+        return jsonify({"ok": False, "error": "Pipeline ya está corriendo"}), 409
+    threading.Thread(target=_run_pipeline_bg, daemon=True).start()
+    return jsonify({"ok": True, "status": "started"})
+
+
+@app.route("/api/pipeline-status")
+@_require_auth
+def api_pipeline_status():
+    return jsonify({
+        "running":        _pipeline_state["running"],
+        "last_started":   _pipeline_state["last_started"],
+        "last_finished":  _pipeline_state["last_finished"],
+        "error":          _pipeline_state["error"],
+        "log":            get_log(20),
     })
 
 

@@ -91,6 +91,32 @@ header {
 .btn.spinning svg { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.btn-primary {
+  background: rgba(201,169,110,0.1);
+  border-color: var(--border-h);
+  color: var(--gold);
+}
+.btn-primary:hover { background: rgba(201,169,110,0.18); }
+.btn-primary.running {
+  background: rgba(64,200,152,0.1);
+  border-color: rgba(64,200,152,0.3);
+  color: var(--green);
+  cursor: not-allowed;
+}
+
+.action-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 24px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.action-bar-left { display: flex; gap: 10px; flex: 1; }
+.action-bar-status { font-size: 0.75rem; color: var(--text3); display: flex; align-items: center; gap: 8px; }
+.running-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1s infinite; }
+.error-msg { color: var(--red); font-size: 0.72rem; }
+
 /* ── Section label ── */
 .section-label {
   font-size: 0.7rem; font-weight: 600;
@@ -364,6 +390,26 @@ tbody td a:hover { color: var(--gold); }
     </div>
   </header>
 
+  <!-- ── Action bar ── -->
+  <div class="action-bar">
+    <div class="action-bar-left">
+      <button class="btn btn-primary" id="btn-collect" onclick="startCollection()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        Nueva Recolección
+      </button>
+      <button class="btn" id="btn-refresh-data" onclick="forceRefresh()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+        Actualizar Datos
+      </button>
+    </div>
+    <div class="action-bar-status" id="action-status"></div>
+  </div>
+
   <!-- ── KPIs ── -->
   <div class="section-label">Indicadores Clave</div>
   <div class="kpis">
@@ -565,8 +611,9 @@ const PAGE_SIZE = 25;
 let chartCiudad = null;
 let chartMeta   = null;
 let chartCats   = null;
-let countdownTimer = null;
-let nextRunDate    = null;
+let countdownTimer  = null;
+let nextRunDate     = null;
+let statusPoller    = null;
 
 // ── Colors ────────────────────────────────────────────────────
 const C = {
@@ -583,7 +630,7 @@ const CATS   = ['dental','estetica','medspa','wellness'];
 const CAT_LABELS = { dental:'Dental', estetica:'Estética', medspa:'Med Spa', wellness:'Wellness' };
 
 // ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); });
+document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); });
 
 async function loadAll() {
   showLoader(true);
@@ -617,6 +664,78 @@ async function refreshAll() {
 }
 
 function showLoader(v) { document.getElementById('loader').classList.toggle('show', v); }
+
+// ── Acciones ──────────────────────────────────────────────────
+async function startCollection() {
+  const btn = document.getElementById('btn-collect');
+  const res = await fetch('/api/run-pipeline', {method:'POST'});
+  const data = await res.json();
+  if (!data.ok) {
+    setStatus(`<span class="error-msg">${data.error}</span>`);
+    return;
+  }
+  btn.classList.add('running');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="running-dot"></div> Recolectando…`;
+  startPolling();
+}
+
+async function forceRefresh() {
+  const btn = document.getElementById('btn-refresh-data');
+  btn.classList.add('spinning');
+  btn.disabled = true;
+  await fetch('/api/refresh', {method:'POST'});
+  await loadAll();
+  btn.classList.remove('spinning');
+  btn.disabled = false;
+  updateTimestamp();
+  setStatus('Datos actualizados desde Notion');
+  setTimeout(() => setStatus(''), 4000);
+}
+
+function startPolling() {
+  if (statusPoller) clearInterval(statusPoller);
+  statusPoller = setInterval(async () => {
+    const res  = await fetch('/api/pipeline-status');
+    const data = await res.json();
+    if (data.running) {
+      const last = data.log?.[0] || '';
+      setStatus(`<span class="running-dot"></span> ${last || 'Procesando…'}`);
+    } else {
+      clearInterval(statusPoller);
+      statusPoller = null;
+      const btn = document.getElementById('btn-collect');
+      btn.classList.remove('running');
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Nueva Recolección`;
+      if (data.error) {
+        setStatus(`<span class="error-msg">Error: ${data.error}</span>`);
+      } else {
+        setStatus('Recolección completada — actualizando datos…');
+        await loadAll();
+        updateTimestamp();
+        setTimeout(() => setStatus(''), 5000);
+      }
+    }
+  }, 3000);
+}
+
+function setStatus(html) {
+  document.getElementById('action-status').innerHTML = html;
+}
+
+// check if pipeline was running on page load
+async function checkPipelineOnLoad() {
+  const res  = await fetch('/api/pipeline-status');
+  const data = await res.json();
+  if (data.running) {
+    const btn = document.getElementById('btn-collect');
+    btn.classList.add('running');
+    btn.disabled = true;
+    btn.innerHTML = `<div class="running-dot"></div> Recolectando…`;
+    startPolling();
+  }
+}
 function updateTimestamp() {
   const now = new Date();
   document.getElementById('ts-label').textContent =
