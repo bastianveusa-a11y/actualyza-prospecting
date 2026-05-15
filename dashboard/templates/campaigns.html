@@ -524,11 +524,12 @@ function renderCampTable(rows) {
   const body = document.getElementById('camp-body');
 
   const campEstado = {
-    'No iniciada': `<span style="color:var(--text3)">No iniciada</span>`,
-    'Activa':      `<span style="color:var(--green)">Activa</span>`,
-    'Pausada':     `<span style="color:var(--orange)">Pausada</span>`,
-    'Completada':  `<span style="color:var(--blue)">Completada</span>`,
-    'Cancelada':   `<span style="color:var(--red)">Cancelada</span>`,
+    'No iniciada':      `<span style="color:var(--text3)">No iniciada</span>`,
+    'Activa':           `<span style="color:var(--green)">Activa</span>`,
+    'Pausada':          `<span style="color:var(--orange)">Pausada</span>`,
+    'Completada':       `<span style="color:var(--blue)">Completada</span>`,
+    'Cancelada':        `<span style="color:var(--red)">Cancelada</span>`,
+    'Reunión agendada': `<span style="color:var(--purple)">📅 Reunión agendada</span>`,
   };
 
   if (!rows.length) {
@@ -573,6 +574,10 @@ function renderCampTable(rows) {
       ? `<button class="${BH}" style="background:transparent;border-color:var(--border);color:var(--text3);margin-left:4px"
            onclick="pauseCampaign('${r.notion_id}',this)">Pausar</button>` : '';
 
+    const btnCal = r.email
+      ? `<button class="${BH}" style="background:rgba(176,96,240,.1);border-color:rgba(176,96,240,.3);color:var(--purple);margin-left:4px"
+           onclick="sendBookingLink('${r.notion_id}','${safe}',this)" title="Enviar link de Cal.com">📅</button>` : '';
+
     return `<tr>
       <td class="td-name">${escHtml(r.nombre)}</td>
       <td>${cityBadge(r.ciudad)}</td>
@@ -582,7 +587,7 @@ function renderCampTable(rows) {
       <td style="font-size:.72rem">${estado}</td>
       <td style="text-align:center;color:var(--text2);font-size:.78rem">${etapa}</td>
       <td style="text-align:center">${abrioIcon}</td>
-      <td style="text-align:right;white-space:nowrap">${btnI}${btnN}${btnP}</td>
+      <td style="text-align:right;white-space:nowrap">${btnI}${btnN}${btnP}${btnCal}</td>
     </tr>`;
   }).join('');
 }
@@ -633,6 +638,23 @@ async function sendNext(notionId, clinicEmail, btn) {
     else btn.disabled = false;
   } else {
     btn.disabled = false;
+    alert('Error: ' + (data.error||'desconocido'));
+  }
+}
+
+async function sendBookingLink(notionId, clinicEmail, btn) {
+  if (!confirm(`Enviar link de Cal.com a:\n${clinicEmail}\n\n¿Confirmar?`)) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  const r    = await fetch('/api/send-booking-link', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({notion_id: notionId}),
+  });
+  const data = await r.json();
+  if (data.ok) {
+    btn.textContent = '✓'; btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = '📅'; btn.style.color = ''; btn.disabled = false; }, 3000);
+  } else {
+    btn.disabled = false; btn.textContent = '📅';
     alert('Error: ' + (data.error||'desconocido'));
   }
 }
