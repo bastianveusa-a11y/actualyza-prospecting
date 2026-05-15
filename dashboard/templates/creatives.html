@@ -146,55 +146,65 @@ header {
 .score-low  { background: rgba(120,120,160,0.12); color: #9090b8; }
 .opened-tag { font-size: 0.62rem; color: var(--green); }
 
-/* Flux section */
-.flux-section {
-  margin-top: 28px; background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 20px 22px;
+/* Creative section */
+.creative-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden; margin-bottom: 4px;
 }
-.flux-header {
+.creative-empty {
+  padding: 48px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.creative-stage { padding: 20px 22px; }
+.creative-header {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 12px; margin-bottom: 18px;
+  gap: 12px; margin-bottom: 20px;
 }
-.flux-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
-.flux-sub { font-size: 0.72rem; color: var(--text3); }
-.flux-badge {
-  flex-shrink: 0; font-size: 0.7rem; font-weight: 600;
-  padding: 4px 10px; border-radius: 20px;
-  border: 1px solid rgba(201,169,110,0.3); color: var(--gold);
-  background: rgba(201,169,110,0.06);
-}
-.flux-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.flux-card {
+.creative-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.creative-sub { font-size: 0.72rem; color: var(--text3); }
+.creative-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.creative-card {
   background: rgba(255,255,255,0.02); border: 1px solid var(--border);
-  border-radius: var(--r-sm); padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  border-radius: var(--r); overflow: hidden;
+  display: flex; flex-direction: column;
 }
-.flux-card-label { font-size: 0.75rem; font-weight: 600; }
-.flux-card-desc { font-size: 0.7rem; color: var(--text3); }
-.flux-img-wrap {
-  border-radius: var(--r-sm); overflow: hidden;
-  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-  min-height: 160px; display: flex; align-items: center; justify-content: center;
+.creative-card-tag {
+  padding: 10px 14px; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--text3);
+  border-bottom: 1px solid var(--border);
 }
-.flux-img-wrap img { width: 100%; height: auto; display: block; }
+.creative-img-wrap {
+  flex: 1; min-height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.2); overflow: hidden;
+}
+.creative-img-wrap img { width: 100%; height: auto; display: block; transition: transform .3s; }
+.creative-img-wrap img:hover { transform: scale(1.02); }
+.creative-card-footer {
+  padding: 10px 14px; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px;
+  border-top: 1px solid var(--border);
+}
+.creative-card-note { font-size: 0.68rem; color: var(--text3); flex: 1; }
+.creative-regen-btn {
+  flex-shrink: 0; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text3); font-size: 0.78rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all .15s;
+}
+.creative-regen-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Flux loading/spinner (kept for inside cards) */
 .flux-placeholder { color: var(--text3); font-size: 0.75rem; }
 .flux-loading {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  color: var(--text3); font-size: 0.75rem;
+  color: var(--text3); font-size: 0.75rem; padding: 40px;
 }
 .flux-spinner {
   width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1);
   border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.flux-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 8px; border-radius: var(--r-sm); width: 100%;
-  border: 1px solid rgba(201,169,110,0.3); background: rgba(201,169,110,0.08);
-  color: var(--gold); font-size: 0.75rem; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s;
-}
-.flux-btn:hover { background: rgba(201,169,110,0.16); border-color: rgba(201,169,110,0.5); }
-.flux-btn:disabled { opacity: .4; cursor: not-allowed; }
 
 /* Enable button */
 .btn-enable-group {
@@ -353,14 +363,6 @@ header {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>
         Campañas
       </a>
-      <a href="/oauth/canva" class="nav-btn" id="canva-connect-btn" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-        Conectar Canva
-      </a>
-      <div class="nav-btn" id="canva-status-badge" style="display:none;cursor:default">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        Canva conectado
-      </div>
       <button class="nav-btn" onclick="refreshAll()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
         Actualizar
@@ -405,46 +407,54 @@ header {
     </div>
   </div>
 
-  <!-- Kanban -->
-  <div class="kanban-wrap">
-    <div class="kanban" id="kanban">
-      <div style="color:var(--text3);font-size:.85rem;padding:40px">
-        Selecciona ciudad y categoría para ver el grupo ↑
+  <!-- Creativos (protagonistas) -->
+  <div class="creative-section" id="creative-section">
+    <div class="creative-empty" id="creative-empty">
+      <div style="font-size:2rem;opacity:.2">🎨</div>
+      <div style="font-size:.85rem;color:var(--text3);margin-top:8px">Selecciona ciudad y categoría para ver los creativos de campaña</div>
+    </div>
+    <div class="creative-stage" id="creative-stage" style="display:none">
+      <div class="creative-header">
+        <div>
+          <div class="creative-title" id="creative-cat-label">—</div>
+          <div class="creative-sub">Visuales generados con Flux + Canva · Se envían solo a leads que abrieron el email anterior</div>
+        </div>
+        <button class="nav-btn" onclick="forceRegenerate()" title="Actualizar para evento especial o cambio de branding">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Actualizar creativos
+        </button>
+      </div>
+      <div class="creative-grid">
+        <div class="creative-card">
+          <div class="creative-card-tag">Email 2b — Abrió sin responder</div>
+          <div class="creative-img-wrap" id="flux-img-2">
+            <div class="flux-loading"><div class="flux-spinner"></div><div>Generando…</div></div>
+          </div>
+          <div class="creative-card-footer">
+            <span class="creative-card-note">Se incluye en el segundo contacto si el lead ya abrió Email 1</span>
+            <button class="creative-regen-btn" id="flux-btn-2" onclick="regenerateCreative(2)" style="display:none">↺</button>
+          </div>
+        </div>
+        <div class="creative-card">
+          <div class="creative-card-tag">Email 3 — Social proof</div>
+          <div class="creative-img-wrap" id="flux-img-3">
+            <div class="flux-loading"><div class="flux-spinner"></div><div>Generando…</div></div>
+          </div>
+          <div class="creative-card-footer">
+            <span class="creative-card-note">Caso de éxito visual para leads con engagement previo</span>
+            <button class="creative-regen-btn" id="flux-btn-3" onclick="regenerateCreative(3)" style="display:none">↺</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Flux creative assets -->
-  <div class="flux-section" id="flux-section" style="display:none">
-    <div class="flux-header">
-      <div>
-        <div class="flux-title">Visuales de campaña</div>
-        <div class="flux-sub">Generados con Flux 1.1 Pro · Refresh automático cada 30 días · Solo para leads que abrieron el anterior</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div class="flux-badge">🎨 Flux 1.1 Pro</div>
-        <button class="nav-btn" onclick="forceRegenerate()" title="Fuerza regeneración para evento especial">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-          Actualizar
-        </button>
-      </div>
-    </div>
-    <div class="flux-grid">
-      <div class="flux-card" id="flux-card-2">
-        <div class="flux-card-label">Email 2b — Banner de impacto</div>
-        <div class="flux-card-desc">Para leads que abrieron Email 1 pero no respondieron</div>
-        <div class="flux-img-wrap" id="flux-img-2">
-          <div class="flux-placeholder">Sin generar</div>
-        </div>
-        <button class="flux-btn" id="flux-btn-2" onclick="regenerateCreative(2)" style="display:none">↺ Regenerar</button>
-      </div>
-      <div class="flux-card" id="flux-card-3">
-        <div class="flux-card-label">Email 3 — Social proof</div>
-        <div class="flux-card-desc">Para leads que abrieron cualquier email anterior</div>
-        <div class="flux-img-wrap" id="flux-img-3">
-          <div class="flux-placeholder">Sin generar</div>
-        </div>
-        <button class="flux-btn" id="flux-btn-3" onclick="regenerateCreative(3)" style="display:none">↺ Regenerar</button>
+  <!-- Kanban -->
+  <div class="kanban-wrap" style="margin-top:24px">
+    <div class="section-label" style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Leads del grupo</div>
+    <div class="kanban" id="kanban">
+      <div style="color:var(--text3);font-size:.85rem;padding:40px">
+        Selecciona ciudad y categoría para ver el grupo ↑
       </div>
     </div>
   </div>
@@ -471,25 +481,10 @@ const STAGES = [
 
 const CAT_LABELS = { dental:'Dental', estetica:'Estética', medspa:'Med Spa', wellness:'Wellness' };
 
-document.addEventListener('DOMContentLoaded', () => { loadAll(); checkCanvaStatus(); });
+document.addEventListener('DOMContentLoaded', loadAll);
 
-// Check if ?canva=connected in URL
 if (new URLSearchParams(location.search).get('canva') === 'connected') {
   history.replaceState({}, '', '/creatives');
-}
-
-async function checkCanvaStatus() {
-  try {
-    const r = await fetch('/api/canva-status');
-    const d = await r.json();
-    document.getElementById('canva-connect-btn').style.display  = d.authorized ? 'none'  : 'flex';
-    document.getElementById('canva-status-badge').style.display = d.authorized ? 'flex'  : 'none';
-    if (d.authorized) {
-      document.getElementById('canva-status-badge').style.color = 'var(--green)';
-    }
-  } catch(e) {
-    document.getElementById('canva-connect-btn').style.display = 'flex';
-  }
 }
 
 async function loadAll() {
@@ -765,8 +760,13 @@ async function loadAssets() {
 
 function toggleFluxSection() {
   const show = !!(selectedCity && selectedCat);
-  document.getElementById('flux-section').style.display = show ? 'block' : 'none';
-  if (show) renderFluxCards();
+  document.getElementById('creative-empty').style.display = show ? 'none' : 'flex';
+  document.getElementById('creative-stage').style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('creative-cat-label').textContent =
+      `${CAT_LABELS[selectedCat] || selectedCat} — ${selectedCity}`;
+    renderFluxCards();
+  }
 }
 
 function renderFluxCards() {
