@@ -382,6 +382,15 @@ def api_run_pipeline():
     return jsonify({"ok": True, "status": "started"})
 
 
+@app.route("/api/reset-progress", methods=["POST"])
+@_require_auth
+def api_reset_progress():
+    PROGRESS_FILE = Path(__file__).parent.parent / "data" / "progress.json"
+    if PROGRESS_FILE.exists():
+        PROGRESS_FILE.unlink()
+    return jsonify({"ok": True})
+
+
 @app.route("/api/stop-pipeline", methods=["POST"])
 @_require_auth
 def api_stop_pipeline():
