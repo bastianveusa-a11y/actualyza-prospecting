@@ -327,14 +327,14 @@ const eligibleLeads  = leads => leads.filter(c => c.email && (!c.campana_email |
 
 // ── Selector ──────────────────────────────────────────────────
 function renderSelector() {
-  document.getElementById('group-selector').innerHTML = CITIES.map(city =>
+  document.getElementById('group-selector').innerHTML = CATEGORIES.map(cat =>
     `<div class="city-section">
-      <div class="city-name" style="color:${CITY_COLOR[city]}">${city}</div>
-      ${CATEGORIES.map(cat => {
+      <div class="city-name" style="color:${CAT_COLOR[cat]}">${CAT_LABEL[cat]}</div>
+      ${CITIES.map(city => {
         const n = eligibleLeads(groupLeads(city, cat)).length;
         const active = selected?.city === city && selected?.cat === cat;
         return `<button class="group-btn ${active ? 'active' : ''}" onclick="selectGroup('${city}','${cat}')">
-          <span>${CAT_LABEL[cat]}</span>
+          <span>${city}</span>
           <span class="group-count">${n}</span>
         </button>`;
       }).join('')}
