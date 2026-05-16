@@ -324,13 +324,14 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 const LANG_LABELS = { en: 'English 🇺🇸', es: 'Español 🇪🇸', pt: 'Português 🇧🇷', fr: 'Français 🇫🇷' };
 const LANG_FLAGS  = { en: '🇺🇸 EN', es: '🇪🇸 ES', pt: '🇧🇷 PT', fr: '🇫🇷 FR' };
 
-let roomId     = null;
-let roomUrl    = null;
-let myLang     = 'en';
-let theirLang  = 'es';
-let ws         = null;
-let audioCtx   = null;
-let audioQueue = Promise.resolve();
+let roomId      = null;
+let roomUrl     = null;
+let myLang      = 'en';
+let theirLang   = 'es';
+let ws          = null;
+let audioCtx    = null;  // 16kHz context for mic capture
+let playbackCtx = null;  // unconstrained context for MP3 playback
+let audioQueue  = Promise.resolve();
 
 // ── Lobby ─────────────────────────────────────────────────────
 async function createRoom() {
@@ -392,6 +393,9 @@ async function fetchRoomUrl(id) {
 }
 
 function startCall() {
+  // Pre-init playback AudioContext on this user gesture so it's not blocked later
+  if (!playbackCtx) playbackCtx = new AudioContext();
+
   document.getElementById('lobby').style.display     = 'none';
   document.getElementById('call-view').style.display = 'flex';
   document.getElementById('daily-frame').src = roomUrl;
@@ -468,14 +472,21 @@ function initAudio() {
 
       processor.onaudioprocess = (e) => {
         const input = e.inputBuffer.getChannelData(0);
-        const pcm   = new Int16Array(input.length);
-        for (let i = 0; i < input.length; i++) {
-          pcm[i] = Math.min(32767, Math.max(-32768, input[i] * 32768));
-        }
-        if (ws && ws.readyState === WebSocket.OPEN) {
+
+        // VAD: compute RMS, skip silence to reduce CPU & Deepgram load
+        let sum = 0;
+        for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+        const rms = Math.sqrt(sum / input.length);
+
+        if (rms > 0.008 && ws && ws.readyState === WebSocket.OPEN) {
+          const pcm = new Int16Array(input.length);
+          for (let i = 0; i < input.length; i++) {
+            pcm[i] = Math.min(32767, Math.max(-32768, input[i] * 32768));
+          }
           ws.send(pcm.buffer);
         }
-        // Update volume bars
+
+        // Volume meter (always update)
         analyser.getByteFrequencyData(volData);
         const avg = volData.reduce((a, b) => a + b, 0) / volData.length;
         updateVolBars(avg);
@@ -509,20 +520,23 @@ function updateVolBars(level) {
 function playAudio(b64) {
   audioQueue = audioQueue.then(async () => {
     try {
+      // Use a separate unconstrained AudioContext so MP3 decodes correctly
+      // (the mic audioCtx is locked to 16kHz which breaks MP3 decoding)
+      if (!playbackCtx) playbackCtx = new AudioContext();
+      if (playbackCtx.state === 'suspended') await playbackCtx.resume();
+
       const ind = document.getElementById('audio-indicator');
       ind.classList.add('playing');
 
       const bin = atob(b64);
-      const buf = new ArrayBuffer(bin.length);
-      const view = new Uint8Array(buf);
-      for (let i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
 
-      const ctx = audioCtx || new AudioContext();
-      const decoded = await ctx.decodeAudioData(buf);
+      const decoded = await playbackCtx.decodeAudioData(buf.buffer.slice(0));
       await new Promise(resolve => {
-        const src = ctx.createBufferSource();
+        const src = playbackCtx.createBufferSource();
         src.buffer = decoded;
-        src.connect(ctx.destination);
+        src.connect(playbackCtx.destination);
         src.onended = resolve;
         src.start(0);
       });
