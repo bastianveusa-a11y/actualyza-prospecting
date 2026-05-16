@@ -305,7 +305,11 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
         </div>
       </div>
 
-      <div class="sidebar-label" style="padding:12px 16px 0">Transcripción en tiempo real</div>
+      <div class="sidebar-label" style="padding:12px 16px 0">
+        Transcripción en tiempo real
+        <span id="stt-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-left:6px;vertical-align:middle;transition:background .3s"></span>
+      </div>
+      <div id="stt-status" style="font-size:.7rem;color:var(--text3);padding:0 16px 6px;display:none"></div>
       <div class="captions-area" id="captions">
         <div class="captions-empty">Las traducciones aparecerán aquí durante la llamada.</div>
       </div>
@@ -434,7 +438,9 @@ function initTranslation() {
     const data = JSON.parse(event.data);
     if (data.type === 'ready') {
       setStatus('Traducción activa', 'connected');
+      setSttDot('idle');
     } else if (data.type === 'caption') {
+      setSttDot('got');
       addCaption('mine', data.original, data.translated);
     } else if (data.type === 'audio') {
       addCaption('theirs', data.original, data.translated);
@@ -478,12 +484,13 @@ function initAudio() {
         for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
         const rms = Math.sqrt(sum / input.length);
 
-        if (rms > 0.008 && ws && ws.readyState === WebSocket.OPEN) {
+        if (rms > 0.004 && ws && ws.readyState === WebSocket.OPEN) {
           const pcm = new Int16Array(input.length);
           for (let i = 0; i < input.length; i++) {
             pcm[i] = Math.min(32767, Math.max(-32768, input[i] * 32768));
           }
           ws.send(pcm.buffer);
+          setSttDot('speaking');
         }
 
         // Volume meter (always update)
@@ -571,6 +578,25 @@ function addCaption(who, original, translated) {
 }
 
 // ── Utils ─────────────────────────────────────────────────────
+let _sttDotTimer = null;
+function setSttDot(state) {
+  const dot = document.getElementById('stt-dot');
+  const lbl = document.getElementById('stt-status');
+  if (!dot) return;
+  if (state === 'speaking') {
+    dot.style.background = 'var(--green)';
+    lbl.textContent = 'Enviando audio…'; lbl.style.display = 'block';
+  } else if (state === 'got') {
+    dot.style.background = 'var(--purple)';
+    lbl.textContent = 'Transcript recibido'; lbl.style.display = 'block';
+    clearTimeout(_sttDotTimer);
+    _sttDotTimer = setTimeout(() => setSttDot('idle'), 2000);
+  } else {
+    dot.style.background = 'var(--text3)';
+    lbl.style.display = 'none';
+  }
+}
+
 function setStatus(text, cls) {
   const el = document.getElementById('call-status');
   el.textContent = text;

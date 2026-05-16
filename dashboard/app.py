@@ -1445,7 +1445,6 @@ def video_ws(ws, room_id):
 
 
 @app.route("/video")
-@_require_auth
 def video_page():
     return render_template("video.html")
 
