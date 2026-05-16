@@ -116,9 +116,24 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 
 .call-body { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
 
-#daily-frame {
-  width: 100%; height: 100%; border: none;
-  background: #000;
+.video-wrap { position: relative; width: 100%; height: 100%; background: #000; }
+#daily-frame { width: 100%; height: 100%; border: none; }
+
+#subtitle-overlay {
+  position: absolute; bottom: 52px; left: 0; right: 0;
+  text-align: center; pointer-events: none; z-index: 10;
+}
+#subtitle-text {
+  display: inline-block;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-size: .88rem;
+  line-height: 1.4;
+  padding: 5px 18px;
+  border-radius: 20px;
+  max-width: 78%;
+  opacity: 0;
+  transition: opacity .35s;
 }
 
 .sidebar {
@@ -271,7 +286,10 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
   </div>
 
   <div class="call-body">
-    <iframe id="daily-frame" allow="camera; microphone; fullscreen; speaker; display-capture"></iframe>
+    <div class="video-wrap">
+      <iframe id="daily-frame" allow="camera; microphone; fullscreen; speaker; display-capture"></iframe>
+      <div id="subtitle-overlay"><div id="subtitle-text"></div></div>
+    </div>
 
     <div class="sidebar">
       <div class="sidebar-section">
@@ -286,6 +304,14 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
             <div class="lang-chip-val" id="chip-their-lang">ES</div>
           </div>
         </div>
+      </div>
+
+      <div class="sidebar-section" style="padding:10px 16px">
+        <button id="translation-toggle" onclick="toggleTranslation()" style="
+          width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);
+          background:rgba(255,255,255,0.04);color:var(--text1);font-size:.78rem;
+          cursor:pointer;text-align:left;transition:all .2s;
+        ">🔊 Traducción activa</button>
       </div>
 
       <div class="sidebar-section">
@@ -328,14 +354,16 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--b
 const LANG_LABELS = { en: 'English 🇺🇸', es: 'Español 🇪🇸', pt: 'Português 🇧🇷', fr: 'Français 🇫🇷' };
 const LANG_FLAGS  = { en: '🇺🇸 EN', es: '🇪🇸 ES', pt: '🇧🇷 PT', fr: '🇫🇷 FR' };
 
-let roomId      = null;
-let roomUrl     = null;
-let myLang      = 'en';
-let theirLang   = 'es';
-let ws          = null;
-let audioCtx    = null;  // 16kHz context for mic capture
-let playbackCtx = null;  // unconstrained context for MP3 playback
-let audioQueue  = Promise.resolve();
+let roomId             = null;
+let roomUrl            = null;
+let myLang             = 'en';
+let theirLang          = 'es';
+let ws                 = null;
+let audioCtx           = null;  // 16kHz context for mic capture
+let playbackCtx        = null;  // unconstrained context for MP3 playback
+let audioQueue         = Promise.resolve();
+let translationEnabled = true;
+let _subtitleTimer     = null;
 
 // ── Lobby ─────────────────────────────────────────────────────
 async function createRoom() {
@@ -442,9 +470,13 @@ function initTranslation() {
     } else if (data.type === 'caption') {
       setSttDot('got');
       addCaption('mine', data.original, data.translated);
+      if (data.translated) showSubtitle(data.translated);
     } else if (data.type === 'audio') {
       addCaption('theirs', data.original, data.translated);
+      showSubtitle(data.translated || data.original);
       playAudio(data.audio_b64);
+    } else if (data.type === 'translation_status') {
+      _applyTranslationStatus(data.enabled);
     } else if (data.type === 'error') {
       setStatus('Error: ' + data.message, '');
     }
@@ -575,6 +607,40 @@ function addCaption(who, original, translated) {
   // Keep last 20 captions
   const all = area.querySelectorAll('.caption-msg');
   if (all.length > 20) all[0].remove();
+}
+
+// ── Subtitle overlay ──────────────────────────────────────────
+function showSubtitle(text) {
+  const el = document.getElementById('subtitle-text');
+  if (!el) return;
+  el.textContent = text;
+  el.style.opacity = '1';
+  clearTimeout(_subtitleTimer);
+  _subtitleTimer = setTimeout(() => { el.style.opacity = '0'; }, 4500);
+}
+
+// ── Translation toggle ────────────────────────────────────────
+function toggleTranslation() {
+  translationEnabled = !translationEnabled;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'set_translation', enabled: translationEnabled }));
+  }
+  _applyTranslationStatus(translationEnabled);
+}
+
+function _applyTranslationStatus(enabled) {
+  translationEnabled = enabled;
+  const btn = document.getElementById('translation-toggle');
+  if (!btn) return;
+  if (enabled) {
+    btn.textContent = '🔊 Traducción activa';
+    btn.style.color = 'var(--text1)';
+    btn.style.borderColor = 'var(--border)';
+  } else {
+    btn.textContent = '🔇 Traducción pausada';
+    btn.style.color = 'var(--text3)';
+    btn.style.borderColor = 'rgba(255,255,255,0.08)';
+  }
 }
 
 // ── Utils ─────────────────────────────────────────────────────

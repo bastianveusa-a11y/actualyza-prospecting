@@ -1333,9 +1333,10 @@ def unsubscribe():
 
 # ── Video translation ─────────────────────────────────────────
 
-_video_rooms      = {}  # room_id → list of ws objects
-_video_rooms_lock = threading.Lock()
-_daily_rooms      = {}  # room_id → daily.co room URL (in-memory; 2h TTL matches room exp)
+_video_rooms        = {}  # room_id → list of ws objects
+_video_rooms_lock   = threading.Lock()
+_daily_rooms        = {}  # room_id → daily.co room URL (in-memory; 2h TTL matches room exp)
+_translation_state  = {}  # room_id → bool (True = enabled)
 
 
 def _vroom_join(room_id: str, ws) -> None:
@@ -1363,6 +1364,13 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
     import base64
     import json as _j
     try:
+        if not _translation_state.get(room_id, True):
+            # Translation paused — just echo raw transcript back to speaker
+            try:
+                ws.send(_j.dumps({"type": "caption", "original": transcript, "translated": ""}))
+            except Exception:
+                pass
+            return
         from modules.video_translator import translate_text, synthesize_speech
         translated = translate_text(transcript, src, tgt)
         if not translated:
@@ -1432,6 +1440,15 @@ def video_ws(ws, room_id):
                     data = json.loads(msg)
                     if data.get("type") == "ping":
                         ws.send(json.dumps({"type": "pong"}))
+                    elif data.get("type") == "set_translation":
+                        enabled = bool(data.get("enabled", True))
+                        _translation_state[room_id] = enabled
+                        other = _vroom_other(room_id, ws)
+                        if other:
+                            try:
+                                other.send(json.dumps({"type": "translation_status", "enabled": enabled}))
+                            except Exception:
+                                pass
                 except Exception:
                     pass
     except Exception as e:
