@@ -1364,15 +1364,17 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
     import base64
     import json as _j
     try:
+        print(f"  [translate] '{transcript}' ({src}→{tgt})")
         if not _translation_state.get(room_id, True):
-            # Translation paused — just echo raw transcript back to speaker
             try:
                 ws.send(_j.dumps({"type": "caption", "original": transcript, "translated": ""}))
             except Exception:
                 pass
             return
         from modules.video_translator import translate_text, synthesize_speech
+        t0 = time.time()
         translated = translate_text(transcript, src, tgt)
+        print(f"  [claude] '{translated}' ({time.time()-t0:.2f}s)")
         if not translated:
             return
         # Send caption back to the speaker
@@ -1381,7 +1383,9 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
         except Exception:
             pass
         # Generate TTS and send to the other participant
+        t1 = time.time()
         audio = synthesize_speech(translated, tgt)
+        print(f"  [elevenlabs] {len(audio)/1024:.1f}KB ({time.time()-t1:.2f}s)")
         other = _vroom_other(room_id, ws)
         if other and audio:
             try:
@@ -1401,6 +1405,7 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
 def video_ws(ws, room_id):
     src = request.args.get("lang",   "en")
     tgt = request.args.get("target", "es")
+    print(f"  [video] WS conectado: room={room_id} src={src} tgt={tgt}")
     _vroom_join(room_id, ws)
     try:
         from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
@@ -1410,14 +1415,17 @@ def video_ws(ws, room_id):
         def _on_transcript(_, result, **kwargs):
             try:
                 text = result.channel.alternatives[0].transcript
-                if text and result.is_final:
+                is_final = result.is_final
+                if text:
+                    print(f"  [deepgram] transcript is_final={is_final}: '{text}'")
+                if text and is_final:
                     threading.Thread(
                         target=_handle_transcript,
                         args=(text, ws, room_id, src, tgt),
                         daemon=True,
                     ).start()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"  [deepgram] error en callback: {e}")
 
         conn.on(LiveTranscriptionEvents.Transcript, _on_transcript)
         opts = LiveOptions(
@@ -1425,16 +1433,22 @@ def video_ws(ws, room_id):
             interim_results=False, endpointing=300,
             encoding="linear16", sample_rate=16000, channels=1,
         )
-        if not conn.start(opts):
+        started = conn.start(opts)
+        print(f"  [deepgram] conn.start={started}")
+        if not started:
             ws.send(json.dumps({"type": "error", "message": "Deepgram no disponible"}))
             return
         ws.send(json.dumps({"type": "ready"}))
+        chunks = 0
         while True:
             msg = ws.receive()
             if msg is None:
                 break
             if isinstance(msg, bytes):
                 conn.send(msg)
+                chunks += 1
+                if chunks % 50 == 0:
+                    print(f"  [video] {chunks} chunks enviados a Deepgram")
             else:
                 try:
                     data = json.loads(msg)
