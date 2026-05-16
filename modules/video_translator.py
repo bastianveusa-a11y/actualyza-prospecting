@@ -46,7 +46,7 @@ def synthesize_speech(text: str, language: str = "en") -> bytes:
     gen = client.text_to_speech.convert(
         text=text,
         voice_id=voice_id,
-        model_id="eleven_multilingual_v2",
+        model_id="eleven_flash_v2_5",
         output_format="mp3_44100_128",
     )
     return b"".join(gen)

@@ -1422,7 +1422,7 @@ def video_ws(ws, room_id):
         conn.on(LiveTranscriptionEvents.Transcript, _on_transcript)
         opts = LiveOptions(
             model="nova-2", language=src, smart_format=True,
-            interim_results=False, endpointing=500,
+            interim_results=False, endpointing=300,
             encoding="linear16", sample_rate=16000, channels=1,
         )
         if not conn.start(opts):
