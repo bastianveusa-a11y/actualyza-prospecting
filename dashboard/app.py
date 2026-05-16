@@ -20,12 +20,14 @@ import requests as http
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from flask import Flask, jsonify, render_template, request, Response, redirect
+from flask_sock import Sock
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
+sock = Sock(app)
 
 NOTION_TOKEN    = os.getenv("NOTION_TOKEN", "")
 NOTION_DB_ID    = os.getenv("NOTION_DATABASE_ID", "")
@@ -1328,6 +1330,178 @@ def unsubscribe():
     return "<html><body style='font-family:Arial;text-align:center;padding:60px'>" \
            "<h2>Unsubscribed</h2><p>You won't receive further emails from AMY AI.</p></body></html>"
 
+
+# ── Video translation ─────────────────────────────────────────
+
+_video_rooms      = {}  # room_id → list of ws objects
+_video_rooms_lock = threading.Lock()
+_daily_rooms      = {}  # room_id → daily.co room URL (in-memory; 2h TTL matches room exp)
+
+
+def _vroom_join(room_id: str, ws) -> None:
+    with _video_rooms_lock:
+        _video_rooms.setdefault(room_id, []).append(ws)
+
+
+def _vroom_leave(room_id: str, ws) -> None:
+    with _video_rooms_lock:
+        if room_id in _video_rooms:
+            _video_rooms[room_id] = [p for p in _video_rooms[room_id] if p is not ws]
+            if not _video_rooms[room_id]:
+                del _video_rooms[room_id]
+
+
+def _vroom_other(room_id: str, ws):
+    with _video_rooms_lock:
+        for p in _video_rooms.get(room_id, []):
+            if p is not ws:
+                return p
+    return None
+
+
+def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) -> None:
+    import base64
+    import json as _j
+    try:
+        from modules.video_translator import translate_text, synthesize_speech
+        translated = translate_text(transcript, src, tgt)
+        if not translated:
+            return
+        # Send caption back to the speaker
+        try:
+            ws.send(_j.dumps({"type": "caption", "original": transcript, "translated": translated}))
+        except Exception:
+            pass
+        # Generate TTS and send to the other participant
+        audio = synthesize_speech(translated, tgt)
+        other = _vroom_other(room_id, ws)
+        if other and audio:
+            try:
+                other.send(_j.dumps({
+                    "type":       "audio",
+                    "original":   transcript,
+                    "translated": translated,
+                    "audio_b64":  base64.b64encode(audio).decode(),
+                }))
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"  ✗ Error traducción video: {e}")
+
+
+@sock.route("/ws/video/<room_id>")
+def video_ws(ws, room_id):
+    src = request.args.get("lang",   "en")
+    tgt = request.args.get("target", "es")
+    _vroom_join(room_id, ws)
+    try:
+        from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
+        dg = DeepgramClient(os.getenv("DEEPGRAM_API_KEY", ""))
+        conn = dg.listen.websocket.v("1")
+
+        def _on_transcript(_, result, **kwargs):
+            try:
+                text = result.channel.alternatives[0].transcript
+                if text and result.is_final:
+                    threading.Thread(
+                        target=_handle_transcript,
+                        args=(text, ws, room_id, src, tgt),
+                        daemon=True,
+                    ).start()
+            except Exception:
+                pass
+
+        conn.on(LiveTranscriptionEvents.Transcript, _on_transcript)
+        opts = LiveOptions(
+            model="nova-2", language=src, smart_format=True,
+            interim_results=False, endpointing=500,
+            encoding="linear16", sample_rate=16000, channels=1,
+        )
+        if not conn.start(opts):
+            ws.send(json.dumps({"type": "error", "message": "Deepgram no disponible"}))
+            return
+        ws.send(json.dumps({"type": "ready"}))
+        while True:
+            msg = ws.receive()
+            if msg is None:
+                break
+            if isinstance(msg, bytes):
+                conn.send(msg)
+            else:
+                try:
+                    data = json.loads(msg)
+                    if data.get("type") == "ping":
+                        ws.send(json.dumps({"type": "pong"}))
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"  ✗ Video WS error: {e}")
+    finally:
+        try:
+            conn.finish()
+        except Exception:
+            pass
+        _vroom_leave(room_id, ws)
+
+
+@app.route("/video")
+@_require_auth
+def video_page():
+    return render_template("video.html")
+
+
+@app.route("/api/video/create-room", methods=["POST"])
+@_require_auth
+def api_create_video_room():
+    import secrets as _sec
+    api_key = os.getenv("DAILY_API_KEY", "")
+    if not api_key:
+        return jsonify({"ok": False, "error": "DAILY_API_KEY no configurada"}), 500
+    room_name = f"amy-{_sec.token_hex(4)}"
+    r = http.post(
+        "https://api.daily.co/v1/rooms",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "name": room_name,
+            "privacy": "private",
+            "properties": {
+                "exp": int(time.time()) + 7200,
+                "enable_screenshare": True,
+                "enable_chat": False,
+                "start_video_off": False,
+                "start_audio_off": False,
+            },
+        },
+        timeout=15,
+    )
+    if not r.ok:
+        return jsonify({"ok": False, "error": r.text}), 500
+    data = r.json()
+    _daily_rooms[room_name] = data["url"]
+    return jsonify({"ok": True, "room_id": room_name, "room_url": data["url"]})
+
+
+@app.route("/api/video/room-url/<room_id>")
+def api_video_room_url(room_id):
+    url = _daily_rooms.get(room_id)
+    if url:
+        return jsonify({"ok": True, "url": url})
+    # Fallback: ask Daily.co directly (covers server restart between host & guest join)
+    api_key = os.getenv("DAILY_API_KEY", "")
+    if api_key:
+        r = http.get(
+            f"https://api.daily.co/v1/rooms/{room_id}",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
+        )
+        if r.ok:
+            url = r.json().get("url", "")
+            _daily_rooms[room_id] = url
+            return jsonify({"ok": True, "url": url})
+    return jsonify({"ok": False, "error": "Sala no encontrada"}), 404
+
+
+# ── End video translation ──────────────────────────────────────
 
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Videollamada con Traducción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080910; --bg2: #0d0e1a; --card: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.07); --border-h: rgba(201,169,110,0.3);
+  --gold: #c9a96e; --gold-d: #9a7840; --text: #eeeef8; --text2: #7878a0; --text3: #50506a;
+  --blue: #5080ff; --green: #40c898; --red: #ff5070; --purple: #b060f0;
+  --r: 12px; --r-sm: 8px;
+}
+html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ── Lobby ── */
+.lobby {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+}
+.lobby-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 40px 44px; width: 100%; max-width: 480px;
+}
+.lobby-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+.logo-mark {
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.3rem; font-weight: 600; }
+.logo-text span { color: var(--gold); }
+.logo-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
+
+.lobby-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+.lobby-sub { font-size: 0.8rem; color: var(--text2); margin-bottom: 28px; line-height: 1.5; }
+
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 0.72rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+.form-select, .form-input {
+  width: 100%; padding: 9px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+  color: var(--text); font-size: 0.82rem; font-family: 'Inter', sans-serif;
+  outline: none; transition: border-color .2s;
+}
+.form-select:focus, .form-input:focus { border-color: var(--border-h); }
+.form-select option { background: #1a1b2e; }
+
+.lang-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; margin-bottom: 20px; }
+.lang-arrow { color: var(--text3); font-size: 1.2rem; padding-bottom: 8px; text-align: center; }
+
+.btn-create {
+  width: 100%; padding: 12px; border-radius: var(--r-sm);
+  border: 1px solid rgba(64,200,152,0.3); background: rgba(64,200,152,0.1);
+  color: var(--green); font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all .2s; margin-bottom: 12px;
+}
+.btn-create:hover { background: rgba(64,200,152,0.18); }
+.btn-create:disabled { opacity: .5; cursor: not-allowed; }
+
+.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text3); font-size: 0.72rem; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.join-row { display: flex; gap: 10px; }
+.btn-join {
+  padding: 9px 18px; border-radius: var(--r-sm); border: 1px solid var(--border);
+  background: var(--card); color: var(--text2); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s; white-space: nowrap;
+}
+.btn-join:hover { border-color: var(--border-h); color: var(--gold); }
+
+.share-box {
+  margin-top: 20px; padding: 14px 16px; border-radius: var(--r-sm);
+  background: rgba(201,169,110,0.06); border: 1px solid var(--border-h);
+  display: none;
+}
+.share-label { font-size: 0.7rem; font-weight: 600; color: var(--gold); margin-bottom: 8px; }
+.share-link { font-size: 0.75rem; color: var(--text2); word-break: break-all; margin-bottom: 10px; }
+.btn-copy {
+  padding: 5px 14px; border-radius: var(--r-sm); border: 1px solid var(--border-h);
+  background: transparent; color: var(--gold); font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.btn-copy:hover { background: rgba(201,169,110,0.1); }
+.back-link { display: block; margin-top: 20px; font-size: 0.75rem; color: var(--text3); text-decoration: none; text-align: center; }
+.back-link:hover { color: var(--text2); }
+
+/* ── Call view ── */
+.call-view { display: none; height: 100vh; flex-direction: column; }
+.call-header {
+  padding: 10px 20px; background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.call-title { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.call-status {
+  font-size: 0.7rem; padding: 2px 10px; border-radius: 20px;
+  background: rgba(255,255,255,0.07); color: var(--text3);
+}
+.call-status.connected { background: rgba(64,200,152,0.12); color: var(--green); }
+.call-status.translating { background: rgba(201,169,110,0.12); color: var(--gold); }
+.call-header-right { display: flex; align-items: center; gap: 10px; }
+.btn-end {
+  padding: 6px 16px; border-radius: var(--r-sm); border: 1px solid rgba(255,80,112,0.3);
+  background: rgba(255,80,112,0.1); color: var(--red); font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.btn-end:hover { background: rgba(255,80,112,0.18); }
+
+.call-body { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
+
+#daily-frame {
+  width: 100%; height: 100%; border: none;
+  background: #000;
+}
+
+.sidebar {
+  background: var(--bg2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-label {
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 10px;
+}
+
+/* Lang indicators */
+.lang-indicators { display: flex; gap: 8px; }
+.lang-chip {
+  flex: 1; padding: 7px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+  text-align: center;
+}
+.lang-chip-label { font-size: 0.65rem; color: var(--text3); margin-bottom: 2px; }
+.lang-chip-val { font-size: 0.82rem; font-weight: 600; }
+
+/* Mic indicator */
+.mic-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+}
+.mic-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.mic-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.mic-label { font-size: 0.75rem; color: var(--text2); }
+.mic-vol { margin-left: auto; }
+.vol-bars { display: flex; gap: 2px; align-items: flex-end; height: 16px; }
+.vol-bar { width: 3px; background: var(--text3); border-radius: 1px; transition: height .1s; }
+
+/* Captions */
+.captions-area { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.caption-msg { padding: 10px 12px; border-radius: var(--r-sm); font-size: 0.78rem; line-height: 1.5; }
+.caption-msg.mine {
+  background: rgba(80,128,255,0.08); border: 1px solid rgba(80,128,255,0.15);
+  border-left: 3px solid var(--blue);
+}
+.caption-msg.theirs {
+  background: rgba(64,200,152,0.07); border: 1px solid rgba(64,200,152,0.12);
+  border-left: 3px solid var(--green);
+}
+.caption-original { color: var(--text2); margin-bottom: 4px; }
+.caption-translated { color: var(--text); font-weight: 500; }
+.caption-tag { font-size: 0.62rem; color: var(--text3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.08em; }
+.captions-empty { text-align: center; color: var(--text3); font-size: 0.78rem; padding: 24px 0; }
+
+/* Audio playing indicator */
+.audio-indicator {
+  padding: 8px 16px; border-top: 1px solid var(--border);
+  font-size: 0.72rem; color: var(--gold); display: none; align-items: center; gap: 8px;
+}
+.audio-indicator.playing { display: flex; }
+.audio-wave { display: flex; gap: 2px; align-items: center; }
+.audio-wave span {
+  display: inline-block; width: 3px; background: var(--gold);
+  border-radius: 2px; animation: wave .6s ease-in-out infinite;
+}
+.audio-wave span:nth-child(2) { animation-delay: .1s; }
+.audio-wave span:nth-child(3) { animation-delay: .2s; }
+.audio-wave span:nth-child(4) { animation-delay: .15s; }
+@keyframes wave { 0%,100% { height: 4px; } 50% { height: 14px; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .call-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .sidebar { border-left: none; border-top: 1px solid var(--border); max-height: 260px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOBBY -->
+<div class="lobby" id="lobby">
+  <div class="lobby-card">
+    <div class="lobby-logo">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="logo-text">Actual<span>yza</span></div>
+        <div class="logo-sub">Videollamada con traducción en tiempo real</div>
+      </div>
+    </div>
+
+    <div class="lobby-title">Nueva reunión con cliente</div>
+    <div class="lobby-sub">
+      Configura los idiomas y crea la sala. El cliente recibirá tu voz traducida en tiempo real.
+    </div>
+
+    <div class="lang-row">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Tu idioma</label>
+        <select class="form-select" id="my-lang">
+          <option value="en">🇺🇸 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="pt">🇧🇷 Português</option>
+          <option value="fr">🇫🇷 Français</option>
+        </select>
+      </div>
+      <div class="lang-arrow">⇄</div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Idioma del cliente</label>
+        <select class="form-select" id="their-lang">
+          <option value="es" selected>🇪🇸 Español</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="pt">🇧🇷 Português</option>
+          <option value="fr">🇫🇷 Français</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-create" id="create-btn" onclick="createRoom()">
+      🎥 Crear sala y obtener link
+    </button>
+
+    <div class="share-box" id="share-box">
+      <div class="share-label">Comparte este link con el cliente</div>
+      <div class="share-link" id="share-link"></div>
+      <button class="btn-copy" onclick="copyLink()">Copiar link</button>
+      <button class="btn-create" style="margin-top:12px;margin-bottom:0" onclick="startCall()">
+        ▶ Entrar a la llamada
+      </button>
+    </div>
+
+    <div class="divider">o unirte a una sala existente</div>
+
+    <div class="join-row">
+      <input class="form-input" id="join-room-id" placeholder="ID de sala (ej: amy-a1b2c3d4)" />
+      <button class="btn-join" onclick="joinRoom()">Unirse</button>
+    </div>
+
+    <a href="/" class="back-link">← Volver al dashboard</a>
+  </div>
+</div>
+
+<!-- CALL VIEW -->
+<div class="call-view" id="call-view">
+  <div class="call-header">
+    <div class="call-title">
+      🎥 Videollamada AMY AI
+      <span class="call-status" id="call-status">Conectando…</span>
+    </div>
+    <div class="call-header-right">
+      <span id="header-langs" style="font-size:.75rem;color:var(--text2)"></span>
+      <button class="btn-end" onclick="endCall()">✕ Terminar</button>
+    </div>
+  </div>
+
+  <div class="call-body">
+    <iframe id="daily-frame" allow="camera; microphone; fullscreen; speaker; display-capture"></iframe>
+
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Idiomas activos</div>
+        <div class="lang-indicators">
+          <div class="lang-chip">
+            <div class="lang-chip-label">Tú hablas</div>
+            <div class="lang-chip-val" id="chip-my-lang">EN</div>
+          </div>
+          <div class="lang-chip">
+            <div class="lang-chip-label">Cliente escucha</div>
+            <div class="lang-chip-val" id="chip-their-lang">ES</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Micrófono</div>
+        <div class="mic-bar">
+          <div class="mic-dot" id="mic-dot"></div>
+          <div class="mic-label" id="mic-label">Iniciando…</div>
+          <div class="mic-vol">
+            <div class="vol-bars" id="vol-bars">
+              <div class="vol-bar" style="height:4px"></div>
+              <div class="vol-bar" style="height:4px"></div>
+              <div class="vol-bar" style="height:4px"></div>
+              <div class="vol-bar" style="height:4px"></div>
+              <div class="vol-bar" style="height:4px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-label" style="padding:12px 16px 0">Transcripción en tiempo real</div>
+      <div class="captions-area" id="captions">
+        <div class="captions-empty">Las traducciones aparecerán aquí durante la llamada.</div>
+      </div>
+
+      <div class="audio-indicator" id="audio-indicator">
+        <div class="audio-wave">
+          <span style="height:6px"></span><span></span><span></span><span style="height:6px"></span>
+        </div>
+        Reproduciendo traducción…
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LANG_LABELS = { en: 'English 🇺🇸', es: 'Español 🇪🇸', pt: 'Português 🇧🇷', fr: 'Français 🇫🇷' };
+const LANG_FLAGS  = { en: '🇺🇸 EN', es: '🇪🇸 ES', pt: '🇧🇷 PT', fr: '🇫🇷 FR' };
+
+let roomId     = null;
+let roomUrl    = null;
+let myLang     = 'en';
+let theirLang  = 'es';
+let ws         = null;
+let audioCtx   = null;
+let audioQueue = Promise.resolve();
+
+// ── Lobby ─────────────────────────────────────────────────────
+async function createRoom() {
+  const btn = document.getElementById('create-btn');
+  btn.disabled = true; btn.textContent = 'Creando sala…';
+
+  try {
+    const r    = await fetch('/api/video/create-room', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+
+    roomId   = data.room_id;
+    roomUrl  = data.room_url;
+    myLang   = document.getElementById('my-lang').value;
+    theirLang = document.getElementById('their-lang').value;
+
+    const shareLink = `${window.location.origin}/video?join=${roomId}&lang=${theirLang}&target=${myLang}`;
+    document.getElementById('share-link').textContent = shareLink;
+    document.getElementById('share-box').style.display = 'block';
+    btn.textContent = '✓ Sala creada';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '🎥 Crear sala y obtener link';
+    alert('Error: ' + e.message);
+  }
+}
+
+function copyLink() {
+  const link = document.getElementById('share-link').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    document.querySelector('.btn-copy').textContent = '✓ Copiado';
+    setTimeout(() => { document.querySelector('.btn-copy').textContent = 'Copiar link'; }, 2000);
+  });
+}
+
+function joinRoom() {
+  const id = document.getElementById('join-room-id').value.trim();
+  if (!id) { alert('Ingresa el ID de la sala'); return; }
+  roomId    = id;
+  myLang    = document.getElementById('my-lang').value;
+  theirLang = document.getElementById('their-lang').value;
+
+  // Get the Daily.co URL from the room ID
+  // Guest joins with a generated Daily.co URL based on the room name
+  // We need to get the domain — we use the DAILY_API_KEY to look it up
+  // For guests, they join via the link shared by the host which includes roomUrl
+  // If no roomUrl, we'll look it up
+  fetchRoomUrl(id).then(url => {
+    if (url) { roomUrl = url; startCall(); }
+    else { alert('Sala no encontrada. Pide al host que te comparta el link correcto.'); }
+  });
+}
+
+async function fetchRoomUrl(id) {
+  try {
+    const r    = await fetch(`/api/video/room-url/${id}`);
+    const data = await r.json();
+    return data.ok ? data.url : null;
+  } catch { return null; }
+}
+
+function startCall() {
+  document.getElementById('lobby').style.display     = 'none';
+  document.getElementById('call-view').style.display = 'flex';
+  document.getElementById('daily-frame').src = roomUrl;
+  document.getElementById('chip-my-lang').textContent    = LANG_FLAGS[myLang]    || myLang.toUpperCase();
+  document.getElementById('chip-their-lang').textContent = LANG_FLAGS[theirLang] || theirLang.toUpperCase();
+  document.getElementById('header-langs').textContent    = `${LANG_LABELS[myLang]} ⇄ ${LANG_LABELS[theirLang]}`;
+  initTranslation();
+}
+
+// Handle guest join via URL params
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const joinId = params.get('join');
+  if (joinId) {
+    document.getElementById('join-room-id').value = joinId;
+    const langParam   = params.get('lang');
+    const targetParam = params.get('target');
+    if (langParam)   document.getElementById('my-lang').value    = langParam;
+    if (targetParam) document.getElementById('their-lang').value = targetParam;
+    // Auto-join after a moment
+    setTimeout(() => joinRoom(), 300);
+  }
+});
+
+// ── Translation WebSocket ─────────────────────────────────────
+function initTranslation() {
+  const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/video/${roomId}?lang=${myLang}&target=${theirLang}`;
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    setStatus('Conectando traducción…', '');
+    initAudio();
+  };
+
+  ws.onmessage = async (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'ready') {
+      setStatus('Traducción activa', 'connected');
+    } else if (data.type === 'caption') {
+      addCaption('mine', data.original, data.translated);
+    } else if (data.type === 'audio') {
+      addCaption('theirs', data.original, data.translated);
+      playAudio(data.audio_b64);
+    } else if (data.type === 'error') {
+      setStatus('Error: ' + data.message, '');
+    }
+  };
+
+  ws.onclose = () => setStatus('Desconectado', '');
+  ws.onerror = () => setStatus('Error de conexión', '');
+
+  // Ping to keep alive
+  setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ping' }));
+    }
+  }, 20000);
+}
+
+// ── Audio capture (mic → WebSocket) ──────────────────────────
+function initAudio() {
+  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(stream => {
+      audioCtx = new AudioContext({ sampleRate: 16000 });
+      const source    = audioCtx.createMediaStreamSource(stream);
+      const processor = audioCtx.createScriptProcessor(2048, 1, 1);
+      const silence   = audioCtx.createGain();
+      silence.gain.value = 0;
+
+      // Volume meter
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      const volData = new Uint8Array(analyser.frequencyBinCount);
+
+      processor.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        const pcm   = new Int16Array(input.length);
+        for (let i = 0; i < input.length; i++) {
+          pcm[i] = Math.min(32767, Math.max(-32768, input[i] * 32768));
+        }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(pcm.buffer);
+        }
+        // Update volume bars
+        analyser.getByteFrequencyData(volData);
+        const avg = volData.reduce((a, b) => a + b, 0) / volData.length;
+        updateVolBars(avg);
+      };
+
+      source.connect(analyser);
+      source.connect(processor);
+      processor.connect(silence);
+      silence.connect(audioCtx.destination);
+
+      document.getElementById('mic-dot').classList.add('active');
+      document.getElementById('mic-label').textContent = 'Micrófono activo — hablando en ' + (LANG_LABELS[myLang] || myLang);
+      setStatus('Traducción activa', 'connected');
+    })
+    .catch(err => {
+      document.getElementById('mic-label').textContent = 'Sin acceso al micrófono: ' + err.message;
+      setStatus('Sin micrófono', '');
+    });
+}
+
+function updateVolBars(level) {
+  const bars = document.querySelectorAll('.vol-bar');
+  bars.forEach((bar, i) => {
+    const h = Math.max(3, Math.min(18, (level / 255) * 18 * (1 - i * 0.12)));
+    bar.style.height = h + 'px';
+    bar.style.background = level > 30 ? 'var(--green)' : 'var(--text3)';
+  });
+}
+
+// ── Audio playback (translated speech) ───────────────────────
+function playAudio(b64) {
+  audioQueue = audioQueue.then(async () => {
+    try {
+      const ind = document.getElementById('audio-indicator');
+      ind.classList.add('playing');
+
+      const bin = atob(b64);
+      const buf = new ArrayBuffer(bin.length);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i);
+
+      const ctx = audioCtx || new AudioContext();
+      const decoded = await ctx.decodeAudioData(buf);
+      await new Promise(resolve => {
+        const src = ctx.createBufferSource();
+        src.buffer = decoded;
+        src.connect(ctx.destination);
+        src.onended = resolve;
+        src.start(0);
+      });
+
+      ind.classList.remove('playing');
+    } catch(e) {
+      console.error('Audio playback error:', e);
+      document.getElementById('audio-indicator').classList.remove('playing');
+    }
+  });
+}
+
+// ── Captions ──────────────────────────────────────────────────
+function addCaption(who, original, translated) {
+  const area = document.getElementById('captions');
+  const empty = area.querySelector('.captions-empty');
+  if (empty) empty.remove();
+
+  const div = document.createElement('div');
+  div.className = `caption-msg ${who}`;
+  const tag = who === 'mine' ? 'Tú dijiste' : 'Cliente dijo';
+  div.innerHTML = `
+    <div class="caption-tag">${tag}</div>
+    <div class="caption-original">${escHtml(original)}</div>
+    <div class="caption-translated">→ ${escHtml(translated)}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+
+  // Keep last 20 captions
+  const all = area.querySelectorAll('.caption-msg');
+  if (all.length > 20) all[0].remove();
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function setStatus(text, cls) {
+  const el = document.getElementById('call-status');
+  el.textContent = text;
+  el.className = 'call-status' + (cls ? ` ${cls}` : '');
+}
+
+function endCall() {
+  if (ws) { ws.close(); ws = null; }
+  document.getElementById('daily-frame').src = '';
+  document.getElementById('call-view').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  document.getElementById('share-box').style.display = 'none';
+  document.getElementById('create-btn').disabled = false;
+  document.getElementById('create-btn').textContent = '🎥 Crear sala y obtener link';
+  document.getElementById('captions').innerHTML = '<div class="captions-empty">Las traducciones aparecerán aquí durante la llamada.</div>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
