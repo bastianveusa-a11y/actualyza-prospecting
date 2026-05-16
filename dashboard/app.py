@@ -1468,6 +1468,11 @@ def video_ws(ws, room_id):
         _vroom_leave(room_id, ws)
 
 
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html")
+
+
 @app.route("/video")
 def video_page():
     return render_template("video.html")
