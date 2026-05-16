@@ -1463,7 +1463,7 @@ def api_create_video_room():
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "name": room_name,
-            "privacy": "private",
+            "privacy": "public",
             "properties": {
                 "exp": int(time.time()) + 7200,
                 "enable_screenshare": True,
