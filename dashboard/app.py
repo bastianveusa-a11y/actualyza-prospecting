@@ -890,17 +890,10 @@ def api_exchange_meta_token():
     if not app_id or not app_secret:
         return jsonify({"ok": False, "error": "META_APP_ID o META_APP_SECRET no configurados"}), 500
 
-    # Verificar que el token corto funciona
+    # Verificar que el token es válido usando /me (no requiere ads_read)
     verify = http.get(
-        "https://graph.facebook.com/v21.0/ads_archive",
-        params={
-            "access_token":          short_token,
-            "ad_reached_countries":  '["US"]',
-            "ad_active_status":      "ACTIVE",
-            "search_terms":          "test",
-            "limit":                 1,
-            "fields":                "id",
-        },
+        "https://graph.facebook.com/v21.0/me",
+        params={"access_token": short_token, "fields": "id,name"},
         timeout=10,
     ).json()
     if "error" in verify:
