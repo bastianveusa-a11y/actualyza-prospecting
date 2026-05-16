@@ -10,6 +10,9 @@ import os
 import sys
 import threading
 import time
+
+# Force unbuffered stdout so logs appear immediately in Railway
+sys.stdout.reconfigure(line_buffering=True)
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
