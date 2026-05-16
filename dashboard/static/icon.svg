@@ -1,0 +1,35 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="180" y1="180" x2="840" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e8c97a"/>
+      <stop offset="100%" stop-color="#a87830"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="48%" r="46%">
+      <stop offset="0%" stop-color="#c9a96e" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#c9a96e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="210" fill="#090a13"/>
+  <rect width="1024" height="1024" rx="210" fill="url(#glow)"/>
+
+  <!-- A — left leg -->
+  <line x1="512" y1="178" x2="182" y2="848"
+        stroke="url(#gold)" stroke-width="72" stroke-linecap="round"/>
+  <!-- A — right leg -->
+  <line x1="512" y1="178" x2="842" y2="848"
+        stroke="url(#gold)" stroke-width="72" stroke-linecap="round"/>
+
+  <!-- Infinity symbol as crossbar (centered at y=575, spans between the A legs) -->
+  <path d="M 512 575
+           C 600 508, 712 508, 712 575
+           C 712 642, 600 642, 512 575
+           C 424 508, 312 508, 312 575
+           C 312 642, 424 642, 512 575 Z"
+        fill="none"
+        stroke="url(#gold)"
+        stroke-width="62"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+</svg>
