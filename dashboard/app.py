@@ -927,19 +927,16 @@ def api_check_meta_token():
     token = os.getenv("META_USER_TOKEN", "")
     if not token:
         return jsonify({"ok": False, "status": "sin_token"})
+    # Use /me to verify token validity (ads_archive requires ads_read app review)
     r = http.get(
-        "https://graph.facebook.com/v21.0/ads_archive",
-        params={
-            "access_token": token, "ad_reached_countries": '["US"]',
-            "ad_active_status": "ACTIVE", "search_terms": "test",
-            "limit": 1, "fields": "id",
-        },
+        "https://graph.facebook.com/v21.0/me",
+        params={"access_token": token, "fields": "id,name"},
         timeout=10,
     ).json()
     if "error" in r:
         msg = r["error"].get("message", "")
         return jsonify({"ok": False, "status": "expirado", "error": msg})
-    return jsonify({"ok": True, "status": "activo"})
+    return jsonify({"ok": True, "status": "activo", "name": r.get("name", "")})
 
 
 @app.route("/api/reset-progress", methods=["POST"])
