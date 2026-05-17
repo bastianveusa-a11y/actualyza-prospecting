@@ -615,6 +615,22 @@ tbody td a:hover { color: var(--gold); }
       <span class="countdown-timer" id="countdown-timer">10:00</span>
     </div>
 
+    <!-- enrichment progress panel -->
+    <div class="progress-panel" id="enrich-panel">
+      <div class="progress-top">
+        <span class="progress-segment" id="enrich-segment">Actualizando clínicas…</span>
+        <span class="progress-fraction" id="enrich-fraction">0 / —</span>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="enrich-bar" style="width:0%;background:var(--green)"></div>
+      </div>
+      <div class="progress-stats">
+        <div class="progress-stat ps-upd"><span class="ps-num" id="enrich-updated">0</span>actualizadas</div>
+        <div class="progress-stat ps-new"><span class="ps-num" id="enrich-skipped">0</span>sin cambios</div>
+        <div class="progress-stat" style="color:var(--text3);margin-left:auto">~<span id="enrich-eta">—</span> restantes</div>
+      </div>
+    </div>
+
     <!-- progress panel (visible while running) -->
     <div class="progress-panel" id="progress-panel">
       <div class="progress-top">
@@ -1102,27 +1118,55 @@ async function stopCollection() {
 
 let enrichPoller = null;
 
+const SECS_PER_ENRICH = 15; // ~15s por clínica (Meta + email + registry)
+
+function setEnrichUI(on) {
+  const btn      = document.getElementById('btn-enrich');
+  const btnStop  = document.getElementById('btn-stop-enrich');
+  const panel    = document.getElementById('enrich-panel');
+  if (on) {
+    btn.disabled = true;
+    btn.innerHTML = `<div class="running-dot"></div> Actualizando…`;
+    btnStop.style.display = '';
+    panel.classList.add('visible');
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Actualizar Datos`;
+    btnStop.style.display = 'none';
+    panel.classList.remove('visible');
+  }
+}
+
+function updateEnrichUI(d) {
+  if (!d.total) return;
+  const pct = Math.min(100, Math.round(d.processed / d.total * 100));
+  document.getElementById('enrich-bar').style.width     = pct + '%';
+  document.getElementById('enrich-fraction').textContent = `${d.processed} / ${d.total}`;
+  document.getElementById('enrich-updated').textContent  = d.updated + ' ';
+  document.getElementById('enrich-skipped').textContent  = d.skipped + ' ';
+  const remaining = d.total - d.processed;
+  document.getElementById('enrich-eta').textContent = remaining > 0 ? formatEta(remaining * SECS_PER_ENRICH) : 'Terminando';
+  document.getElementById('enrich-segment').textContent = `Revisando ${d.processed} de ${d.total} clínicas`;
+}
+
 async function startEnrichment() {
   const res  = await fetch('/api/run-enrichment', {method:'POST'});
   const data = await res.json();
   if (!data.ok) { setStatus(`<span class="error-msg">${data.error}</span>`); return; }
-  document.getElementById('btn-enrich').disabled = true;
-  document.getElementById('btn-enrich').innerHTML = `<div class="running-dot"></div> Actualizando…`;
-  document.getElementById('btn-stop-enrich').style.display = '';
+  setEnrichUI(true);
   setStatus('Actualizando datos de clínicas existentes…');
   enrichPoller = setInterval(async () => {
     const r = await fetch('/api/enrichment-status');
     const d = await r.json();
+    updateEnrichUI(d);
     if (!d.running) {
       clearInterval(enrichPoller); enrichPoller = null;
-      document.getElementById('btn-enrich').disabled = false;
-      document.getElementById('btn-enrich').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Actualizar Datos`;
-      document.getElementById('btn-stop-enrich').style.display = 'none';
+      setEnrichUI(false);
       await loadAll(); updateTimestamp();
-      setStatus(d.error ? `<span class="error-msg">Error: ${d.error}</span>` : 'Datos actualizados ✓');
-      setTimeout(() => setStatus(''), 5000);
+      setStatus(d.error ? `<span class="error-msg">Error: ${d.error}</span>` : `Datos actualizados ✓ — ${d.updated} clínicas enriquecidas`);
+      setTimeout(() => setStatus(''), 6000);
     }
-  }, 4000);
+  }, 3000);
 }
 
 async function stopEnrichment() {

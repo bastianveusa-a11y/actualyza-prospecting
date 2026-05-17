@@ -61,6 +61,10 @@ _enrichment_state: dict = {
     "last_started":  None,
     "last_finished": None,
     "error":         None,
+    "total":         0,
+    "processed":     0,
+    "updated":       0,
+    "skipped":       0,
 }
 _stop_requested: bool      = False
 _stop_enrichment: bool     = False
@@ -464,9 +468,20 @@ def _run_enrichment_bg():
     _enrichment_state["running"]        = True
     _enrichment_state["last_started"]   = datetime.now(timezone.utc).isoformat()
     _enrichment_state["error"]          = None
+    _enrichment_state["total"]          = 0
+    _enrichment_state["processed"]      = 0
+    _enrichment_state["updated"]        = 0
+    _enrichment_state["skipped"]        = 0
+
+    def _on_progress(processed, total, updated, skipped):
+        _enrichment_state["processed"] = processed
+        _enrichment_state["total"]     = total
+        _enrichment_state["updated"]   = updated
+        _enrichment_state["skipped"]   = skipped
+
     try:
         from pipeline.orchestrator import run_enrichment
-        run_enrichment(stop_flag=lambda: _stop_enrichment)
+        run_enrichment(stop_flag=lambda: _stop_enrichment, progress_cb=_on_progress)
         _cache = {"data": None, "ts": 0.0}
     except Exception as e:
         _enrichment_state["error"] = str(e)
@@ -502,6 +517,10 @@ def api_enrichment_status():
         "last_started":  _enrichment_state["last_started"],
         "last_finished": _enrichment_state["last_finished"],
         "error":         _enrichment_state["error"],
+        "total":         _enrichment_state["total"],
+        "processed":     _enrichment_state["processed"],
+        "updated":       _enrichment_state["updated"],
+        "skipped":       _enrichment_state["skipped"],
         "log":           get_log(20),
     })
 

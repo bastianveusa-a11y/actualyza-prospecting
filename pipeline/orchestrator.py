@@ -373,11 +373,12 @@ def _print_summary(stats: dict, start: str) -> None:
     log("=" * 55)
 
 
-def run_enrichment(stop_flag=None, batch_size: int = 20) -> None:
+def run_enrichment(stop_flag=None, progress_cb=None) -> None:
     """
     Recorre todas las clínicas en Notion y actualiza sus datos:
     Meta Ads, email de contacto, registro mercantil.
     Solo procesa clínicas que tengan datos incompletos.
+    progress_cb(processed, total, updated, skipped) — llamado tras cada clínica.
     """
     import requests as _req
 
@@ -449,6 +450,8 @@ def run_enrichment(stop_flag=None, batch_size: int = 20) -> None:
 
         if not (needs_meta or needs_email or needs_dueno):
             stats["skipped"] += 1
+            if progress_cb:
+                progress_cb(i + 1, total, stats["updated"], stats["skipped"])
             continue
 
         log(f"  [{i+1}/{total}] {name}")
@@ -497,6 +500,9 @@ def run_enrichment(stop_flag=None, batch_size: int = 20) -> None:
                 stats["updated"] += 1
             else:
                 stats["errors"] += 1
+
+        if progress_cb:
+            progress_cb(i + 1, total, stats["updated"], stats["skipped"])
 
     log("\n" + "=" * 55)
     log("ENRICHMENT COMPLETADO")
