@@ -112,6 +112,9 @@ header {
 .auto-cycle-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
 .auto-cycle-toggle input { accent-color: var(--gold); width:15px; height:15px; cursor:pointer; }
 .auto-cycle-label { font-size:.78rem; color:var(--text2); letter-spacing:.02em; }
+.countdown-panel { display:flex; align-items:center; gap:12px; padding:10px 16px; background:rgba(201,169,110,0.07); border:1px solid rgba(201,169,110,0.2); border-radius:10px; margin-top:10px; }
+.countdown-label { font-size:.8rem; color:var(--text2); }
+.countdown-timer { font-size:1.4rem; font-weight:700; color:var(--gold); font-variant-numeric:tabular-nums; letter-spacing:.04em; }
 
 /* Notification bar */
 .notif-strip {
@@ -596,6 +599,12 @@ tbody td a:hover { color: var(--gold); }
           <div class="cat-chips" id="cat-chips">Cargando…</div>
         </div>
       </div>
+    </div>
+
+    <!-- countdown panel (visible during auto-cycle wait) -->
+    <div class="countdown-panel" id="countdown-panel" style="display:none">
+      <span class="countdown-label">Próximo ciclo en</span>
+      <span class="countdown-timer" id="countdown-timer">10:00</span>
     </div>
 
     <!-- progress panel (visible while running) -->
@@ -1105,12 +1114,42 @@ function formatEta(secs) {
   return `${m}m ${s}s`;
 }
 
+// ── Countdown ─────────────────────────────────────────────────
+let countdownInterval = null;
+
+function startCountdown(nextCycleAt) {
+  const panel = document.getElementById('countdown-panel');
+  const timer = document.getElementById('countdown-timer');
+  if (countdownInterval) clearInterval(countdownInterval);
+  panel.style.display = 'flex';
+
+  function tick() {
+    const secsLeft = Math.max(0, Math.round((new Date(nextCycleAt) - Date.now()) / 1000));
+    const m = Math.floor(secsLeft / 60).toString().padStart(2, '0');
+    const s = (secsLeft % 60).toString().padStart(2, '0');
+    timer.textContent = `${m}:${s}`;
+    if (secsLeft <= 0) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      panel.style.display = 'none';
+    }
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+function stopCountdown() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  document.getElementById('countdown-panel').style.display = 'none';
+}
+
 function startPolling() {
   if (statusPoller) clearInterval(statusPoller);
   statusPoller = setInterval(async () => {
     const res  = await fetch('/api/pipeline-status');
     const data = await res.json();
     if (data.running) {
+      stopCountdown();
       updateProgressUI(data.progress);
       setStatus(`<span class="running-dot"></span> Pipeline activo`);
     } else {
@@ -1118,6 +1157,11 @@ function startPolling() {
       setRunningUI(false);
       if (data.error) {
         setStatus(`<span class="error-msg">Error: ${data.error}</span>`);
+      } else if (data.auto_cycle && data.next_cycle_at) {
+        setStatus('Tanda completada — esperando próximo ciclo…');
+        startCountdown(data.next_cycle_at);
+        startPolling();
+        await loadAll(); updateTimestamp();
       } else {
         setStatus('Recolección completada — actualizando datos…');
         await loadAll(); updateTimestamp();
@@ -1132,7 +1176,12 @@ function setStatus(html) { document.getElementById('action-status').innerHTML = 
 async function checkPipelineOnLoad() {
   const res  = await fetch('/api/pipeline-status');
   const data = await res.json();
-  if (data.running) { setRunningUI(true); updateProgressUI(data.progress); startPolling(); }
+  if (data.running) {
+    setRunningUI(true); updateProgressUI(data.progress); startPolling();
+  } else if (data.auto_cycle && data.next_cycle_at) {
+    startCountdown(data.next_cycle_at);
+    startPolling();
+  }
 }
 function updateTimestamp() {
   const now = new Date();

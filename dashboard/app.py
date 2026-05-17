@@ -324,6 +324,15 @@ def api_pipeline():
     seg_total  = len(us_cities) * len(cats)
     seg_done   = sum(1 for city in us_cities for cat in cats if segs.get(f"{city}/{cat}", 0) > 0)
 
+    next_cycle_at = None
+    last_finished = _pipeline_state.get("last_finished")
+    if _pipeline_state.get("auto_cycle") and not _pipeline_state["running"] and last_finished:
+        try:
+            finished_dt   = datetime.fromisoformat(last_finished.replace("Z", "+00:00"))
+            next_cycle_at = (finished_dt + timedelta(seconds=600)).isoformat()
+        except Exception:
+            pass
+
     return jsonify({
         "last_run":      last_run,
         "next_run":      next_run_iso,
@@ -332,6 +341,7 @@ def api_pipeline():
         "segs":          segs,
         "auto_cycle":    _pipeline_state.get("auto_cycle", False),
         "running":       _pipeline_state["running"],
+        "next_cycle_at": next_cycle_at,
     })
 
 
