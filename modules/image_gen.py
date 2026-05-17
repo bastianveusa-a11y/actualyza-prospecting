@@ -96,7 +96,7 @@ def generate_background(categoria: str, email_num: int) -> str:
     Retorna la URL pública de la imagen generada.
     email_num: 2 (banner de impacto) o 3 (social proof — tono más cálido)
     """
-    api_key = os.getenv("REPLICATE_API_KEY", "")
+    api_key = os.getenv("REPLICATE_API_TOKEN", "") or os.getenv("REPLICATE_API_KEY", "")
     if not api_key:
         raise RuntimeError("REPLICATE_API_KEY no configurada")
 

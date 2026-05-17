@@ -845,7 +845,7 @@ def api_creative_status():
     return jsonify({
         "canva_authorized": canva_ok,
         "notion_token_set": bool(NOTION_TOKEN),
-        "replicate_key_set": bool(os.getenv("REPLICATE_API_TOKEN")),
+        "replicate_key_set": bool(os.getenv("REPLICATE_API_TOKEN") or os.getenv("REPLICATE_API_KEY")),
         "assets_saved_at": assets.get("_saved_at"),
         "assets_present": present,
         "assets_missing": missing,
