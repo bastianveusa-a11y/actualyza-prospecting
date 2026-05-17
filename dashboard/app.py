@@ -533,15 +533,15 @@ def api_creatives_generate_all():
             key = f"{cat}_{num}"
             print(f"  ⟳ [generate-all] Procesando {key}…", flush=True)
             import traceback
-            from modules.image_gen import generate_background, compose_creative
+            from modules.image_gen import generate_background
             from modules.canva_api import is_authorized, upload_asset_binary
             try:
                 flux_url = generate_background(cat, num)
                 print(f"  ✓ [{key}] Flux OK", flush=True)
                 canva_ok = is_authorized()
                 for style in ("a", "b"):
-                    composed = compose_creative(flux_url, cat, num, style=style)
-                    print(f"  ✓ [{key}] Composición {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
+                    composed = _compose(flux_url, cat, num, style)
+                    print(f"  ✓ [{key}] Render {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
                     if canva_ok:
                         url = upload_asset_binary(composed, name=f"amy-{cat}-e{num}-{style}")
                     else:
@@ -964,12 +964,22 @@ def _update_approval_key(key: str, updates: dict) -> None:
         _save_approvals(data)
 
 
+def _compose(flux_url: str, cat: str, num: int, style: str) -> bytes:
+    """Renderiza creativo: Playwright si disponible, Pillow como fallback."""
+    try:
+        from modules.html_creative import render_creative
+        return render_creative(flux_url, cat, num, style)
+    except Exception:
+        from modules.image_gen import compose_creative
+        return compose_creative(flux_url, cat, num, style)
+
+
 def _generate_two_options_bg(cat: str, num: int):
     """Genera 2 opciones de creativo (estilos A y B) para un caso en background."""
     import threading
     def _run():
         import traceback
-        from modules.image_gen import generate_background, compose_creative
+        from modules.image_gen import generate_background
         from modules.canva_api import is_authorized, upload_asset_binary
         key = f"{cat}_{num}"
         _update_approval_key(key, {"generating": True, "error": None})
@@ -979,8 +989,8 @@ def _generate_two_options_bg(cat: str, num: int):
             print(f"  ✓ [{key}] Flux OK: {flux_url[:60]}…", flush=True)
             canva_ok = is_authorized()
             for style in ("a", "b"):
-                composed = compose_creative(flux_url, cat, num, style=style)
-                print(f"  ✓ [{key}] Composición {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
+                composed = _compose(flux_url, cat, num, style)
+                print(f"  ✓ [{key}] Render {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
                 if canva_ok:
                     url = upload_asset_binary(composed, name=f"amy-{cat}-e{num}-{style}")
                     print(f"  ✓ [{key}] Canva {style.upper()}: {url[:60]}…", flush=True)
@@ -1090,8 +1100,8 @@ def api_creative_test():
 @_require_auth
 def api_creative_render():
     """
-    Renderiza compose_creative() con una flux_url ya existente y devuelve JPEG directo.
-    Útil para previsualizar el diseño sin gastar créditos de Replicate.
+    Renderiza un creativo con Playwright (HTML→JPEG) usando flux_url existente.
+    Fallback a Pillow si Playwright no está disponible.
     Params: flux_url, cat (default dental), num (default 2), style (default a)
     """
     import traceback
@@ -1102,8 +1112,12 @@ def api_creative_render():
     if not flux_url:
         return Response("flux_url param required", 400)
     try:
-        from modules.image_gen import compose_creative
-        jpeg = compose_creative(flux_url, cat, num, style)
+        try:
+            from modules.html_creative import render_creative
+            jpeg = render_creative(flux_url, cat, num, style)
+        except Exception:
+            from modules.image_gen import compose_creative
+            jpeg = compose_creative(flux_url, cat, num, style)
         return Response(jpeg, mimetype="image/jpeg")
     except Exception as e:
         return Response(f"Error: {e}\n{traceback.format_exc()}", 500)
