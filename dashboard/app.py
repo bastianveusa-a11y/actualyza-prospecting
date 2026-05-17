@@ -389,6 +389,31 @@ def _run_pipeline_bg():
     finally:
         _pipeline_state["running"]       = False
         _pipeline_state["last_finished"] = datetime.now(timezone.utc).isoformat()
+        # Auto-ciclo: si hay auto_cycle activo, reagenda en 10 min
+        if _pipeline_state.get("auto_cycle") and not _stop_requested:
+            import threading
+            def _delayed_restart():
+                time.sleep(600)  # 10 minutos
+                if _pipeline_state.get("auto_cycle") and not _stop_requested:
+                    _run_pipeline_bg()
+            threading.Thread(target=_delayed_restart, daemon=True).start()
+
+
+def start_auto_cycle(targets=None):
+    """Inicia ciclo automático: pipeline → espera 10 min → pipeline → ..."""
+    global _stop_requested
+    _stop_requested = False
+    _pipeline_state["auto_cycle"] = True
+    _pipeline_state["targets"]    = targets
+    if not _pipeline_state["running"]:
+        import threading
+        threading.Thread(target=_run_pipeline_bg, daemon=True).start()
+
+
+def stop_auto_cycle():
+    global _stop_requested
+    _stop_requested = True
+    _pipeline_state["auto_cycle"] = False
 
 
 @app.route("/api/run-pipeline", methods=["POST"])
@@ -396,9 +421,22 @@ def _run_pipeline_bg():
 def api_run_pipeline():
     if _pipeline_state["running"]:
         return jsonify({"ok": False, "error": "Pipeline ya está corriendo"}), 409
-    _pipeline_state["targets"] = (request.json or {}).get("targets") or None
+    body    = request.json or {}
+    targets = body.get("targets") or None
+    auto    = body.get("auto_cycle", False)
+    if auto:
+        start_auto_cycle(targets)
+        return jsonify({"ok": True, "status": "auto_cycle_started"})
+    _pipeline_state["targets"] = targets
     threading.Thread(target=_run_pipeline_bg, daemon=True).start()
     return jsonify({"ok": True, "status": "started"})
+
+
+@app.route("/api/stop-pipeline", methods=["POST"])
+@_require_auth
+def api_stop_pipeline():
+    stop_auto_cycle()
+    return jsonify({"ok": True, "status": "stopping"})
 
 
 @app.route("/api/available-cities")
@@ -408,6 +446,40 @@ def api_available_cities():
     return jsonify({
         "cities":     AVAILABLE_CITIES,
         "categories": [{"key": k, "label": v.title()} for k, v in CATEGORIES.items()],
+        "presets": [
+            {
+                "id":    "dental_all_us",
+                "label": "Dental — todas US",
+                "targets": [
+                    {"city": c["city"], "state": c["state"], "categories": ["dental"]}
+                    for c in AVAILABLE_CITIES if c["country"] == "US"
+                ],
+            },
+            {
+                "id":    "dental_all_es",
+                "label": "Dental — España",
+                "targets": [
+                    {"city": c["city"], "state": c["state"], "categories": ["dental"]}
+                    for c in AVAILABLE_CITIES if c["country"] == "ES"
+                ],
+            },
+            {
+                "id":    "dental_global",
+                "label": "Dental — todo el mundo",
+                "targets": [
+                    {"city": c["city"], "state": c["state"], "categories": ["dental"]}
+                    for c in AVAILABLE_CITIES
+                ],
+            },
+            {
+                "id":    "all_categories_us",
+                "label": "Todo — todas US",
+                "targets": [
+                    {"city": c["city"], "state": c["state"]}
+                    for c in AVAILABLE_CITIES if c["country"] == "US"
+                ],
+            },
+        ],
     })
 
 

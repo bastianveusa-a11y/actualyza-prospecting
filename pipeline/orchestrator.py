@@ -168,20 +168,23 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
         except BudgetExceeded:
             pass  # Meta scraping es sin costo — solo registramos, no bloqueamos
 
-    # Sunbiz — datos legales del dueño
-    sunbiz = sunbiz_lookup(
-        clinic_name=name,
-        clinic_address=clinic.get("direccion", ""),
-        clinic_zip=clinic.get("zip", ""),
-        clinic_phone=clinic.get("telefono", ""),
-        delay=SUNBIZ_DELAY,
-    )
-    if not sunbiz.get("error"):
-        clinic["entidad_legal"]     = sunbiz.get("nombre_legal", "")
-        clinic["dueno"]             = sunbiz.get("dueno", "")
-        clinic["agente_registrado"] = sunbiz.get("agente_registrado", "")
-        clinic["sunbiz_url"]        = sunbiz.get("sunbiz_url", "")
-        clinic["match_score"]       = sunbiz.get("match_score", 0.0)
+    # Sunbiz — solo para clínicas de Florida (registro estatal FL)
+    city_meta  = next((c for c in AVAILABLE_CITIES if c["city"] == clinic.get("ciudad")), {})
+    use_sunbiz = city_meta.get("sunbiz", False)
+    if use_sunbiz:
+        sunbiz = sunbiz_lookup(
+            clinic_name=name,
+            clinic_address=clinic.get("direccion", ""),
+            clinic_zip=clinic.get("zip", ""),
+            clinic_phone=clinic.get("telefono", ""),
+            delay=SUNBIZ_DELAY,
+        )
+        if not sunbiz.get("error"):
+            clinic["entidad_legal"]     = sunbiz.get("nombre_legal", "")
+            clinic["dueno"]             = sunbiz.get("dueno", "")
+            clinic["agente_registrado"] = sunbiz.get("agente_registrado", "")
+            clinic["sunbiz_url"]        = sunbiz.get("sunbiz_url", "")
+            clinic["match_score"]       = sunbiz.get("match_score", 0.0)
 
     # Email de contacto desde el sitio web
     if clinic.get("web") and not clinic.get("email_contacto"):

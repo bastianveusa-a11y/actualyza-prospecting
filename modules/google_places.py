@@ -156,44 +156,61 @@ def search_all_categories(
     return all_clinics
 
 
-# Ciudades disponibles con metadata — ordenadas por % hispano descendente
-# es=True indica mercado con alta población hispanohablante
+# Ciudades disponibles con metadata
+# country: "US" = EE.UU., "ES" = España
+# sunbiz: True solo para ciudades de Florida (registro estatal FL)
 AVAILABLE_CITIES = [
-    {"city": "Miami",       "state": "FL", "label": "Miami, FL",       "es": True,  "note": "70% hispano"},
-    {"city": "Hialeah",     "state": "FL", "label": "Hialeah, FL",     "es": True,  "note": "95% hispano"},
-    {"city": "San Antonio", "state": "TX", "label": "San Antonio, TX", "es": True,  "note": "65% hispano"},
-    {"city": "McAllen",     "state": "TX", "label": "McAllen, TX",     "es": True,  "note": "85% hispano"},
-    {"city": "El Paso",     "state": "TX", "label": "El Paso, TX",     "es": True,  "note": "82% hispano"},
-    {"city": "Houston",     "state": "TX", "label": "Houston, TX",     "es": True,  "note": "45% hispano"},
-    {"city": "Dallas",      "state": "TX", "label": "Dallas, TX",      "es": True,  "note": "41% hispano"},
-    {"city": "Los Angeles", "state": "CA", "label": "Los Angeles, CA", "es": True,  "note": "49% hispano"},
-    {"city": "Phoenix",     "state": "AZ", "label": "Phoenix, AZ",     "es": True,  "note": "42% hispano"},
-    {"city": "Orlando",     "state": "FL", "label": "Orlando, FL",     "es": True,  "note": "32% hispano"},
-    {"city": "Las Vegas",   "state": "NV", "label": "Las Vegas, NV",   "es": True,  "note": "32% hispano"},
-    {"city": "San Diego",   "state": "CA", "label": "San Diego, CA",   "es": True,  "note": "30% hispano"},
-    {"city": "Chicago",     "state": "IL", "label": "Chicago, IL",     "es": False, "note": "29% hispano"},
-    {"city": "New York",    "state": "NY", "label": "New York, NY",    "es": False, "note": "29% hispano"},
-    {"city": "Austin",      "state": "TX", "label": "Austin, TX",      "es": False, "note": "32% hispano"},
-    {"city": "Tampa",       "state": "FL", "label": "Tampa, FL",       "es": False, "note": "27% hispano"},
+    # ── Florida ──────────────────────────────────────────────────────
+    {"city": "Miami",         "state": "FL", "country": "US", "sunbiz": True,  "label": "Miami, FL",         "es": True,  "note": "70% hispano"},
+    {"city": "Hialeah",       "state": "FL", "country": "US", "sunbiz": True,  "label": "Hialeah, FL",       "es": True,  "note": "95% hispano"},
+    {"city": "Orlando",       "state": "FL", "country": "US", "sunbiz": True,  "label": "Orlando, FL",       "es": True,  "note": "32% hispano"},
+    {"city": "Tampa",         "state": "FL", "country": "US", "sunbiz": True,  "label": "Tampa, FL",         "es": True,  "note": "27% hispano"},
+    {"city": "Jacksonville",  "state": "FL", "country": "US", "sunbiz": True,  "label": "Jacksonville, FL",  "es": False, "note": "9% hispano"},
+    # ── Texas ─────────────────────────────────────────────────────────
+    {"city": "San Antonio",   "state": "TX", "country": "US", "sunbiz": False, "label": "San Antonio, TX",   "es": True,  "note": "65% hispano"},
+    {"city": "McAllen",       "state": "TX", "country": "US", "sunbiz": False, "label": "McAllen, TX",       "es": True,  "note": "85% hispano"},
+    {"city": "El Paso",       "state": "TX", "country": "US", "sunbiz": False, "label": "El Paso, TX",       "es": True,  "note": "82% hispano"},
+    {"city": "Houston",       "state": "TX", "country": "US", "sunbiz": False, "label": "Houston, TX",       "es": True,  "note": "45% hispano"},
+    {"city": "Dallas",        "state": "TX", "country": "US", "sunbiz": False, "label": "Dallas, TX",        "es": True,  "note": "41% hispano"},
+    {"city": "Austin",        "state": "TX", "country": "US", "sunbiz": False, "label": "Austin, TX",        "es": False, "note": "32% hispano"},
+    # ── Otras US ──────────────────────────────────────────────────────
+    {"city": "Los Angeles",   "state": "CA", "country": "US", "sunbiz": False, "label": "Los Angeles, CA",   "es": True,  "note": "49% hispano"},
+    {"city": "Phoenix",       "state": "AZ", "country": "US", "sunbiz": False, "label": "Phoenix, AZ",       "es": True,  "note": "42% hispano"},
+    {"city": "Las Vegas",     "state": "NV", "country": "US", "sunbiz": False, "label": "Las Vegas, NV",     "es": True,  "note": "32% hispano"},
+    {"city": "San Diego",     "state": "CA", "country": "US", "sunbiz": False, "label": "San Diego, CA",     "es": True,  "note": "30% hispano"},
+    {"city": "Chicago",       "state": "IL", "country": "US", "sunbiz": False, "label": "Chicago, IL",       "es": False, "note": "29% hispano"},
+    {"city": "New York",      "state": "NY", "country": "US", "sunbiz": False, "label": "New York, NY",      "es": False, "note": "29% hispano"},
+    # ── España ────────────────────────────────────────────────────────
+    {"city": "Madrid",        "state": "ES", "country": "ES", "sunbiz": False, "label": "Madrid, España",    "es": True,  "note": "mercado español"},
+    {"city": "Barcelona",     "state": "ES", "country": "ES", "sunbiz": False, "label": "Barcelona, España", "es": True,  "note": "mercado español"},
+    {"city": "Valencia",      "state": "ES", "country": "ES", "sunbiz": False, "label": "Valencia, España",  "es": True,  "note": "mercado español"},
+    {"city": "Sevilla",       "state": "ES", "country": "ES", "sunbiz": False, "label": "Sevilla, España",   "es": True,  "note": "mercado español"},
+    {"city": "Málaga",        "state": "ES", "country": "ES", "sunbiz": False, "label": "Málaga, España",    "es": True,  "note": "mercado español"},
 ]
 
 _CITY_CENTERS = {
-    "Miami":       {"latitude": 25.7617, "longitude": -80.1918},
-    "Hialeah":     {"latitude": 25.8576, "longitude": -80.2781},
-    "Orlando":     {"latitude": 28.5383, "longitude": -81.3792},
-    "Tampa":       {"latitude": 27.9506, "longitude": -82.4572},
-    "Dallas":      {"latitude": 32.7767, "longitude": -96.7970},
-    "Houston":     {"latitude": 29.7604, "longitude": -95.3698},
-    "San Antonio": {"latitude": 29.4241, "longitude": -98.4936},
-    "Austin":      {"latitude": 30.2672, "longitude": -97.7431},
-    "McAllen":     {"latitude": 26.2034, "longitude": -98.2300},
-    "El Paso":     {"latitude": 31.7619, "longitude": -106.4850},
-    "Los Angeles": {"latitude": 34.0522, "longitude": -118.2437},
-    "San Diego":   {"latitude": 32.7157, "longitude": -117.1611},
-    "Phoenix":     {"latitude": 33.4484, "longitude": -112.0740},
-    "Las Vegas":   {"latitude": 36.1699, "longitude": -115.1398},
-    "Chicago":     {"latitude": 41.8781, "longitude": -87.6298},
-    "New York":    {"latitude": 40.7128, "longitude": -74.0060},
+    "Miami":        {"latitude": 25.7617,  "longitude": -80.1918},
+    "Hialeah":      {"latitude": 25.8576,  "longitude": -80.2781},
+    "Orlando":      {"latitude": 28.5383,  "longitude": -81.3792},
+    "Tampa":        {"latitude": 27.9506,  "longitude": -82.4572},
+    "Jacksonville": {"latitude": 30.3322,  "longitude": -81.6557},
+    "Dallas":       {"latitude": 32.7767,  "longitude": -96.7970},
+    "Houston":      {"latitude": 29.7604,  "longitude": -95.3698},
+    "San Antonio":  {"latitude": 29.4241,  "longitude": -98.4936},
+    "Austin":       {"latitude": 30.2672,  "longitude": -97.7431},
+    "McAllen":      {"latitude": 26.2034,  "longitude": -98.2300},
+    "El Paso":      {"latitude": 31.7619,  "longitude": -106.4850},
+    "Los Angeles":  {"latitude": 34.0522,  "longitude": -118.2437},
+    "San Diego":    {"latitude": 32.7157,  "longitude": -117.1611},
+    "Phoenix":      {"latitude": 33.4484,  "longitude": -112.0740},
+    "Las Vegas":    {"latitude": 36.1699,  "longitude": -115.1398},
+    "Chicago":      {"latitude": 41.8781,  "longitude": -87.6298},
+    "New York":     {"latitude": 40.7128,  "longitude": -74.0060},
+    "Madrid":       {"latitude": 40.4168,  "longitude": -3.7038},
+    "Barcelona":    {"latitude": 41.3851,  "longitude":  2.1734},
+    "Valencia":     {"latitude": 39.4699,  "longitude": -0.3763},
+    "Sevilla":      {"latitude": 37.3891,  "longitude": -5.9845},
+    "Málaga":       {"latitude": 36.7213,  "longitude": -4.4214},
 }
 
 def _get_city_center(city: str) -> dict:
