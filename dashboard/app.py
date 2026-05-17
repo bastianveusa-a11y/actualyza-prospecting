@@ -1339,14 +1339,19 @@ _translation_state  = {}  # room_id → bool (True = enabled)
 def _vroom_join(room_id: str, ws) -> None:
     with _video_rooms_lock:
         _video_rooms.setdefault(room_id, []).append(ws)
+        count = len(_video_rooms[room_id])
+    print(f"  [room] {room_id}: +1 participante → total={count}", flush=True)
 
 
 def _vroom_leave(room_id: str, ws) -> None:
     with _video_rooms_lock:
         if room_id in _video_rooms:
             _video_rooms[room_id] = [p for p in _video_rooms[room_id] if p is not ws]
+            count = len(_video_rooms[room_id])
             if not _video_rooms[room_id]:
                 del _video_rooms[room_id]
+                count = 0
+    print(f"  [room] {room_id}: -1 participante → total={count}", flush=True)
 
 
 def _vroom_other(room_id: str, ws):
@@ -1384,6 +1389,8 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
         audio = synthesize_speech(translated, tgt)
         print(f"  [elevenlabs] {len(audio)/1024:.1f}KB ({time.time()-t1:.2f}s)")
         other = _vroom_other(room_id, ws)
+        total = len(_video_rooms.get(room_id, []))
+        print(f"  [room] buscando otro en {room_id}: total={total} other={'sí' if other else 'NO'}", flush=True)
         if other and audio:
             try:
                 other.send(_j.dumps({
@@ -1392,8 +1399,9 @@ def _handle_transcript(transcript: str, ws, room_id: str, src: str, tgt: str) ->
                     "translated": translated,
                     "audio_b64":  base64.b64encode(audio).decode(),
                 }))
-            except Exception:
-                pass
+                print(f"  [room] audio enviado al otro ✓", flush=True)
+            except Exception as e:
+                print(f"  [room] ERROR enviando audio al otro: {e}", flush=True)
     except Exception as e:
         print(f"  ✗ Error traducción video: {e}")
 
