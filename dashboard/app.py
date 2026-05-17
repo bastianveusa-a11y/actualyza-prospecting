@@ -522,10 +522,40 @@ def api_creatives_generate(cat, num):
 @app.route("/api/creatives/generate-all", methods=["POST"])
 @_require_auth
 def api_creatives_generate_all():
-    for cat in CATEGORIES:
-        for num in EMAIL_NUMS:
-            _generate_two_options_bg(cat, num)
-    return jsonify({"ok": True, "message": "Generando todas las opciones en background…"})
+    """Un solo thread secuencial para evitar rate-limit 429 en Replicate."""
+    import threading
+    def _run_all():
+        cases = [(cat, num) for cat in CATEGORIES for num in EMAIL_NUMS]
+        for cat, num in cases:
+            key = f"{cat}_{num}"
+            _update_approval_key(key, {"generating": True, "error": None})
+        for cat, num in cases:
+            key = f"{cat}_{num}"
+            print(f"  ⟳ [generate-all] Procesando {key}…", flush=True)
+            import traceback
+            from modules.image_gen import generate_background, compose_creative
+            from modules.canva_api import is_authorized, upload_asset_binary
+            try:
+                flux_url = generate_background(cat, num)
+                print(f"  ✓ [{key}] Flux OK", flush=True)
+                canva_ok = is_authorized()
+                for style in ("a", "b"):
+                    composed = compose_creative(flux_url, cat, num, style=style)
+                    print(f"  ✓ [{key}] Composición {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
+                    if canva_ok:
+                        url = upload_asset_binary(composed, name=f"amy-{cat}-e{num}-{style}")
+                    else:
+                        cache_key = f"{key}_{style}"
+                        _image_cache[cache_key] = composed
+                        url = f"/api/creative-image/{cache_key}"
+                    _update_approval_key(key, {style: {"url": url, "generated_at": datetime.now(timezone.utc).isoformat()}})
+                _update_approval_key(key, {"generating": False, "error": None})
+                print(f"  ✓ [{key}] Completado", flush=True)
+            except Exception as e:
+                print(f"  ✗ [{key}] Error: {e}\n{traceback.format_exc()}", flush=True)
+                _update_approval_key(key, {"generating": False, "error": str(e)})
+    threading.Thread(target=_run_all, daemon=True).start()
+    return jsonify({"ok": True, "message": "Generando todas las opciones en background (secuencial)…"})
 
 
 @app.route("/api/creatives/approve/<cat>/<int:num>", methods=["POST"])

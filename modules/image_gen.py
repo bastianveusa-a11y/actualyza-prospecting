@@ -219,6 +219,14 @@ def compose_creative(flux_url: str, categoria: str, email_num: int, style: str =
 
     _ensure_fonts()
 
+    # Style A: gold/warm — Style B: teal/cool  (must be set before overlay)
+    if style == "b":
+        ACCENT        = (64, 200, 152, 255)
+        overlay_color = (6, 10, 22, 208)
+    else:
+        ACCENT        = (201, 169, 110, 255)
+        overlay_color = (8, 9, 19, 208)
+
     resp = requests.get(flux_url, timeout=30)
     resp.raise_for_status()
     img = Image.open(io.BytesIO(resp.content)).convert("RGBA")
@@ -230,14 +238,6 @@ def compose_creative(flux_url: str, categoria: str, email_num: int, style: str =
 
     draw = ImageDraw.Draw(img)
     copy = _COPY.get((categoria, email_num), _COPY.get(("dental", email_num), _COPY[("dental", 2)]))
-
-    # Style A: gold/warm — Style B: teal/cool
-    if style == "b":
-        ACCENT = (64, 200, 152, 255)   # teal
-        overlay_color = (6, 10, 22, 208)  # cooler dark
-    else:
-        ACCENT = (201, 169, 110, 255)  # gold
-        overlay_color = (8, 9, 19, 208)   # warm dark
 
     GOLD  = (201, 169, 110, 255)
     WHITE = (238, 238, 248, 255)
