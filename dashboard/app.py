@@ -1369,11 +1369,21 @@ def api_reset_progress():
 @app.route("/api/pipeline-status")
 @_require_auth
 def api_pipeline_status():
+    next_cycle_at = None
+    last_finished = _pipeline_state.get("last_finished")
+    if _pipeline_state.get("auto_cycle") and not _pipeline_state["running"] and last_finished:
+        try:
+            finished_dt   = datetime.fromisoformat(last_finished.replace("Z", "+00:00"))
+            next_cycle_at = (finished_dt + timedelta(seconds=600)).isoformat()
+        except Exception:
+            pass
     return jsonify({
         "running":        _pipeline_state["running"],
         "last_started":   _pipeline_state["last_started"],
         "last_finished":  _pipeline_state["last_finished"],
         "error":          _pipeline_state["error"],
+        "auto_cycle":     _pipeline_state.get("auto_cycle", False),
+        "next_cycle_at":  next_cycle_at,
         "progress":       _parse_run_progress() if _pipeline_state["running"] else {},
         "log":            get_log(20),
     })

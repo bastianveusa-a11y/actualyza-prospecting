@@ -937,15 +937,17 @@ async function loadTargetConfig() {
   availableCities = data.cities || [];
   availableCats   = data.categories || [];
 
-  // Load from localStorage or set defaults
-  const saved = JSON.parse(localStorage.getItem('pipeline_targets') || 'null');
-  if (saved) {
-    selectedCities = new Set(saved.cities || []);
-    selectedCats   = new Set(saved.cats   || []);
+  // Load from localStorage — reset si hay más ciudades disponibles que las guardadas
+  const saved       = JSON.parse(localStorage.getItem('pipeline_targets') || 'null');
+  const allUSCities = availableCities.filter(c => c.country === 'US').map(c => `${c.city}|${c.state}`);
+  if (saved && saved.cities && saved.cities.length >= allUSCities.length) {
+    selectedCities = new Set(saved.cities);
+    selectedCats   = new Set(saved.cats || []);
   } else {
-    // Defaults: Miami, Orlando, Dallas + all categories
-    selectedCities = new Set(['Miami|FL', 'Orlando|FL', 'Dallas|TX']);
+    // Default: todas las ciudades US + todas las categorías
+    selectedCities = new Set(allUSCities);
     selectedCats   = new Set(availableCats.map(c => c.key));
+    localStorage.removeItem('pipeline_targets');
   }
   renderCityChips();
   renderCatChips();
