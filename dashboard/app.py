@@ -922,39 +922,51 @@ def _get_notifications() -> list:
     return notes
 
 
+_approvals_lock = __import__("threading").Lock()
+
+
+def _update_approval_key(key: str, updates: dict) -> None:
+    """Lee, actualiza solo el key indicado y guarda — protegido con lock."""
+    with _approvals_lock:
+        data = _load_approvals()
+        entry = data.setdefault(key, {})
+        entry.update(updates)
+        _save_approvals(data)
+
+
 def _generate_two_options_bg(cat: str, num: int):
     """Genera 2 opciones de creativo (estilos A y B) para un caso en background."""
     import threading
     def _run():
+        import traceback
         from modules.image_gen import generate_background, compose_creative
         from modules.canva_api import is_authorized, upload_asset_binary
         key = f"{cat}_{num}"
-        approvals = _load_approvals()
-        entry = approvals.setdefault(key, {})
-        entry["generating"] = True
-        _save_approvals(approvals)
-        print(f"  ⟳ Generando opciones A+B para {key}…", flush=True)
+        _update_approval_key(key, {"generating": True, "error": None})
+        print(f"  ⟳ [{key}] Iniciando generación A+B…", flush=True)
         try:
             flux_url = generate_background(cat, num)
-            print(f"  ✓ Flux OK para {key}", flush=True)
+            print(f"  ✓ [{key}] Flux OK: {flux_url[:60]}…", flush=True)
+            canva_ok = is_authorized()
             for style in ("a", "b"):
                 composed = compose_creative(flux_url, cat, num, style=style)
-                print(f"  ✓ Composición estilo {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
-                if is_authorized():
+                print(f"  ✓ [{key}] Composición {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
+                if canva_ok:
                     url = upload_asset_binary(composed, name=f"amy-{cat}-e{num}-{style}")
-                    print(f"  ✓ Canva OK estilo {style.upper()}: {url[:60]}…", flush=True)
+                    print(f"  ✓ [{key}] Canva {style.upper()}: {url[:60]}…", flush=True)
                 else:
                     cache_key = f"{key}_{style}"
                     _image_cache[cache_key] = composed
                     url = f"/api/creative-image/{cache_key}"
-                    print(f"  ⚠ Cache local estilo {style.upper()}: {url}", flush=True)
-                entry[style] = {"url": url, "generated_at": datetime.now(timezone.utc).isoformat()}
+                    print(f"  ⚠ [{key}] Cache {style.upper()}: {url}", flush=True)
+                _update_approval_key(key, {style: {"url": url, "generated_at": datetime.now(timezone.utc).isoformat()}})
+            print(f"  ✓ [{key}] Completado", flush=True)
         except Exception as e:
-            entry["error"] = str(e)
-            print(f"  ✗ Error generando {key}: {e}", flush=True)
+            tb = traceback.format_exc()
+            print(f"  ✗ [{key}] Error: {e}\n{tb}", flush=True)
+            _update_approval_key(key, {"error": str(e)})
         finally:
-            entry["generating"] = False
-            _save_approvals(approvals)
+            _update_approval_key(key, {"generating": False})
     threading.Thread(target=_run, daemon=True).start()
 
 
