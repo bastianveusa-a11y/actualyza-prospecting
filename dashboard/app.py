@@ -458,6 +458,12 @@ def creatives_page():
     return render_template("creatives.html")
 
 
+@app.route("/preview")
+@_require_auth
+def preview_page():
+    return render_template("preview.html")
+
+
 @app.route("/api/notifications")
 @_require_auth
 def api_notifications():

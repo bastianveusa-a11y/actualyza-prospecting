@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Pre-vuelo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080910; --bg2: #0d0e1a; --bg3: #12131f;
+  --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07);
+  --border-h: rgba(201,169,110,0.3);
+  --gold: #c9a96e; --gold-l: #e8c97a; --gold-d: #9a7840;
+  --teal: #40c898;
+  --text: #eeeef8; --text2: #7878a0; --text3: #50506a;
+  --blue: #5080ff; --green: #40c898; --orange: #ff9050; --red: #ff5070; --purple: #b060f0;
+  --r: 12px; --r-sm: 8px;
+}
+html { font-size: 14px; }
+body {
+  font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.04) 0%, transparent 60%);
+}
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.shell { max-width: 1440px; margin: 0 auto; padding: 24px 28px 60px; }
+
+/* Header */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.logo-text span { color: var(--gold); }
+.logo-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+  border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-size: 0.8rem; font-weight: 500; cursor: pointer;
+  transition: all .2s; font-family: 'Inter', sans-serif; text-decoration: none;
+}
+.btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
+.btn svg { width: 14px; height: 14px; }
+
+/* Nav tabs */
+.nav-tabs { display: flex; gap: 4px; margin-bottom: 28px; padding: 4px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); width: fit-content; }
+.nav-tab { padding: 6px 16px; border-radius: var(--r-sm); font-size: 0.8rem; font-weight: 500; color: var(--text2); cursor: pointer; transition: all .15s; text-decoration: none; display: inline-block; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.nav-tab.active { background: rgba(201,169,110,0.12); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); }
+
+/* Layout */
+.main-grid { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; }
+
+/* Sidebar */
+.sidebar {
+  position: sticky; top: 24px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px;
+}
+.sidebar-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+.city-group { margin-bottom: 18px; }
+.city-name { font-size: 0.7rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; padding-left: 2px; }
+.group-btn {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 8px 10px; border-radius: var(--r-sm); font-size: 0.8rem; font-family: 'Inter', sans-serif;
+  border: 1px solid transparent; background: transparent; color: var(--text2);
+  cursor: pointer; transition: all .15s; margin-bottom: 4px; text-align: left;
+}
+.group-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.group-btn.active { background: rgba(201,169,110,0.1); border-color: rgba(201,169,110,0.2); color: var(--gold); }
+.group-count {
+  font-size: 0.68rem; font-weight: 600; padding: 1px 7px;
+  border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text3);
+}
+.group-btn.active .group-count { background: rgba(201,169,110,0.15); color: var(--gold); }
+
+/* Cat badge colors */
+.c-dental   { color: var(--blue); }
+.c-estetica { color: var(--purple); }
+.c-medspa   { color: var(--teal); }
+.c-wellness { color: var(--orange); }
+
+/* Content */
+.content { min-height: 400px; }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 360px; gap: 12px; color: var(--text3); text-align: center;
+}
+.empty-icon { font-size: 2.5rem; opacity: .3; }
+.empty-title { font-size: 0.9rem; font-weight: 500; color: var(--text2); }
+
+/* Group header */
+.group-header {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px 24px; margin-bottom: 20px;
+}
+.gh-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.gh-title { font-size: 1.1rem; font-weight: 700; }
+.gh-badge { font-size: 0.68rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 8px; }
+.badge-dental   { background: rgba(80,128,255,0.1); color: var(--blue); }
+.badge-estetica { background: rgba(176,96,240,0.1); color: var(--purple); }
+.badge-medspa   { background: rgba(64,200,152,0.1); color: var(--teal); }
+.badge-wellness { background: rgba(255,144,80,0.1); color: var(--orange); }
+
+.stats-row { display: flex; gap: 28px; }
+.stat-item { display: flex; flex-direction: column; gap: 2px; }
+.stat-val { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.stat-lbl { font-size: 0.68rem; color: var(--text3); }
+
+/* Creative strip */
+.creative-strip {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 16px 20px; margin-bottom: 20px;
+}
+.strip-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+.strip-thumbs { display: flex; gap: 16px; }
+.thumb-wrap {
+  flex: 1; border-radius: var(--r-sm); overflow: hidden;
+  border: 1px solid var(--border); position: relative;
+}
+.thumb-wrap img { width: 100%; height: 100px; object-fit: cover; display: block; }
+.thumb-label {
+  position: absolute; top: 6px; left: 8px;
+  background: rgba(0,0,0,0.7); border-radius: 4px;
+  font-size: 0.62rem; font-weight: 600; color: #fff; padding: 2px 6px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.thumb-empty {
+  height: 100px; display: flex; align-items: center; justify-content: center;
+  color: var(--text3); font-size: 0.72rem; gap: 8px; flex-direction: column;
+  background: var(--bg3);
+}
+.thumb-empty a { color: var(--gold); text-decoration: none; font-size: .7rem; }
+.thumb-empty a:hover { text-decoration: underline; }
+
+/* Email sequence */
+.seq-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+.seq-list { display: flex; flex-direction: column; gap: 12px; }
+
+.email-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r);
+  display: grid; grid-template-columns: 1fr auto; overflow: hidden;
+  transition: border-color .2s;
+}
+.email-card:hover { border-color: rgba(255,255,255,0.1); }
+.email-body { padding: 16px 20px; }
+.email-step-tag {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 0.68rem;
+  font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+}
+.tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+.email-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 3px; }
+.email-desc { font-size: 0.74rem; color: var(--text3); line-height: 1.55; margin-bottom: 12px; }
+.email-actions { display: flex; gap: 8px; align-items: center; }
+.preview-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+  border-radius: var(--r-sm); border: 1px solid var(--border); background: transparent;
+  color: var(--text2); font-size: 0.76rem; font-weight: 500;
+  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+}
+.preview-btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
+.preview-btn:disabled { opacity: .4; cursor: not-allowed; }
+.preview-btn svg { width: 13px; height: 13px; }
+.preview-btn.loading { color: var(--blue); border-color: rgba(80,128,255,0.3); }
+
+.email-thumb {
+  width: 170px; min-height: 90px; position: relative; flex-shrink: 0;
+  background: var(--bg3); display: flex; align-items: center; justify-content: center;
+  border-left: 1px solid var(--border); overflow: hidden;
+}
+.email-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.no-thumb { color: var(--text3); font-size: 0.68rem; text-align: center; padding: 12px; opacity: .5; }
+
+/* Clinic list */
+.clinic-list-wrap { margin-top: 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.clinic-list-header { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); display: flex; align-items: center; justify-content: space-between; }
+.clinic-row {
+  display: grid; grid-template-columns: 1fr 90px 80px 80px auto;
+  align-items: center; gap: 16px; padding: 11px 20px;
+  border-bottom: 1px solid var(--border); transition: background .15s;
+}
+.clinic-row:last-child { border-bottom: none; }
+.clinic-row:hover { background: rgba(255,255,255,0.02); }
+.clinic-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etapa-pill { font-size: 0.66rem; font-weight: 600; padding: 2px 8px; border-radius: 8px; text-align: center; }
+.ep-activa   { background: rgba(64,200,152,0.1); color: var(--green); }
+.ep-pendiente { background: rgba(255,144,80,0.08); color: var(--orange); }
+.ep-none     { background: rgba(255,255,255,0.04); color: var(--text3); }
+.clinic-score { font-size: 0.78rem; font-weight: 600; text-align: center; }
+.clinic-email-count { font-size: 0.74rem; color: var(--text2); text-align: center; }
+.btn-preview-clinic {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text3); font-size: 0.72rem;
+  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; white-space: nowrap;
+}
+.btn-preview-clinic:hover { border-color: var(--border-h); color: var(--gold); }
+
+/* Preview Modal */
+.modal-bg {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  z-index: 100; align-items: flex-start; justify-content: center; padding: 32px 16px;
+  overflow-y: auto;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 12px; overflow: hidden;
+  width: 100%; max-width: 680px; box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  position: relative;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: #f0f0f0; border-bottom: 1px solid #ddd;
+}
+.modal-title { font-size: 0.82rem; font-weight: 600; color: #333; }
+.modal-subject { font-size: 0.72rem; color: #666; margin-top: 2px; }
+.modal-close {
+  background: none; border: none; cursor: pointer; font-size: 1.3rem; color: #666;
+  padding: 4px; border-radius: 4px; line-height: 1;
+}
+.modal-close:hover { background: rgba(0,0,0,0.08); color: #333; }
+.modal-body { padding: 0; }
+#email-iframe { width: 100%; border: none; min-height: 600px; display: block; }
+.modal-loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 300px; flex-direction: column; gap: 12px; color: #888; font-size: 0.82rem;
+}
+.spin { width: 24px; height: 24px; border: 2px solid #ddd; border-top-color: #c9a96e; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 18px; font-size: .82rem; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,.4); opacity: 0; transform: translateY(8px); transition: all .3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { border-color: rgba(255,80,112,.3); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div>
+        <div class="logo-text">Actual<span>yza</span></div>
+        <div class="logo-sub">Prospecting Dashboard</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="btn">Dashboard</a>
+      <a href="/campaigns" class="btn">Campañas</a>
+      <a href="/creatives" class="btn">Creativos</a>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <a href="/" class="nav-tab">Dashboard</a>
+    <a href="/campaigns" class="nav-tab">Campañas</a>
+    <a href="/creatives" class="nav-tab">Creativos</a>
+    <span class="nav-tab active">Pre-vuelo</span>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-label">Segmentos</div>
+      <div id="sidebar-groups">
+        <div style="color:var(--text3);font-size:.76rem;padding:8px 0">Cargando…</div>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content" id="content">
+      <div class="empty-state">
+        <div class="empty-icon">✉</div>
+        <div class="empty-title">Selecciona un segmento</div>
+        <div style="font-size:.76rem">Elige una ciudad + categoría para ver el pre-vuelo de campaña.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">Vista previa del email</div>
+        <div class="modal-subject" id="modal-subject"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <div class="modal-loading"><div class="spin"></div>Generando preview…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CITIES = ['Miami', 'Orlando', 'Dallas'];
+const CATS   = ['dental', 'estetica', 'medspa', 'wellness'];
+const CAT_LABELS = { dental: 'Dental', estetica: 'Estética', medspa: 'MedSpa', wellness: 'Wellness' };
+const CAT_CLASS  = { dental: 'badge-dental', estetica: 'badge-estetica', medspa: 'badge-medspa', wellness: 'badge-wellness' };
+const EMAIL_SEQ  = [
+  { num: 1, name: 'Introducción', desc: 'Primer contacto — texto personalizado, sin imagen. Enfocado en el dolor del propietario y AMY como solución.', color: '#5080ff', hasCreative: false },
+  { num: 2, name: 'Impacto',      desc: 'Segundo email — incluye la imagen creativa de impacto (FOMO, hook stat). Refuerza la urgencia de responder rápido.', color: '#c9a96e', hasCreative: true },
+  { num: 3, name: 'Prueba social',desc: 'Tercer email — caso de éxito con cifras reales de una clínica similar. Incluye imagen creativa de prueba social.', color: '#40c898', hasCreative: true },
+  { num: 4, name: 'Seguimiento',  desc: 'Cuarto email — breve y directo. Cierra el ciclo, propone una llamada de 15 minutos.', color: '#b060f0', hasCreative: false },
+];
+
+let clinics   = [];
+let creatives = {};
+let currentGroup = null;
+
+async function init() {
+  const [cr, cl] = await Promise.all([
+    fetch('/api/creatives/status').then(r => r.json()),
+    fetch('/api/campaigns').then(r => r.json()),
+  ]);
+  creatives = cr.creatives || {};
+  clinics   = Array.isArray(cl) ? cl : [];
+  buildSidebar();
+}
+
+/* ── Build sidebar groups ── */
+function buildSidebar() {
+  const container = document.getElementById('sidebar-groups');
+  container.innerHTML = '';
+
+  CITIES.forEach(city => {
+    const cityDiv = document.createElement('div');
+    cityDiv.className = 'city-group';
+    cityDiv.innerHTML = `<div class="city-name">${city}</div>`;
+
+    CATS.forEach(cat => {
+      const count = clinics.filter(c => c.ciudad === city && c.categoria === cat).length;
+      if (count === 0) return;
+      const key = `${city}__${cat}`;
+      const btn = document.createElement('button');
+      btn.className = 'group-btn';
+      btn.id = `grp-${key}`;
+      btn.onclick = () => showGroup(city, cat);
+      btn.innerHTML = `
+        <span class="c-${cat}">${CAT_LABELS[cat]}</span>
+        <span class="group-count">${count}</span>
+      `;
+      cityDiv.appendChild(btn);
+    });
+
+    if (cityDiv.children.length > 1) container.appendChild(cityDiv);
+  });
+}
+
+/* ── Show group content ── */
+function showGroup(city, cat) {
+  currentGroup = { city, cat };
+
+  // Sidebar active state
+  document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`grp-${city}__${cat}`)?.classList.add('active');
+
+  const groupClinics = clinics.filter(c => c.ciudad === city && c.categoria === cat);
+  const key2 = `${cat}_2`;
+  const key3 = `${cat}_3`;
+  const cr2  = creatives[key2] || {};
+  const cr3  = creatives[key3] || {};
+
+  // Stats
+  const active    = groupClinics.filter(c => c.campana_email === 'Activa').length;
+  const withEmail = groupClinics.filter(c => c.email).length;
+  const sent      = groupClinics.reduce((s, c) => s + (c.email_enviados || 0), 0);
+  const opened    = groupClinics.reduce((s, c) => s + (c.email_abiertos || 0), 0);
+
+  // Creative thumbnails
+  const thumb2 = cr2.approved_url
+    ? `<div class="thumb-wrap"><img src="${cr2.approved_url}" loading="lazy" onerror="this.style.display='none'"><span class="thumb-label">E2 · Impacto</span></div>`
+    : `<div class="thumb-wrap"><div class="thumb-empty"><span>Sin creativo aprobado</span><a href="/creatives">Aprobar en Creativos →</a></div></div>`;
+
+  const thumb3 = cr3.approved_url
+    ? `<div class="thumb-wrap"><img src="${cr3.approved_url}" loading="lazy" onerror="this.style.display='none'"><span class="thumb-label">E3 · Prueba social</span></div>`
+    : `<div class="thumb-wrap"><div class="thumb-empty"><span>Sin creativo aprobado</span><a href="/creatives">Aprobar en Creativos →</a></div></div>`;
+
+  // Email sequence cards
+  const seqCards = EMAIL_SEQ.map(step => {
+    let thumbHTML = '';
+    if (step.hasCreative) {
+      const crData = step.num === 2 ? cr2 : cr3;
+      thumbHTML = crData.approved_url
+        ? `<div class="email-thumb"><img src="${crData.approved_url}" loading="lazy"></div>`
+        : `<div class="email-thumb"><div class="no-thumb">Creativo pendiente</div></div>`;
+    } else {
+      thumbHTML = `<div class="email-thumb"><div class="no-thumb">Solo texto</div></div>`;
+    }
+
+    const sampleClinic = groupClinics.find(c => c.email) || groupClinics[0];
+    const canPreview = !!sampleClinic;
+
+    return `
+      <div class="email-card">
+        <div class="email-body">
+          <div class="email-step-tag" style="color:${step.color}">
+            <span class="tag-dot" style="background:${step.color}"></span>
+            Email ${step.num}
+          </div>
+          <div class="email-name">${step.name}</div>
+          <div class="email-desc">${step.desc}</div>
+          <div class="email-actions">
+            <button class="preview-btn" onclick="previewEmail('${sampleClinic?.notion_id || ''}', ${step.num}, '${step.name}', '${city}', '${cat}')"
+              ${canPreview ? '' : 'disabled'} title="${canPreview ? 'Ver email renderizado' : 'Sin clínica con email en este grupo'}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/>
+                <circle cx="8" cy="8" r="2"/>
+              </svg>
+              Ver email completo
+            </button>
+            ${!canPreview ? '<span style="font-size:.7rem;color:var(--text3)">Sin clínica con email</span>' : ''}
+          </div>
+        </div>
+        ${thumbHTML}
+      </div>`;
+  }).join('');
+
+  // Clinic list
+  const clinicRows = groupClinics.map(c => {
+    const etapa = c.campana_email === 'Activa' ? `<span class="etapa-pill ep-activa">Activa</span>`
+                : c.campana_email ? `<span class="etapa-pill ep-pendiente">${c.campana_email}</span>`
+                : `<span class="etapa-pill ep-none">—</span>`;
+    const score = c.lead_score || 0;
+    const scoreColor = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--gold)' : 'var(--text3)';
+    return `
+      <div class="clinic-row">
+        <div class="clinic-name" title="${c.nombre}">${c.nombre}</div>
+        <div>${etapa}</div>
+        <div class="clinic-score" style="color:${scoreColor}">${score}</div>
+        <div class="clinic-email-count">${c.email_enviados || 0} enviados</div>
+        <button class="btn-preview-clinic" onclick="previewEmail('${c.notion_id}', 1, 'Introducción', '${city}', '${cat}')" ${c.email ? '' : 'disabled'}>
+          Preview E1
+        </button>
+      </div>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="group-header">
+      <div class="gh-top">
+        <div>
+          <span class="gh-title">${city}</span>
+          <span class="gh-badge ${CAT_CLASS[cat]}">${CAT_LABELS[cat]}</span>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-val">${groupClinics.length}</div><div class="stat-lbl">Clínicas</div></div>
+        <div class="stat-item"><div class="stat-val">${withEmail}</div><div class="stat-lbl">Con email</div></div>
+        <div class="stat-item"><div class="stat-val" style="color:var(--green)">${active}</div><div class="stat-lbl">Campaña activa</div></div>
+        <div class="stat-item"><div class="stat-val">${sent}</div><div class="stat-lbl">Emails enviados</div></div>
+        <div class="stat-item"><div class="stat-val">${opened}</div><div class="stat-lbl">Abiertos</div></div>
+      </div>
+    </div>
+
+    <div class="creative-strip">
+      <div class="strip-label">Creativos aprobados para esta categoría</div>
+      <div class="strip-thumbs">${thumb2}${thumb3}</div>
+    </div>
+
+    <div class="seq-label">Secuencia de emails — cómo se verá en la campaña</div>
+    <div class="seq-list">${seqCards}</div>
+
+    <div class="clinic-list-wrap" style="margin-top:24px">
+      <div class="clinic-list-header">
+        <span>Clínicas en este segmento</span>
+        <span style="font-weight:400;text-transform:none;letter-spacing:0">${groupClinics.length} registros</span>
+      </div>
+      <div class="clinic-list-rows">
+        <div class="clinic-row" style="background:var(--bg3);padding-top:8px;padding-bottom:8px">
+          <div style="font-size:.68rem;color:var(--text3)">NOMBRE</div>
+          <div style="font-size:.68rem;color:var(--text3)">CAMPAÑA</div>
+          <div style="font-size:.68rem;color:var(--text3);text-align:center">SCORE</div>
+          <div style="font-size:.68rem;color:var(--text3);text-align:center">EMAILS</div>
+          <div></div>
+        </div>
+        ${clinicRows || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:.8rem">Sin clínicas en este segmento</div>'}
+      </div>
+    </div>
+  `;
+}
+
+/* ── Preview modal ── */
+async function previewEmail(notionId, emailNum, stepName, city, cat) {
+  if (!notionId) return;
+  const modal = document.getElementById('modal-bg');
+  const body  = document.getElementById('modal-body');
+  document.getElementById('modal-title').textContent = `Email ${emailNum} — ${stepName} · ${city} / ${CAT_LABELS[cat]}`;
+  document.getElementById('modal-subject').textContent = 'Generando con Claude…';
+  body.innerHTML = `<div class="modal-loading"><div class="spin"></div>Generando preview con Claude…</div>`;
+  modal.classList.add('open');
+
+  try {
+    const r = await fetch('/api/preview-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notion_id: notionId, email_num: emailNum }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Error al generar');
+
+    document.getElementById('modal-subject').textContent = `Asunto: ${d.subject || '—'}`;
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'email-iframe';
+    iframe.style.cssText = 'width:100%;border:none;min-height:600px;display:block;';
+    body.innerHTML = '';
+    body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(d.body_html || '<p style="padding:20px;font-family:sans-serif">Sin contenido HTML</p>');
+    doc.close();
+
+    // Auto-resize iframe
+    setTimeout(() => {
+      try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch(e) {}
+    }, 400);
+  } catch(e) {
+    body.innerHTML = `<div class="modal-loading" style="color:#e05070">${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('open');
+  document.getElementById('modal-body').innerHTML = '<div class="modal-loading"><div class="spin"></div>Generando preview…</div>';
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast show ${type}`;
+  setTimeout(() => { el.className = 'toast'; }, 3500);
+}
+
+init();
+</script>
+</body>
+</html>
