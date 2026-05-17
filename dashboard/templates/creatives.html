@@ -3,36 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Actualyza — Pre-vuelo de Campaña</title>
+<title>Actualyza — Creativos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:       #080910; --bg2: #0d0e1a; --bg3: #12131f;
-  --card:     rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07);
+  --bg: #080910; --bg2: #0d0e1a; --bg3: #12131f;
+  --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07);
   --border-h: rgba(201,169,110,0.3);
-  --gold:     #c9a96e; --gold-l: #e8c97a; --gold-d: #9a7840;
-  --text:     #eeeef8; --text2: #7878a0; --text3: #50506a;
-  --blue:     #5080ff; --green: #40c898; --orange: #ff9050;
-  --red:      #ff5070; --purple: #b060f0; --teal: #40d0c0;
+  --gold: #c9a96e; --gold-l: #e8c97a; --gold-d: #9a7840;
+  --teal: #40c898;
+  --text: #eeeef8; --text2: #7878a0; --text3: #50506a;
+  --blue: #5080ff; --green: #40c898; --orange: #ff9050; --red: #ff5070;
   --r: 12px; --r-sm: 8px;
 }
 html { font-size: 14px; }
 body {
-  font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
-  min-height: 100vh;
+  font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh;
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.04) 0%, transparent 60%);
 }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 
-.shell { max-width: 1400px; margin: 0 auto; padding: 24px 28px 48px; }
-.main-grid { display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: start; }
+.shell { max-width: 1440px; margin: 0 auto; padding: 24px 28px 60px; }
 
+/* Header */
 header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
@@ -49,533 +47,579 @@ header {
 .logo-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 .btn {
-  display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
   border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card);
   color: var(--text2); font-size: 0.8rem; font-weight: 500; cursor: pointer;
   transition: all .2s; font-family: 'Inter', sans-serif; text-decoration: none;
 }
 .btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
 .btn svg { width: 14px; height: 14px; }
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-color: transparent; color: #0a0a0f; font-weight: 600;
+}
+.btn-gold:hover { opacity: .9; color: #0a0a0f; }
+.btn-teal { background: rgba(64,200,152,0.12); border-color: rgba(64,200,152,0.25); color: var(--teal); }
+.btn-teal:hover { background: rgba(64,200,152,0.2); color: var(--teal); }
+.btn-danger { background: rgba(255,80,112,0.08); border-color: rgba(255,80,112,0.2); color: var(--red); }
+.btn-danger:hover { background: rgba(255,80,112,0.15); color: var(--red); }
 
-/* Left panel */
-.left-panel {
+/* Nav tabs */
+.nav-tabs { display: flex; gap: 4px; margin-bottom: 28px; padding: 4px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); width: fit-content; }
+.nav-tab { padding: 6px 16px; border-radius: var(--r-sm); font-size: 0.8rem; font-weight: 500; color: var(--text2); cursor: pointer; transition: all .15s; text-decoration: none; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.nav-tab.active { background: rgba(201,169,110,0.12); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); }
+
+/* Notification banner */
+.notif-banner {
+  display: none; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--r-sm); margin-bottom: 20px;
+  border: 1px solid;
+}
+.notif-banner.warning { background: rgba(255,144,80,0.06); border-color: rgba(255,144,80,0.2); }
+.notif-banner.info    { background: rgba(80,128,255,0.06); border-color: rgba(80,128,255,0.2); }
+.notif-banner.error   { background: rgba(255,80,112,0.06); border-color: rgba(255,80,112,0.2); }
+.notif-icon { font-size: 1rem; flex-shrink: 0; }
+.notif-body { flex: 1; }
+.notif-title { font-size: 0.82rem; font-weight: 600; }
+.notif-sub   { font-size: 0.74rem; color: var(--text2); margin-top: 2px; }
+.notif-dismiss { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 1.1rem; padding: 2px; }
+.notif-dismiss:hover { color: var(--text2); }
+
+/* Main grid */
+.main-grid { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
+
+/* Sidebar */
+.sidebar {
   position: sticky; top: 24px;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 18px 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px;
 }
-.panel-label {
-  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text3); margin-bottom: 16px;
-}
-.city-section { margin-bottom: 20px; }
-.city-name { font-size: 0.72rem; font-weight: 600; color: var(--text2); margin-bottom: 8px; padding-left: 2px; }
-.group-btn {
+.sidebar-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+.sidebar-item {
   display: flex; align-items: center; justify-content: space-between;
-  width: 100%; padding: 8px 12px; border-radius: var(--r-sm);
-  border: 1px solid transparent; background: transparent;
-  color: var(--text2); font-size: 0.8rem; font-family: 'Inter', sans-serif;
-  cursor: pointer; transition: all .15s; margin-bottom: 4px;
+  padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid transparent; font-size: 0.8rem; color: var(--text2);
+  transition: all .15s; margin-bottom: 4px; background: none; width: 100%;
+  font-family: 'Inter', sans-serif; text-align: left;
 }
-.group-btn:hover { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--text); }
-.group-btn.active { background: rgba(201,169,110,0.1); border-color: rgba(201,169,110,0.3); color: var(--gold); }
-.group-count {
-  font-size: 0.7rem; font-weight: 600; padding: 1px 7px;
-  border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text3);
-}
-.group-btn.active .group-count { background: rgba(201,169,110,0.15); color: var(--gold); }
+.sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.sidebar-item.active { background: rgba(201,169,110,0.1); border-color: rgba(201,169,110,0.2); color: var(--gold); }
+.sidebar-count { font-size: 0.68rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text3); }
+.sidebar-item.active .sidebar-count { background: rgba(201,169,110,0.15); color: var(--gold); }
+.sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.sidebar-action { width: 100%; margin-top: 8px; justify-content: center; }
 
-/* Empty state */
-.empty-state {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 400px; gap: 12px; color: var(--text3); text-align: center;
-}
-.empty-icon { font-size: 2.5rem; opacity: .4; }
-.empty-title { font-size: 0.9rem; font-weight: 500; color: var(--text2); }
-.empty-sub { font-size: 0.78rem; }
+/* Content area */
+.content-area { display: flex; flex-direction: column; gap: 32px; }
 
-/* Pre-flight */
-.preflight { display: flex; flex-direction: column; gap: 20px; }
+/* Category section */
+.cat-section { display: none; }
+.cat-section.visible { display: block; }
+.cat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cat-title { font-size: 1.1rem; font-weight: 700; }
+.cat-badge { font-size: 0.68rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 8px; }
+.cat-dental   { background: rgba(80,128,255,0.1); color: var(--blue); }
+.cat-estetica { background: rgba(176,96,240,0.1); color: #b060f0; }
+.cat-medspa   { background: rgba(64,200,152,0.1); color: var(--teal); }
+.cat-wellness { background: rgba(255,144,80,0.1); color: var(--orange); }
 
-.group-header {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 24px;
-}
-.group-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
-.stats-row { display: flex; gap: 24px; flex-wrap: wrap; }
-.stat-item { display: flex; flex-direction: column; gap: 2px; }
-.stat-val { font-size: 1.3rem; font-weight: 700; line-height: 1; }
-.stat-lbl { font-size: 0.68rem; color: var(--text3); }
+.email-cases { display: flex; flex-direction: column; gap: 20px; }
 
-.seq-label {
-  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+/* Approval card */
+.approval-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
 }
-.seq-list { display: flex; flex-direction: column; gap: 10px; }
+.approval-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.email-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
+.email-tag span { color: var(--text2); margin-left: 6px; text-transform: none; letter-spacing: 0; }
+.approval-status { display: flex; align-items: center; gap: 8px; }
+.status-pill {
+  font-size: 0.68rem; font-weight: 600; padding: 2px 10px; border-radius: 10px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.status-approved { background: rgba(64,200,152,0.1); color: var(--green); border: 1px solid rgba(64,200,152,0.2); }
+.status-pending  { background: rgba(255,144,80,0.1); color: var(--orange); border: 1px solid rgba(255,144,80,0.2); }
+.status-empty    { background: rgba(255,255,255,0.04); color: var(--text3); border: 1px solid var(--border); }
+.status-overdue  { background: rgba(255,80,112,0.1); color: var(--red); border: 1px solid rgba(255,80,112,0.2); }
+.status-generating { background: rgba(80,128,255,0.1); color: var(--blue); border: 1px solid rgba(80,128,255,0.2); }
+.expiry-info { font-size: 0.72rem; color: var(--text3); }
 
-.email-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
-  overflow: hidden; display: grid; grid-template-columns: 1fr auto; transition: border-color .2s;
-}
-.email-card:hover { border-color: rgba(255,255,255,0.12); }
-.email-body { padding: 16px 20px; }
-.email-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; margin-bottom: 6px;
-}
-.email-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-.email-desc { font-size: 0.74rem; color: var(--text3); line-height: 1.5; }
-.email-actions { margin-top: 10px; }
-.preview-btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
-  border-radius: var(--r-sm); border: 1px solid var(--border); background: transparent;
-  color: var(--text2); font-size: 0.74rem; font-weight: 500;
-  cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
-}
-.preview-btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
-.preview-btn:disabled { opacity: .4; cursor: not-allowed; }
+.approval-body { padding: 18px; }
 
-.email-creative {
-  width: 180px; min-height: 95px; position: relative; flex-shrink: 0;
-  background: var(--bg2); display: flex; align-items: center; justify-content: center;
-  border-left: 1px solid var(--border);
+/* Options grid */
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+.option-card {
+  border: 2px solid var(--border); border-radius: var(--r-sm); overflow: hidden;
+  transition: border-color .2s; position: relative; cursor: default;
 }
-.email-creative img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.creative-spinner {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  color: var(--text3); font-size: 0.68rem; text-align: center; padding: 12px;
+.option-card.selected { border-color: var(--gold); }
+.option-card.selected-teal { border-color: var(--teal); }
+
+.option-label {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: var(--bg3); border-bottom: 1px solid var(--border);
 }
-.spin-ring {
-  width: 20px; height: 20px; border: 2px solid rgba(201,169,110,0.2);
-  border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite;
+.option-name { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); }
+.option-badge { font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 8px; }
+.badge-gold { background: rgba(201,169,110,0.15); color: var(--gold); }
+.badge-teal { background: rgba(64,200,152,0.15); color: var(--teal); }
+.badge-approved { background: rgba(64,200,152,0.1); color: var(--green); }
+.badge-current { background: rgba(201,169,110,0.15); color: var(--gold); }
+
+.option-preview {
+  width: 100%; height: 160px; background: var(--bg3);
+  display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
 }
+.option-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.preview-loading {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--text3); font-size: 0.72rem;
+}
+.spin { width: 22px; height: 22px; border: 2px solid rgba(201,169,110,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.no-image { color: var(--text3); font-size: 0.7rem; text-align: center; padding: 16px; opacity: .5; }
+.preview-empty { color: var(--text3); font-size: 0.72rem; text-align: center; padding: 16px; }
 
-/* Leads */
-.leads-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
-.leads-header {
-  padding: 14px 20px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
+.option-actions { padding: 10px 12px; background: var(--bg3); border-top: 1px solid var(--border); display: flex; gap: 8px; }
+.btn-choose {
+  flex: 1; padding: 6px 12px; border-radius: var(--r-sm); font-size: 0.76rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all .2s; font-family: 'Inter', sans-serif;
 }
-.leads-title { font-size: 0.82rem; font-weight: 600; }
-.leads-count { font-size: 0.72rem; color: var(--text3); }
-.leads-list { max-height: 220px; overflow-y: auto; }
-.lead-row {
-  display: flex; align-items: center; gap: 12px; padding: 9px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.77rem;
-}
-.lead-row:last-child { border-bottom: none; }
-.lead-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lead-email { color: var(--text3); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lead-badge { font-size: 0.65rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
-.b-no-email { background: rgba(255,80,112,0.12); color: var(--red); }
-.b-activa   { background: rgba(64,200,152,0.12); color: var(--green); }
-.b-nueva    { background: rgba(201,169,110,0.12); color: var(--gold); }
-.b-done     { background: rgba(80,128,255,0.12); color: var(--blue); }
+.btn-choose-a { background: rgba(201,169,110,0.15); color: var(--gold); border: 1px solid rgba(201,169,110,0.3); }
+.btn-choose-a:hover { background: rgba(201,169,110,0.25); }
+.btn-choose-b { background: rgba(64,200,152,0.12); color: var(--teal); border: 1px solid rgba(64,200,152,0.25); }
+.btn-choose-b:hover { background: rgba(64,200,152,0.22); }
+.btn-choose:disabled { opacity: .35; cursor: not-allowed; }
+.btn-choose.is-chosen { cursor: default; }
 
-/* Activate */
-.activate-bar {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
-  padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+.card-actions { display: flex; align-items: center; gap: 10px; }
+.regen-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+  border-radius: var(--r-sm); border: 1px solid var(--border); background: transparent;
+  color: var(--text3); font-size: 0.76rem; font-weight: 500; cursor: pointer;
+  transition: all .2s; font-family: 'Inter', sans-serif;
 }
-.activate-info { font-size: 0.8rem; color: var(--text2); }
-.activate-info strong { color: var(--text); }
-.activate-btn {
-  display: flex; align-items: center; gap: 8px; padding: 10px 24px;
-  border-radius: var(--r-sm); border: 1px solid rgba(64,200,152,0.3);
-  background: rgba(64,200,152,0.1); color: var(--green);
-  font-size: 0.85rem; font-weight: 600; cursor: pointer;
-  transition: all .2s; font-family: 'Inter', sans-serif; white-space: nowrap;
-}
-.activate-btn:hover { background: rgba(64,200,152,0.18); border-color: rgba(64,200,152,0.5); }
-.activate-btn:disabled { opacity: .45; cursor: not-allowed; }
-.activate-result { font-size: 0.78rem; margin-top: 10px; display: none; }
+.regen-btn:hover { border-color: var(--border-h); color: var(--gold); }
+.regen-btn svg { width: 13px; height: 13px; }
 
-/* Modal */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.82);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 999; opacity: 0; pointer-events: none; transition: opacity .25s;
+/* Approved bar */
+.approved-bar {
+  display: none; align-items: center; gap: 10px; padding: 10px 14px;
+  background: rgba(64,200,152,0.05); border: 1px solid rgba(64,200,152,0.15);
+  border-radius: var(--r-sm); margin-top: 12px; font-size: 0.78rem; color: var(--text2);
 }
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal {
-  background: #0d0e1a; border: 1px solid var(--border); border-radius: var(--r);
-  width: 680px; max-width: 95vw; max-height: 88vh;
-  display: flex; flex-direction: column;
-  transform: translateY(14px); transition: transform .25s;
-}
-.modal-overlay.open .modal { transform: translateY(0); }
-.modal-head {
-  padding: 18px 22px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-}
-.modal-title { font-size: 0.88rem; font-weight: 600; }
-.modal-subject { font-size: 0.74rem; color: var(--text3); margin-top: 3px; }
-.modal-close {
-  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
-  background: transparent; color: var(--text2); cursor: pointer; font-size: 1.1rem;
-  display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;
-}
-.modal-close:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
-.modal-loading { text-align: center; padding: 60px 0; color: var(--text3); font-size: .85rem; }
-.modal-email-frame {
-  background: #fff; color: #1a1a1a; border-radius: 8px; padding: 28px 32px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  font-size: 14px; line-height: 1.6;
-}
-.modal-email-frame p { margin-bottom: 14px; }
-.modal-email-frame a { color: #1a56ff; }
-.field-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.approved-bar.visible { display: flex; }
+.approved-check { color: var(--green); font-size: 1rem; }
+.approved-url { font-size: 0.68rem; color: var(--text3); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
 
-@media (max-width: 900px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .left-panel { position: static; }
-  .email-creative { width: 120px; }
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 12px 18px; font-size: 0.82rem; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4); opacity: 0; transform: translateY(8px);
+  transition: all .3s; pointer-events: none;
 }
-@media (max-width: 600px) {
-  .shell { padding: 16px 16px 40px; }
-  .activate-bar { flex-direction: column; align-items: flex-start; }
-}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-color: rgba(64,200,152,0.3); color: var(--green); }
+.toast.error   { border-color: rgba(255,80,112,0.3); color: var(--red); }
 </style>
 </head>
 <body>
-
 <div class="shell">
+
+  <!-- Header -->
   <header>
     <div class="logo">
       <div class="logo-mark">A</div>
       <div>
         <div class="logo-text">Actual<span>yza</span></div>
-        <div class="logo-sub">Pre-vuelo de Campaña</div>
+        <div class="logo-sub">Prospecting Dashboard</div>
       </div>
     </div>
     <div class="header-right">
       <a href="/" class="btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        Dashboard
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 8h10M3 4h10M3 12h7"/>
+        </svg>
+        Pipeline
       </a>
       <a href="/campaigns" class="btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 4l6-2 6 2v8l-6 2-6-2V4z"/>
+        </svg>
         Campañas
       </a>
-      <button class="btn" onclick="regenAssets(this)" title="Regenerar creativos (~$0.32)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-        Actualizar creativos
-      </button>
     </div>
   </header>
 
+  <!-- Nav tabs -->
+  <div class="nav-tabs">
+    <a href="/" class="nav-tab">Dashboard</a>
+    <a href="/campaigns" class="nav-tab">Campañas</a>
+    <span class="nav-tab active">Creativos</span>
+  </div>
+
+  <!-- Notification banners -->
+  <div id="notif-area"></div>
+
+  <!-- Main grid -->
   <div class="main-grid">
-    <div class="left-panel">
-      <div class="panel-label">Grupos de campaña</div>
-      <div id="group-selector">
-        <div style="color:var(--text3);font-size:.78rem;text-align:center;padding:24px 0">Cargando…</div>
-      </div>
-    </div>
 
-    <div id="right-panel">
-      <div class="empty-state">
-        <div class="empty-icon">✈️</div>
-        <div class="empty-title">Selecciona un grupo para el pre-vuelo</div>
-        <div class="empty-sub">Ciudad + categoría → revisa la secuencia → activa</div>
-      </div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-label">Categorías</div>
+      <button class="sidebar-item active" onclick="showCat('all')" id="btn-all">
+        <span>Todas</span>
+        <span class="sidebar-count" id="cnt-all">8</span>
+      </button>
+      <button class="sidebar-item" onclick="showCat('dental')" id="btn-dental">
+        <span>Dental</span>
+        <span class="sidebar-count" id="cnt-dental">2</span>
+      </button>
+      <button class="sidebar-item" onclick="showCat('estetica')" id="btn-estetica">
+        <span>Estética</span>
+        <span class="sidebar-count" id="cnt-estetica">2</span>
+      </button>
+      <button class="sidebar-item" onclick="showCat('medspa')" id="btn-medspa">
+        <span>MedSpa</span>
+        <span class="sidebar-count" id="cnt-medspa">2</span>
+      </button>
+      <button class="sidebar-item" onclick="showCat('wellness')" id="btn-wellness">
+        <span>Wellness</span>
+        <span class="sidebar-count" id="cnt-wellness">2</span>
+      </button>
+
+      <hr class="sidebar-divider">
+      <button class="btn btn-gold sidebar-action" onclick="generateAll()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 2v4l2 2M3.3 3.3A6 6 0 1 0 14 8"/>
+        </svg>
+        Generar todo
+      </button>
+      <div id="gen-all-status" style="font-size:.72rem;color:var(--text3);text-align:center;margin-top:8px;"></div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-area" id="content">
+
+      <!-- dental -->
+      <section class="cat-section visible" data-cat="dental" id="sec-dental">
+        <div class="cat-header">
+          <div><span class="cat-title">Dental</span><span class="cat-badge cat-dental">4 emails/mes</span></div>
+        </div>
+        <div class="email-cases" id="cases-dental"></div>
+      </section>
+
+      <!-- estetica -->
+      <section class="cat-section visible" data-cat="estetica" id="sec-estetica">
+        <div class="cat-header">
+          <div><span class="cat-title">Estética</span><span class="cat-badge cat-estetica">4 emails/mes</span></div>
+        </div>
+        <div class="email-cases" id="cases-estetica"></div>
+      </section>
+
+      <!-- medspa -->
+      <section class="cat-section visible" data-cat="medspa" id="sec-medspa">
+        <div class="cat-header">
+          <div><span class="cat-title">MedSpa</span><span class="cat-badge cat-medspa">4 emails/mes</span></div>
+        </div>
+        <div class="email-cases" id="cases-medspa"></div>
+      </section>
+
+      <!-- wellness -->
+      <section class="cat-section visible" data-cat="wellness" id="sec-wellness">
+        <div class="cat-header">
+          <div><span class="cat-title">Wellness</span><span class="cat-badge cat-wellness">4 emails/mes</span></div>
+        </div>
+        <div class="email-cases" id="cases-wellness"></div>
+      </section>
+
     </div>
   </div>
 </div>
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal" onclick="closeModal(event)">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title" id="modal-title">Preview</div>
-        <div class="modal-subject" id="modal-subject"></div>
-      </div>
-      <button class="modal-close" onclick="closeModalDirect()">×</button>
-    </div>
-    <div class="modal-body" id="modal-body">
-      <div class="modal-loading">Generando con Claude…</div>
-    </div>
-  </div>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
-let allClinics = [];
-let allAssets  = {};
-let selected   = null;
+const CATS = ['dental','estetica','medspa','wellness'];
+const NUMS = [2, 3];
+const EMAIL_LABELS = {
+  2: { name: 'Email 2 — Impacto', desc: 'Banner de FOMO y urgencia. Acompaña el segundo email de la secuencia.' },
+  3: { name: 'Email 3 — Prueba social', desc: 'Caso de éxito con cifras reales. Acompaña el tercer email.' },
+};
 
-const CITIES     = ['Miami','Orlando','Dallas'];
-const CATEGORIES = ['dental','estetica','medspa','wellness'];
-const CAT_LABEL  = {dental:'Dental', estetica:'Esthetic', medspa:'Med Spa', wellness:'Wellness'};
-const CAT_COLOR  = {dental:'var(--blue)', estetica:'var(--purple)', medspa:'var(--teal)', wellness:'var(--green)'};
-const CITY_COLOR = {Miami:'var(--blue)', Orlando:'var(--green)', Dallas:'var(--gold)'};
+let state = {};
+let pollingIntervals = {};
 
-document.addEventListener('DOMContentLoaded', init);
-
+/* ── Init ── */
 async function init() {
-  [allClinics, allAssets] = await Promise.all([
-    fetch('/api/clinics').then(r => r.json()),
-    fetch('/api/creative-assets').then(r => r.json()).then(d => d.assets || {}),
-  ]);
-  renderSelector();
-  pollAssets();
+  await loadNotifications();
+  await loadStatus();
+  setInterval(partialRefresh, 8000);
 }
 
-const groupLeads     = (city, cat) => allClinics.filter(c => c.ciudad === city && c.categoria === cat);
-const eligibleLeads  = leads => leads.filter(c => c.email && (!c.campana_email || c.campana_email === 'No iniciada'));
-
-// ── Selector ──────────────────────────────────────────────────
-function renderSelector() {
-  document.getElementById('group-selector').innerHTML = CATEGORIES.map(cat =>
-    `<div class="city-section">
-      <div class="city-name" style="color:${CAT_COLOR[cat]}">${CAT_LABEL[cat]}</div>
-      ${CITIES.map(city => {
-        const n = eligibleLeads(groupLeads(city, cat)).length;
-        const active = selected?.city === city && selected?.cat === cat;
-        return `<button class="group-btn ${active ? 'active' : ''}" onclick="selectGroup('${city}','${cat}')">
-          <span>${city}</span>
-          <span class="group-count">${n}</span>
-        </button>`;
-      }).join('')}
-    </div>`
-  ).join('');
+/* ── Notifications ── */
+async function loadNotifications() {
+  try {
+    const r = await fetch('/api/notifications');
+    const d = await r.json();
+    const area = document.getElementById('notif-area');
+    area.innerHTML = '';
+    (d.notifications || []).forEach(n => {
+      const icon = { warning: '⚠', info: 'ℹ', error: '✕' }[n.type] || 'ℹ';
+      const div = document.createElement('div');
+      div.className = `notif-banner ${n.type}`;
+      div.style.display = 'flex';
+      div.innerHTML = `
+        <span class="notif-icon">${icon}</span>
+        <div class="notif-body">
+          <div class="notif-title">${n.title}</div>
+          ${n.body ? `<div class="notif-sub">${n.body}</div>` : ''}
+        </div>
+        ${n.action ? `<a href="${n.action}" class="btn" style="flex-shrink:0;font-size:.72rem">${n.action_label}</a>` : ''}
+        <button class="notif-dismiss" onclick="this.parentElement.remove()">×</button>
+      `;
+      area.appendChild(div);
+    });
+  } catch(e) {}
 }
 
-// ── Pre-flight ────────────────────────────────────────────────
-function selectGroup(city, cat) {
-  selected = {city, cat};
-  renderSelector();
+/* ── Status load ── */
+async function loadStatus() {
+  const r = await fetch('/api/creatives/status');
+  const d = await r.json();
+  state = d.creatives || {};
+  renderAll();
+}
 
-  const leads    = groupLeads(city, cat);
-  const eligible = eligibleLeads(leads);
-  const activas  = leads.filter(c => c.campana_email === 'Activa').length;
-  const completas= leads.filter(c => c.campana_email === 'Completada').length;
-  const sinEmail = leads.filter(c => !c.email).length;
-  const first    = eligible[0] || leads[0];
+async function partialRefresh() {
+  const r = await fetch('/api/creatives/status');
+  const d = await r.json();
+  const prev = state;
+  state = d.creatives || {};
+  // Re-render only cards that changed generating status
+  for (const key in state) {
+    const was = prev[key] || {};
+    const now = state[key] || {};
+    if (was.generating !== now.generating || was.approved !== now.approved) {
+      const [cat, num] = key.split('_');
+      renderCard(cat, parseInt(num));
+    }
+  }
+}
 
-  document.getElementById('right-panel').innerHTML = `
-    <div class="preflight">
+/* ── Render ── */
+function renderAll() {
+  CATS.forEach(cat => {
+    const container = document.getElementById(`cases-${cat}`);
+    if (!container) return;
+    container.innerHTML = '';
+    NUMS.forEach(num => {
+      container.appendChild(buildCard(cat, num));
+    });
+  });
+}
 
-      <div class="group-header">
-        <div class="group-title">
-          <span style="color:${CITY_COLOR[city]}">${city}</span>
-          <span style="color:var(--text3);font-weight:400;font-size:.9rem"> / </span>
-          <span style="color:${CAT_COLOR[cat]}">${CAT_LABEL[cat]}</span>
-        </div>
-        <div class="stats-row">
-          ${stat(leads.length,   'var(--text)',   'Total leads')}
-          ${stat(eligible.length,'var(--gold)',   'Elegibles')}
-          ${stat(activas,        'var(--green)',  'Secuencias activas')}
-          ${stat(completas,      'var(--blue)',   'Completadas')}
-          ${stat(sinEmail,       'var(--text3)',  'Sin correo')}
-        </div>
-      </div>
+function renderCard(cat, num) {
+  const key = `${cat}_${num}`;
+  const existing = document.getElementById(`card-${key}`);
+  if (!existing) return;
+  const newCard = buildCard(cat, num);
+  existing.replaceWith(newCard);
+}
 
+function buildCard(cat, num) {
+  const key = `${cat}_${num}`;
+  const s   = state[key] || {};
+  const lbl = EMAIL_LABELS[num];
+
+  // Status pill
+  let statusHTML = '';
+  if (s.generating) {
+    statusHTML = `<span class="status-pill status-generating">Generando…</span>`;
+  } else if (s.overdue) {
+    statusHTML = `<span class="status-pill status-overdue">Vencido · ${s.days_since}d</span>`;
+  } else if (s.approved) {
+    statusHTML = `<span class="status-pill status-approved">Aprobado · ${s.days_since ?? 0}d</span>`;
+  } else if (s.a || s.b) {
+    statusHTML = `<span class="status-pill status-pending">Pendiente aprobación</span>`;
+  } else {
+    statusHTML = `<span class="status-pill status-empty">Sin generar</span>`;
+  }
+
+  // Build option HTML
+  const optA = buildOption(key, 'a', s);
+  const optB = buildOption(key, 'b', s);
+
+  // Approved bar
+  const approvedBar = s.approved_url ? `
+    <div class="approved-bar visible">
+      <span class="approved-check">✓</span>
+      <span>Creativo activo:</span>
+      <span class="approved-url">${s.approved_url}</span>
+    </div>` : '';
+
+  const card = document.createElement('div');
+  card.className = 'approval-card';
+  card.id = `card-${key}`;
+  card.innerHTML = `
+    <div class="approval-card-header">
       <div>
-        <div class="seq-label">Secuencia de emails — vista previa</div>
-        <div class="seq-list" id="seq-list">
-          ${emailCard(1,   cat, first, 'Introducción',            'Primer contacto en frío. Texto plano sin imagen — máxima entregabilidad.', false, false)}
-          ${emailCard(2,   cat, first, 'Seguimiento (no abrió)',  'Segunda oportunidad con ángulo diferente. Creativo de impacto incluido.', true, false)}
-          ${emailCard('2b',cat, first, 'Seguimiento (sí abrió)', 'Para quien abrió Email 1 pero no respondió. Más profundo + link Cal.com.', true, true)}
-          ${emailCard(3,   cat, first, 'Prueba social',           'Historia de una clínica similar + resultados. Creativo + link Cal.com.', true, false)}
-          ${emailCard(4,   cat, first, 'Último contacto',         'Cierre respetuoso. Link Cal.com como CTA principal. Sin imagen.', false, false)}
-        </div>
+        <div class="email-tag">${lbl.name}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:2px">${lbl.desc}</div>
       </div>
-
-      <div class="leads-card">
-        <div class="leads-header">
-          <div class="leads-title">Leads del grupo</div>
-          <div class="leads-count">${leads.length} total · ${eligible.length} elegibles</div>
-        </div>
-        <div class="leads-list">
-          ${leads.length
-            ? leads.slice().sort((a,b)=>(b.lead_score||0)-(a.lead_score||0)).map(c => {
-                let badge, bc;
-                if (!c.email)                              { badge='Sin correo'; bc='b-no-email'; }
-                else if (c.campana_email === 'Activa')     { badge='Activa';     bc='b-activa'; }
-                else if (c.campana_email === 'Completada') { badge='Completa';   bc='b-done'; }
-                else                                       { badge='Elegible';   bc='b-nueva'; }
-                return `<div class="lead-row">
-                  <div class="lead-name">${escHtml(c.nombre)}</div>
-                  <div class="lead-email">${escHtml(c.email||'—')}</div>
-                  <span class="lead-badge ${bc}">${badge}</span>
-                </div>`;
-              }).join('')
-            : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:.78rem">Sin leads en este grupo</div>'}
-        </div>
+      <div class="approval-status">
+        ${statusHTML}
       </div>
-
-      <div class="activate-bar">
-        <div class="activate-info">
-          Enviar <strong>Email 1</strong> a <strong>${eligible.length} leads elegibles</strong> de ${city} / ${CAT_LABEL[cat]}.
-          ${eligible.length === 0 ? '<br><span style="color:var(--red);font-size:.72rem">Sin leads elegibles con correo en este grupo.</span>' : ''}
-        </div>
-        <button class="activate-btn" id="activate-btn"
-          onclick="activateGroup('${city}','${cat}',this)"
-          ${eligible.length === 0 ? 'disabled' : ''}>
-          🚀 Activar secuencia
+    </div>
+    <div class="approval-body">
+      <div class="options-grid">
+        ${optA}
+        ${optB}
+      </div>
+      <div class="card-actions">
+        <button class="regen-btn" onclick="regenerate('${cat}',${num})" ${s.generating ? 'disabled' : ''}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M2.5 8A5.5 5.5 0 1 0 8 2.5" stroke-linecap="round"/>
+            <path d="M2.5 4v4h4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          ${s.a || s.b ? 'Regenerar' : 'Generar opciones'}
         </button>
+        ${s.generating ? '<span style="font-size:.72rem;color:var(--blue)">Generando opciones…</span>' : ''}
       </div>
-      <div class="activate-result" id="activate-result"></div>
-
-    </div>`;
-
-  updateCreatives(cat);
+      ${approvedBar}
+    </div>
+  `;
+  return card;
 }
 
-function stat(val, color, label) {
-  return `<div class="stat-item">
-    <div class="stat-val" style="color:${color}">${val}</div>
-    <div class="stat-lbl">${label}</div>
-  </div>`;
-}
+function buildOption(key, opt, s) {
+  const data = s[opt];
+  const isApproved = s.approved === opt;
+  const hasData = data && data.url;
+  const isA = opt === 'a';
 
-function emailCard(num, cat, first, title, desc, hasCreative, is2b) {
-  const emailNum   = num === '2b' ? 2 : num;
-  const creativeKey = (num === 3) ? 3 : 2;
-  const nid        = first?.notion_id || '';
-  const colors     = {'1':'var(--text3)','2':'var(--orange)','2b':'var(--teal)','3':'var(--purple)','4':'var(--blue)'};
-  const col        = colors[String(num)] || 'var(--text3)';
+  let previewHTML = '';
+  if (s.generating && !hasData) {
+    previewHTML = `<div class="preview-loading"><div class="spin"></div><span>Generando…</span></div>`;
+  } else if (hasData) {
+    previewHTML = `<img src="${data.url}" alt="Opción ${opt.toUpperCase()}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=preview-empty>No disponible</div>'">`;
+  } else {
+    previewHTML = `<div class="preview-empty">Sin generar</div>`;
+  }
 
-  const creative = hasCreative
-    ? `<div class="email-creative" id="cr-${num}-${cat}">
-        <div class="creative-spinner"><div class="spin-ring"></div><span>Cargando…</span></div>
-       </div>`
-    : `<div class="email-creative"><div class="no-image">Sin<br>imagen</div></div>`;
+  const badgeClass = isA ? 'badge-gold' : 'badge-teal';
+  const badgeLabel = isApproved ? '✓ Activo' : (isA ? 'Gold' : 'Teal');
+  const badgeCls   = isApproved ? 'badge-approved' : badgeClass;
 
-  return `<div class="email-card">
-    <div class="email-body">
-      <div class="email-tag" style="color:${col}">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${col};opacity:.7"></span>
-        Email ${num}
+  const chooseClass = isA ? 'btn-choose-a' : 'btn-choose-b';
+  const chooseLabel = isApproved ? '✓ Seleccionado' : `Elegir ${opt.toUpperCase()}`;
+  const chooseDisabled = !hasData || s.generating ? 'disabled' : '';
+  const chosenCls = isApproved ? 'is-chosen' : '';
+  const cardSelectedCls = isApproved ? (isA ? 'selected' : 'selected-teal') : '';
+
+  const [cat, num] = key.split('_');
+
+  return `
+    <div class="option-card ${cardSelectedCls}">
+      <div class="option-label">
+        <span class="option-name">Opción ${opt.toUpperCase()}</span>
+        <span class="option-badge ${badgeCls}">${badgeLabel}</span>
       </div>
-      <div class="email-title">${title}</div>
-      <div class="email-desc">${desc}</div>
-      <div class="email-actions">
-        <button class="preview-btn" ${!nid ? 'disabled' : ''}
-          onclick="previewEmail('${nid}',${emailNum},${is2b},'Email ${num} — ${title}')">
-          👁 Ver preview
+      <div class="option-preview">${previewHTML}</div>
+      <div class="option-actions">
+        <button class="btn-choose ${chooseClass} ${chosenCls}" ${chooseDisabled}
+          onclick="approve('${cat}',${num},'${opt}')">
+          ${chooseLabel}
         </button>
       </div>
     </div>
-    ${creative}
-  </div>`;
+  `;
 }
 
-// ── Creative images ───────────────────────────────────────────
-function updateCreatives(cat) {
-  const assets = allAssets[cat] || {};
-  [[2,'cr-2'],[3,'cr-3']].forEach(([n, prefix]) => {
-    const el  = document.getElementById(`${prefix}-${cat}`);
-    if (!el) return;
-    const url = assets[String(n)];
-    if (url) {
-      el.innerHTML = `<img src="${url}" alt="Email ${n} creativo"
-        onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>No disponible</div>'">`;
-    } else {
-      el.innerHTML = `<div class="creative-spinner"><div class="spin-ring"></div><span>Generando…</span></div>`;
-    }
+/* ── Actions ── */
+function showCat(cat) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${cat}`)?.classList.add('active');
+  document.querySelectorAll('.cat-section').forEach(s => {
+    if (cat === 'all') { s.classList.add('visible'); }
+    else { s.classList.toggle('visible', s.dataset.cat === cat); }
   });
-  // Email 2b uses same creative as email 2
-  const el2b = document.getElementById(`cr-2b-${cat}`);
-  if (el2b) {
-    const url = assets['2'];
-    if (url) {
-      el2b.innerHTML = `<img src="${url}" alt="Email 2b creativo"
-        onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>No disponible</div>'">`;
-    } else {
-      el2b.innerHTML = `<div class="creative-spinner"><div class="spin-ring"></div><span>Generando…</span></div>`;
-    }
-  }
 }
 
-let pollTimer = null;
-function pollAssets() {
-  clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    const data = await fetch('/api/creative-assets').then(r => r.json());
-    allAssets  = data.assets || {};
-    if (selected) updateCreatives(selected.cat);
-    const done = CATEGORIES.every(c => allAssets[c]?.['2'] && allAssets[c]?.['3']);
-    if (done) clearInterval(pollTimer);
-  }, 4000);
-}
-
-// ── Preview modal ─────────────────────────────────────────────
-async function previewEmail(nid, num, prevOpened, label) {
-  if (!nid) return;
-  document.getElementById('modal-title').textContent   = `Preview — ${label}`;
-  document.getElementById('modal-subject').textContent = '';
-  document.getElementById('modal-body').innerHTML      = '<div class="modal-loading">Generando con Claude… (5–10 seg)</div>';
-  document.getElementById('modal').classList.add('open');
-
-  try {
-    const r    = await fetch('/api/preview-email', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({notion_id: nid, email_num: num, previous_opened: prevOpened}),
-    });
-    const data = await r.json();
-    if (!data.ok) throw new Error(data.error || 'Error desconocido');
-    document.getElementById('modal-subject').textContent = `Asunto: ${data.subject}`;
-    document.getElementById('modal-body').innerHTML = `
-      <div class="field-label" style="margin-bottom:4px">Asunto</div>
-      <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:20px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:8px">${escHtml(data.subject)}</div>
-      <div class="field-label" style="margin-bottom:8px">Cuerpo del email</div>
-      <div class="modal-email-frame">${data.body_html}</div>`;
-  } catch(e) {
-    document.getElementById('modal-body').innerHTML =
-      `<div style="color:var(--red);padding:20px;font-size:.82rem">Error: ${escHtml(e.message)}</div>`;
-  }
-}
-
-function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalDirect(); }
-function closeModalDirect() { document.getElementById('modal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
-
-// ── Activate ──────────────────────────────────────────────────
-async function activateGroup(city, cat, btn) {
-  const n = eligibleLeads(groupLeads(city, cat)).length;
-  if (!n || !confirm(`Se enviará Email 1 a ${n} leads de ${city} / ${CAT_LABEL[cat]}.\n\n¿Confirmar?`)) return;
-  btn.disabled = true; btn.textContent = 'Enviando…';
-  const result = document.getElementById('activate-result');
-  result.style.display = 'none';
-
-  const r    = await fetch('/api/enable-group', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({city, category: cat}),
-  });
-  const data = await r.json();
-  result.style.display = 'block';
-
-  if (data.ok) {
-    result.style.color = 'var(--green)';
-    result.textContent = `✓ Email 1 enviado a ${data.enabled} de ${data.total} leads.${data.errors?.length ? ` ${data.errors.length} errores.` : ''}`;
-    btn.textContent = '✓ Activado'; btn.style.color = 'var(--green)';
-    allClinics = await fetch('/api/clinics').then(r => r.json());
-    await fetch('/api/refresh', {method:'POST'});
-    setTimeout(() => selectGroup(city, cat), 1800);
-  } else {
-    result.style.color = 'var(--red)';
-    result.textContent = 'Error: ' + (data.error || 'desconocido');
-    btn.disabled = false; btn.textContent = '🚀 Activar secuencia';
-  }
-}
-
-// ── Regen ─────────────────────────────────────────────────────
-async function regenAssets(btn) {
-  if (!confirm('Regenerar todos los creativos costará ~$0.32 en Flux.\n\n¿Confirmar?')) return;
+async function approve(cat, num, option) {
+  const key = `${cat}_${num}`;
+  const btn = event.target;
   btn.disabled = true;
-  await fetch('/api/regenerate-assets', {method:'POST'});
-  allAssets = {};
-  if (selected) updateCreatives(selected.cat);
-  pollAssets();
-  btn.disabled = false;
+  btn.textContent = 'Guardando…';
+  try {
+    const r = await fetch(`/api/creatives/approve/${cat}/${num}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({option})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast(`Opción ${option.toUpperCase()} aprobada ✓`, 'success');
+      await loadStatus();
+    } else {
+      toast(d.error || 'Error al aprobar', 'error');
+      btn.disabled = false;
+    }
+  } catch(e) {
+    toast('Error de red', 'error');
+    btn.disabled = false;
+  }
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function regenerate(cat, num) {
+  try {
+    const r = await fetch(`/api/creatives/generate/${cat}/${num}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      toast(`Generando opciones para ${cat} E${num}…`);
+      // Optimistically update state
+      const key = `${cat}_${num}`;
+      if (!state[key]) state[key] = {};
+      state[key].generating = true;
+      renderCard(cat, num);
+    }
+  } catch(e) { toast('Error de red', 'error'); }
 }
+
+async function generateAll() {
+  const status = document.getElementById('gen-all-status');
+  status.textContent = 'Iniciando generación…';
+  try {
+    const r = await fetch('/api/creatives/generate-all', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      status.textContent = 'Generando en background…';
+      // Mark all as generating
+      CATS.forEach(cat => NUMS.forEach(num => {
+        const key = `${cat}_${num}`;
+        if (!state[key]) state[key] = {};
+        state[key].generating = true;
+        renderCard(cat, num);
+      }));
+      setTimeout(() => { status.textContent = ''; }, 5000);
+    }
+  } catch(e) { status.textContent = 'Error de red'; }
+}
+
+/* ── Toast ── */
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => { el.className = 'toast'; }, 3500);
+}
+
+init();
 </script>
 </body>
 </html>

@@ -40,8 +40,10 @@ REVIEWER_USER   = os.getenv("REVIEWER_USER", "")
 REVIEWER_PASS   = os.getenv("REVIEWER_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
 LOG_FILE        = Path(__file__).parent.parent / "data" / "runs.log"
-ASSETS_FILE     = Path(__file__).parent.parent / "data" / "creative_assets.json"
-NEXT_RUN_DAYS   = 7
+ASSETS_FILE       = Path(__file__).parent.parent / "data" / "creative_assets.json"
+APPROVALS_FILE    = Path(__file__).parent.parent / "data" / "creative_approvals.json"
+NEXT_RUN_DAYS     = 7
+CREATIVE_TTL_DAYS = 30
 
 CATEGORIES = ["dental", "estetica", "medspa", "wellness"]
 EMAIL_NUMS  = [2, 3]
@@ -456,6 +458,105 @@ def creatives_page():
     return render_template("creatives.html")
 
 
+@app.route("/api/notifications")
+@_require_auth
+def api_notifications():
+    return jsonify({"ok": True, "notifications": _get_notifications()})
+
+
+@app.route("/api/notifications/dismiss", methods=["POST"])
+@_require_auth
+def api_notifications_dismiss():
+    # Client-side only — notifications re-appear on next page load if condition persists
+    return jsonify({"ok": True})
+
+
+@app.route("/api/creatives/status")
+@_require_auth
+def api_creatives_status():
+    approvals = _load_approvals()
+    result = {}
+    now = datetime.now(timezone.utc)
+    for cat in CATEGORIES:
+        for num in EMAIL_NUMS:
+            key = f"{cat}_{num}"
+            entry = approvals.get(key, {})
+            days_since = None
+            if entry.get("approved_at"):
+                try:
+                    approved_at = datetime.fromisoformat(entry["approved_at"])
+                    if approved_at.tzinfo is None:
+                        approved_at = approved_at.replace(tzinfo=timezone.utc)
+                    days_since = (now - approved_at).days
+                except Exception:
+                    pass
+            result[key] = {
+                "a":          entry.get("a"),
+                "b":          entry.get("b"),
+                "approved":   entry.get("approved"),
+                "approved_url": entry.get("approved_url"),
+                "approved_at":  entry.get("approved_at"),
+                "days_since": days_since,
+                "overdue":    days_since is not None and days_since >= CREATIVE_TTL_DAYS,
+                "generating": entry.get("generating", False),
+                "error":      entry.get("error"),
+            }
+    return jsonify({"ok": True, "creatives": result, "ttl_days": CREATIVE_TTL_DAYS})
+
+
+@app.route("/api/creatives/generate/<cat>/<int:num>", methods=["POST"])
+@_require_auth
+def api_creatives_generate(cat, num):
+    if cat not in CATEGORIES or num not in EMAIL_NUMS:
+        return jsonify({"ok": False, "error": "Categoría o email_num inválido"}), 400
+    _generate_two_options_bg(cat, num)
+    return jsonify({"ok": True, "message": f"Generando opciones para {cat}_e{num}…"})
+
+
+@app.route("/api/creatives/generate-all", methods=["POST"])
+@_require_auth
+def api_creatives_generate_all():
+    for cat in CATEGORIES:
+        for num in EMAIL_NUMS:
+            _generate_two_options_bg(cat, num)
+    return jsonify({"ok": True, "message": "Generando todas las opciones en background…"})
+
+
+@app.route("/api/creatives/approve/<cat>/<int:num>", methods=["POST"])
+@_require_auth
+def api_creatives_approve(cat, num):
+    if cat not in CATEGORIES or num not in EMAIL_NUMS:
+        return jsonify({"ok": False, "error": "Categoría o email_num inválido"}), 400
+    data   = request.json or {}
+    option = data.get("option", "").lower()
+    if option not in ("a", "b"):
+        return jsonify({"ok": False, "error": "option debe ser 'a' o 'b'"}), 400
+    approvals = _load_approvals()
+    key   = f"{cat}_{num}"
+    entry = approvals.setdefault(key, {})
+    opt   = entry.get(option)
+    if not opt or not opt.get("url"):
+        return jsonify({"ok": False, "error": f"Opción {option.upper()} no generada aún"}), 400
+    # Guardar en historial
+    if entry.get("approved_url"):
+        history = entry.get("history", [])
+        history.append({
+            "option":      entry.get("approved"),
+            "url":         entry["approved_url"],
+            "approved_at": entry.get("approved_at"),
+        })
+        entry["history"] = history[-10:]  # keep last 10
+    entry["approved"]     = option
+    entry["approved_url"] = opt["url"]
+    entry["approved_at"]  = datetime.now(timezone.utc).isoformat()
+    _save_approvals(approvals)
+    # Sync al asset store que usan los emails
+    assets = _load_assets()
+    assets[key] = opt["url"]
+    _save_assets(assets)
+    return jsonify({"ok": True, "approved_url": opt["url"]})
+
+
 @app.route("/api/preview-email", methods=["POST"])
 @_require_auth
 def api_preview_email():
@@ -749,6 +850,106 @@ def _assets_need_refresh(assets: dict) -> bool:
         return True
     age = datetime.datetime.utcnow() - datetime.datetime.fromisoformat(saved_at)
     return age.days >= _ASSETS_MAX_AGE_DAYS
+
+
+def _load_approvals() -> dict:
+    if APPROVALS_FILE.exists():
+        try:
+            return json.loads(APPROVALS_FILE.read_text())
+        except Exception:
+            pass
+    return {}
+
+
+def _save_approvals(data: dict) -> None:
+    APPROVALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    APPROVALS_FILE.write_text(json.dumps(data, indent=2, default=str))
+
+
+def _get_notifications() -> list:
+    """Retorna notificaciones activas: creativos por renovar, errores de pipeline, etc."""
+    notes = []
+    approvals = _load_approvals()
+    now = datetime.now(timezone.utc)
+
+    overdue, pending = [], []
+    for cat in CATEGORIES:
+        for num in EMAIL_NUMS:
+            key = f"{cat}_{num}"
+            entry = approvals.get(key, {})
+            if not entry.get("approved_at"):
+                pending.append(key)
+            else:
+                approved_at = datetime.fromisoformat(entry["approved_at"])
+                if approved_at.tzinfo is None:
+                    approved_at = approved_at.replace(tzinfo=timezone.utc)
+                if (now - approved_at).days >= CREATIVE_TTL_DAYS:
+                    overdue.append(key)
+
+    if overdue:
+        notes.append({
+            "id":      "creative_refresh",
+            "type":    "warning",
+            "title":   f"{len(overdue)} creativo{'s' if len(overdue)>1 else ''} necesita{'n' if len(overdue)>1 else ''} renovación",
+            "body":    "Han pasado 30 días. Aprueba nuevas opciones o se reutilizarán los anteriores.",
+            "action":  "/creatives",
+            "action_label": "Ver creativos",
+        })
+    if pending:
+        notes.append({
+            "id":      "creative_pending",
+            "type":    "info",
+            "title":   f"{len(pending)} creativo{'s' if len(pending)>1 else ''} sin aprobar",
+            "body":    "Genera y aprueba opciones para usar en los emails.",
+            "action":  "/creatives",
+            "action_label": "Ir a creativos",
+        })
+    if _pipeline_state.get("error"):
+        notes.append({
+            "id":      "pipeline_error",
+            "type":    "error",
+            "title":   "Error en el pipeline",
+            "body":    str(_pipeline_state["error"])[:120],
+            "action":  None,
+            "action_label": None,
+        })
+    return notes
+
+
+def _generate_two_options_bg(cat: str, num: int):
+    """Genera 2 opciones de creativo (estilos A y B) para un caso en background."""
+    import threading
+    def _run():
+        from modules.image_gen import generate_background, compose_creative
+        from modules.canva_api import is_authorized, upload_asset_binary
+        key = f"{cat}_{num}"
+        approvals = _load_approvals()
+        entry = approvals.setdefault(key, {})
+        entry["generating"] = True
+        _save_approvals(approvals)
+        print(f"  ⟳ Generando opciones A+B para {key}…", flush=True)
+        try:
+            flux_url = generate_background(cat, num)
+            print(f"  ✓ Flux OK para {key}", flush=True)
+            for style in ("a", "b"):
+                composed = compose_creative(flux_url, cat, num, style=style)
+                print(f"  ✓ Composición estilo {style.upper()} OK ({len(composed)//1024}KB)", flush=True)
+                if is_authorized():
+                    url = upload_asset_binary(composed, name=f"amy-{cat}-e{num}-{style}")
+                    print(f"  ✓ Canva OK estilo {style.upper()}: {url[:60]}…", flush=True)
+                else:
+                    cache_key = f"{key}_{style}"
+                    _image_cache[cache_key] = composed
+                    url = f"/api/creative-image/{cache_key}"
+                    print(f"  ⚠ Cache local estilo {style.upper()}: {url}", flush=True)
+                entry[style] = {"url": url, "generated_at": datetime.now(timezone.utc).isoformat()}
+        except Exception as e:
+            entry["error"] = str(e)
+            print(f"  ✗ Error generando {key}: {e}", flush=True)
+        finally:
+            entry["generating"] = False
+            _save_approvals(approvals)
+    threading.Thread(target=_run, daemon=True).start()
 
 
 def _generate_all_assets_bg(force: bool = False):

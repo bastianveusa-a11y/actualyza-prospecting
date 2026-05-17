@@ -205,7 +205,7 @@ def generate_background(categoria: str, email_num: int) -> str:
     raise RuntimeError(f"Respuesta inesperada de Replicate: {data}")
 
 
-def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
+def compose_creative(flux_url: str, categoria: str, email_num: int, style: str = "a") -> bytes:
     """
     Composición de creativo de ventas sobre imagen Flux:
       - Overlay oscuro uniforme (backdrop atmosférico)
@@ -225,11 +225,19 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
     W, H = img.size  # 1200 x 630
 
     # Overlay oscuro uniforme — la clínica queda como atmósfera de fondo
-    overlay = Image.new("RGBA", (W, H), (8, 9, 19, 208))  # ~82% opacidad
+    overlay = Image.new("RGBA", (W, H), overlay_color)
     img = Image.alpha_composite(img, overlay)
 
     draw = ImageDraw.Draw(img)
     copy = _COPY.get((categoria, email_num), _COPY.get(("dental", email_num), _COPY[("dental", 2)]))
+
+    # Style A: gold/warm — Style B: teal/cool
+    if style == "b":
+        ACCENT = (64, 200, 152, 255)   # teal
+        overlay_color = (6, 10, 22, 208)  # cooler dark
+    else:
+        ACCENT = (201, 169, 110, 255)  # gold
+        overlay_color = (8, 9, 19, 208)   # warm dark
 
     GOLD  = (201, 169, 110, 255)
     WHITE = (238, 238, 248, 255)
@@ -270,7 +278,7 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
     hook_label = copy.get("hook_label", "")
     hook_sub   = copy.get("hook_sub", "")
 
-    hook_color = GREEN if email_num == 3 else GOLD
+    hook_color = ACCENT
     draw.text((px, cy), hook_num, font=font_hook, fill=hook_color)
     bb = draw.textbbox((0, 0), hook_num, font=font_hook)
     cy += (bb[3] - bb[1]) + 4
@@ -303,11 +311,12 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
     if cta:
         strip_h = 50
         strip_y = H - strip_h
-        draw.rectangle([(0, strip_y), (W, H)], fill=(201, 169, 110, 22))
-        draw.line([(0, strip_y), (W, strip_y)], fill=(201, 169, 110, 75), width=1)
+        ar, ag, ab, _ = ACCENT
+        draw.rectangle([(0, strip_y), (W, H)], fill=(ar, ag, ab, 22))
+        draw.line([(0, strip_y), (W, strip_y)], fill=(ar, ag, ab, 75), width=1)
         cta_bb = draw.textbbox((0, 0), cta, font=font_cta)
         cta_ty = strip_y + (strip_h - (cta_bb[3] - cta_bb[1])) // 2
-        draw.text((px, cta_ty), cta, font=font_cta, fill=GOLD)
+        draw.text((px, cta_ty), cta, font=font_cta, fill=ACCENT)
 
     out = io.BytesIO()
     img.convert("RGB").save(out, format="JPEG", quality=92)

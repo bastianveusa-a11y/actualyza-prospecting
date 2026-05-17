@@ -110,6 +110,21 @@ header {
 }
 .btn-stop:hover { background: rgba(255,80,112,0.15); border-color: rgba(255,80,112,0.5); color: var(--red); }
 
+/* Notification bar */
+.notif-strip {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  border-radius: 8px; border: 1px solid; font-size: 0.8rem;
+}
+.notif-strip.warning { background: rgba(255,144,80,0.06); border-color: rgba(255,144,80,0.2); color: var(--orange); }
+.notif-strip.info    { background: rgba(80,128,255,0.06); border-color: rgba(80,128,255,0.2); color: var(--blue); }
+.notif-strip.error   { background: rgba(255,80,112,0.06); border-color: rgba(255,80,112,0.2); color: var(--red); }
+.notif-strip .ns-title { font-weight: 600; }
+.notif-strip .ns-body  { color: var(--text2); margin-left: 4px; }
+.notif-strip a { color: inherit; font-weight: 600; margin-left: auto; text-decoration: none; padding: 3px 10px; border: 1px solid currentColor; border-radius: 6px; opacity: .8; font-size: .74rem; }
+.notif-strip a:hover { opacity: 1; }
+.ns-dismiss { margin-left: 8px; background: none; border: none; color: inherit; cursor: pointer; opacity: .5; font-size: 1rem; }
+.ns-dismiss:hover { opacity: 1; }
+
 .action-bar {
   margin-bottom: 24px;
   background: var(--card);
@@ -503,6 +518,9 @@ tbody td a:hover { color: var(--gold); }
     </div>
   </header>
 
+  <!-- ── Notification bar ── -->
+  <div id="notif-bar" style="display:none;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+
   <!-- ── Action bar ── -->
   <div class="action-bar">
     <div class="action-bar-top">
@@ -818,7 +836,28 @@ const CATS   = ['dental','estetica','medspa','wellness'];
 const CAT_LABELS = { dental:'Dental', estetica:'Estética', medspa:'Med Spa', wellness:'Wellness' };
 
 // ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); loadTargetConfig(); });
+async function loadNotifBar() {
+  try {
+    const r = await fetch('/api/notifications');
+    const d = await r.json();
+    const bar = document.getElementById('notif-bar');
+    const notes = d.notifications || [];
+    if (!notes.length) { bar.style.display = 'none'; return; }
+    bar.innerHTML = notes.map(n => `
+      <div class="notif-strip ${n.type}">
+        <span class="ns-title">${n.title}</span>
+        <span class="ns-body">${n.body || ''}</span>
+        ${n.action ? `<a href="${n.action}">${n.action_label}</a>` : ''}
+        <button class="ns-dismiss" onclick="this.parentElement.remove();checkNotifBar()">×</button>
+      </div>`).join('');
+    bar.style.display = 'flex';
+  } catch(e) {}
+}
+function checkNotifBar() {
+  const bar = document.getElementById('notif-bar');
+  if (bar && !bar.children.length) bar.style.display = 'none';
+}
+document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); loadTargetConfig(); loadNotifBar(); });
 
 async function loadAll() {
   showLoader(true);
