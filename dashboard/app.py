@@ -1366,6 +1366,18 @@ def api_reset_progress():
     return jsonify({"ok": True})
 
 
+@app.route("/api/progress-state")
+@_require_auth
+def api_progress_state():
+    pf = Path(__file__).parent.parent / "data" / "progress.json"
+    if not pf.exists():
+        return jsonify({})
+    try:
+        return jsonify(json.loads(pf.read_text()))
+    except Exception:
+        return jsonify({})
+
+
 @app.route("/api/pipeline-status")
 @_require_auth
 def api_pipeline_status():

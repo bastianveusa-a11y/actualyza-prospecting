@@ -109,6 +109,8 @@ header {
   color: var(--red);
 }
 .btn-stop:hover { background: rgba(255,80,112,0.15); border-color: rgba(255,80,112,0.5); color: var(--red); }
+.chip-done { opacity:.5; }
+.chip-done.active { opacity:.7; border-color: var(--green) !important; }
 .auto-cycle-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
 .auto-cycle-toggle input { accent-color: var(--gold); width:15px; height:15px; cursor:pointer; }
 .auto-cycle-label { font-size:.78rem; color:var(--text2); letter-spacing:.02em; }
@@ -877,7 +879,7 @@ function checkNotifBar() {
   const bar = document.getElementById('notif-bar');
   if (bar && !bar.children.length) bar.style.display = 'none';
 }
-document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); loadTargetConfig(); loadNotifBar(); });
+document.addEventListener('DOMContentLoaded', () => { updateTimestamp(); loadAll(); checkPipelineOnLoad(); loadTargetConfig(); loadCityProgress(); loadNotifBar(); });
 
 async function loadAll() {
   showLoader(true);
@@ -954,6 +956,28 @@ async function loadTargetConfig() {
   updateTargetsSummary();
 }
 
+let cityProgress = {};
+
+async function loadCityProgress() {
+  try {
+    const res = await fetch('/api/progress-state');
+    cityProgress = await res.json();
+    renderCityChips();
+  } catch(e) {}
+}
+
+function cityProgressDots(cityName) {
+  const cats = ['dental','estetica','medspa','wellness'];
+  const cityData = cityProgress[cityName] || {};
+  const dots = cats.map(cat => {
+    const st = (cityData[cat] || {}).status || 'pending';
+    const color = st === 'complete' ? 'var(--green)' : st === 'in_progress' ? 'var(--gold)' : 'rgba(255,255,255,0.15)';
+    return `<span style="width:5px;height:5px;border-radius:50%;background:${color};display:inline-block"></span>`;
+  }).join('');
+  const done = cats.filter(cat => (cityData[cat] || {}).status === 'complete').length;
+  return { dots, done, total: cats.length };
+}
+
 function cityKey(c) { return `${c.city}|${c.state}`; }
 
 function renderCityChips() {
@@ -962,9 +986,14 @@ function renderCityChips() {
     const key    = cityKey(c);
     const active = selectedCities.has(key);
     const es     = c.es ? `<span class="es-badge">ES</span>` : '';
-    const note   = c.note ? `<span style="font-size:.62rem;opacity:.7">${c.note}</span>` : '';
-    return `<button class="chip ${active?'active':''}" onclick="toggleCity('${key}')" title="${c.note||''}">
-      ${c.label} ${es}
+    const { dots, done, total } = cityProgressDots(c.city);
+    const allDone = done === total && total > 0 && Object.keys(cityProgress).length > 0;
+    const pctLabel = Object.keys(cityProgress).length > 0 ? `<span style="font-size:.58rem;opacity:.6">${done}/${total}</span>` : '';
+    return `<button class="chip ${active?'active':''} ${allDone?'chip-done':''}" onclick="toggleCity('${key}')" title="${c.note||''}">
+      <span style="display:flex;flex-direction:column;gap:3px;align-items:flex-start">
+        <span>${c.label} ${es}</span>
+        <span style="display:flex;gap:3px;align-items:center">${dots} ${pctLabel}</span>
+      </span>
     </button>`;
   }).join('');
 }
@@ -1163,7 +1192,7 @@ function startPolling() {
         setStatus('Tanda completada — esperando próximo ciclo…');
         startCountdown(data.next_cycle_at);
         startPolling();
-        await loadAll(); updateTimestamp();
+        await loadAll(); updateTimestamp(); await loadCityProgress();
       } else {
         setStatus('Recolección completada — actualizando datos…');
         await loadAll(); updateTimestamp();
