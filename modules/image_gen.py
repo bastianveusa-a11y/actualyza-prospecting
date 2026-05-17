@@ -207,43 +207,58 @@ def generate_background(categoria: str, email_num: int) -> str:
 
 def compose_creative(flux_url: str, categoria: str, email_num: int, style: str = "a") -> bytes:
     """
-    Composición de creativo de ventas sobre imagen Flux:
-      - Overlay oscuro uniforme (backdrop atmosférico)
-      - Número de impacto grande (hook stat)
-      - Headline en Playfair Italic
-      - Bullets con beneficios concretos
-      - CTA strip en la base
-      - Wordmark AMY AI top-left
+    Split-panel sales creative:
+      Left 65%: dark branded panel with stat, headline, bullets, CTA
+      Right 35%: clinic photo clearly visible (light overlay only)
+      Gradient blend at the split point for professional transition
     """
     from PIL import Image, ImageDraw, ImageFont
 
     _ensure_fonts()
 
-    # Style A: gold/warm — Style B: teal/cool  (must be set before overlay)
+    W, H = 1200, 630
+
     if style == "b":
-        ACCENT        = (64, 200, 152, 255)
-        overlay_color = (6, 10, 22, 208)
+        ACCENT     = (64, 200, 152)
+        PANEL_RGB  = (6, 10, 22)
     else:
-        ACCENT        = (201, 169, 110, 255)
-        overlay_color = (8, 9, 19, 208)
+        ACCENT     = (201, 169, 110)
+        PANEL_RGB  = (8, 9, 19)
 
     resp = requests.get(flux_url, timeout=30)
     resp.raise_for_status()
     img = Image.open(io.BytesIO(resp.content)).convert("RGBA")
-    W, H = img.size  # 1200 x 630
+    img = img.resize((W, H), Image.LANCZOS)
 
-    # Overlay oscuro uniforme — la clínica queda como atmósfera de fondo
-    overlay = Image.new("RGBA", (W, H), overlay_color)
-    img = Image.alpha_composite(img, overlay)
+    # ── Subtle full-bleed tint so photo isn't blown out on the right ──
+    tint = Image.new("RGBA", (W, H), (*PANEL_RGB, 55))
+    img = Image.alpha_composite(img, tint)
+
+    # ── Left dark panel with gradient feather into photo ──────────────
+    SOLID_W    = 660   # fully opaque dark panel width
+    FEATHER_W  = 180   # gradient fade from SOLID_W to transparent
+    PANEL_ALPHA = 218
+
+    panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    # Solid dark region
+    solid = Image.new("RGBA", (SOLID_W, H), (*PANEL_RGB, PANEL_ALPHA))
+    panel.paste(solid, (0, 0))
+    # Feather gradient
+    for i in range(FEATHER_W):
+        alpha = int(PANEL_ALPHA * (1 - i / FEATHER_W) ** 1.4)
+        col   = Image.new("RGBA", (1, H), (*PANEL_RGB, alpha))
+        panel.paste(col, (SOLID_W + i, 0))
+
+    img = Image.alpha_composite(img, panel)
 
     draw = ImageDraw.Draw(img)
     copy = _COPY.get((categoria, email_num), _COPY.get(("dental", email_num), _COPY[("dental", 2)]))
 
-    GOLD  = (201, 169, 110, 255)
-    WHITE = (238, 238, 248, 255)
-    GRAY  = (155, 155, 180, 255)
-    GREEN = (64, 200, 152, 255)
-    RED_M = (210,  90,  90, 210)
+    WHITE  = (238, 238, 248)
+    GRAY   = (160, 160, 185)
+    RED_M  = (210,  90,  90)
+    GOLD   = (201, 169, 110)
+    ar, ag, ab = ACCENT
 
     def _tf(path, size, fallback=None):
         try:
@@ -256,70 +271,81 @@ def compose_creative(flux_url: str, categoria: str, email_num: int, style: str =
                     pass
             return ImageFont.load_default()
 
-    font_wm     = _tf(_FONT_BOLD,   18)
-    font_hook   = _tf(_FONT_BOLD,   70)
-    font_lbl    = _tf(_FONT_REG,    16)
-    font_sub_lb = _tf(_FONT_REG,    15)
-    font_hl     = _tf(_FONT_ITALIC, 48, _FONT_BOLD)
-    font_bullet = _tf(_FONT_REG,    21)
-    font_cta    = _tf(_FONT_BOLD,   20)
+    font_wm     = _tf(_FONT_BOLD,   14)
+    font_wm_sub = _tf(_FONT_REG,    12)
+    font_hook   = _tf(_FONT_BOLD,   108)
+    font_lbl    = _tf(_FONT_REG,    17)
+    font_sub_lb = _tf(_FONT_REG,    14)
+    font_hl     = _tf(_FONT_ITALIC, 46, _FONT_BOLD)
+    font_bullet = _tf(_FONT_REG,    19)
+    font_cta    = _tf(_FONT_BOLD,   19)
 
-    px = 60   # left margin
-    cy = 38   # current y
+    # ── Left accent bar ──────────────────────────────────────────────
+    draw.rectangle([(0, 0), (4, H)], fill=(*ACCENT, 255))
 
-    # ── Wordmark ────────────────────────────────────────────────────
-    draw.text((px, cy), "AMY AI", font=font_wm, fill=GOLD)
-    cy += 22
-    draw.line([(px, cy + 3), (px + 88, cy + 3)], fill=(201, 169, 110, 110), width=1)
-    cy += 18
+    px = 52   # left text margin (after accent bar)
+    cy = 42
 
-    # ── Hook stat ───────────────────────────────────────────────────
+    # ── Wordmark ─────────────────────────────────────────────────────
+    draw.text((px, cy), "AMY AI", font=font_wm, fill=(*GOLD, 255))
+    wm_bb = draw.textbbox((0, 0), "AMY AI", font=font_wm)
+    draw.text((px + (wm_bb[2] - wm_bb[0]) + 8, cy + 1), "· ACTUALYZA", font=font_wm_sub, fill=(*GRAY, 160))
+    cy += (wm_bb[3] - wm_bb[1]) + 6
+    draw.line([(px, cy), (px + 130, cy)], fill=(*GOLD, 70), width=1)
+    cy += 14
+
+    # ── Hook stat ────────────────────────────────────────────────────
     hook_num   = copy.get("hook_num", "")
     hook_label = copy.get("hook_label", "")
     hook_sub   = copy.get("hook_sub", "")
 
-    hook_color = ACCENT
-    draw.text((px, cy), hook_num, font=font_hook, fill=hook_color)
+    draw.text((px, cy), hook_num, font=font_hook, fill=(*ACCENT, 255))
     bb = draw.textbbox((0, 0), hook_num, font=font_hook)
+    cy += (bb[3] - bb[1]) + 2
+
+    draw.text((px, cy), hook_label.upper(), font=font_lbl, fill=(*GRAY, 255))
+    bb = draw.textbbox((0, 0), hook_label, font=font_lbl)
     cy += (bb[3] - bb[1]) + 4
-
-    draw.text((px, cy), hook_label.upper(), font=font_lbl, fill=GRAY)
-    cy += 20
     if hook_sub:
-        draw.text((px, cy), hook_sub, font=font_sub_lb, fill=RED_M)
-        cy += 20
+        draw.text((px, cy), hook_sub, font=font_sub_lb, fill=(*RED_M, 200))
+        bb = draw.textbbox((0, 0), hook_sub, font=font_sub_lb)
+        cy += (bb[3] - bb[1]) + 2
 
+    cy += 12
+    # Accent separator
+    draw.rectangle([(px, cy), (px + 48, cy + 3)], fill=(*ACCENT, 200))
     cy += 16
-    draw.line([(px, cy), (px + 380, cy)], fill=(255, 255, 255, 25), width=1)
-    cy += 18
 
-    # ── Headline en Playfair Italic ─────────────────────────────────
+    # ── Headline ─────────────────────────────────────────────────────
     for line in copy.get("headline", "").split("\n"):
-        draw.text((px, cy), line, font=font_hl, fill=WHITE)
+        draw.text((px, cy), line, font=font_hl, fill=(*WHITE, 255))
         bb = draw.textbbox((0, 0), line, font=font_hl)
-        cy += (bb[3] - bb[1]) + 5
+        cy += (bb[3] - bb[1]) + 4
     cy += 10
 
-    # ── Bullets ─────────────────────────────────────────────────────
+    # ── Bullets ──────────────────────────────────────────────────────
     for b in copy.get("bullets", []):
-        draw.text((px, cy), f"→  {b}", font=font_bullet, fill=GRAY)
-        bb = draw.textbbox((0, 0), f"→  {b}", font=font_bullet)
-        cy += (bb[3] - bb[1]) + 7
+        dot_y = cy + 9
+        draw.ellipse([(px, dot_y), (px + 5, dot_y + 5)], fill=(*ACCENT, 210))
+        draw.text((px + 14, cy), b, font=font_bullet, fill=(*GRAY, 255))
+        bb = draw.textbbox((0, 0), b, font=font_bullet)
+        cy += (bb[3] - bb[1]) + 9
 
-    # ── CTA strip ───────────────────────────────────────────────────
+    # ── CTA strip ────────────────────────────────────────────────────
     cta = copy.get("cta", "")
     if cta:
-        strip_h = 50
+        strip_h = 52
         strip_y = H - strip_h
-        ar, ag, ab, _ = ACCENT
-        draw.rectangle([(0, strip_y), (W, H)], fill=(ar, ag, ab, 22))
-        draw.line([(0, strip_y), (W, strip_y)], fill=(ar, ag, ab, 75), width=1)
+        cta_bg = Image.new("RGBA", (W, strip_h), (ar, ag, ab, 28))
+        img.paste(cta_bg, (0, strip_y), cta_bg)
+        draw = ImageDraw.Draw(img)
+        draw.line([(0, strip_y), (W, strip_y)], fill=(ar, ag, ab, 100), width=1)
         cta_bb = draw.textbbox((0, 0), cta, font=font_cta)
         cta_ty = strip_y + (strip_h - (cta_bb[3] - cta_bb[1])) // 2
-        draw.text((px, cta_ty), cta, font=font_cta, fill=ACCENT)
+        draw.text((px, cta_ty), cta, font=font_cta, fill=(*ACCENT, 255))
 
     out = io.BytesIO()
-    img.convert("RGB").save(out, format="JPEG", quality=92)
+    img.convert("RGB").save(out, format="JPEG", quality=93)
     return out.getvalue()
 
 

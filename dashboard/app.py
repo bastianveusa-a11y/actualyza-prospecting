@@ -1086,6 +1086,29 @@ def api_creative_test():
         return jsonify({"ok": False, "step": step, "error": str(e), "trace": traceback.format_exc()})
 
 
+@app.route("/api/creative-render")
+@_require_auth
+def api_creative_render():
+    """
+    Renderiza compose_creative() con una flux_url ya existente y devuelve JPEG directo.
+    Útil para previsualizar el diseño sin gastar créditos de Replicate.
+    Params: flux_url, cat (default dental), num (default 2), style (default a)
+    """
+    import traceback
+    flux_url = request.args.get("flux_url", "")
+    cat      = request.args.get("cat", "dental")
+    num      = int(request.args.get("num", "2"))
+    style    = request.args.get("style", "a")
+    if not flux_url:
+        return Response("flux_url param required", 400)
+    try:
+        from modules.image_gen import compose_creative
+        jpeg = compose_creative(flux_url, cat, num, style)
+        return Response(jpeg, mimetype="image/jpeg")
+    except Exception as e:
+        return Response(f"Error: {e}\n{traceback.format_exc()}", 500)
+
+
 @app.route("/api/creative-image/<key>")
 def api_creative_image(key):
     """Sirve imagen compuesta desde cache en memoria (fallback sin Canva)."""
