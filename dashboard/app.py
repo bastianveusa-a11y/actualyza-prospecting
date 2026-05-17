@@ -816,6 +816,27 @@ def api_creative_assets():
     return jsonify({"ok": True, "assets": result})
 
 
+@app.route("/api/creative-test")
+@_require_auth
+def api_creative_test():
+    """Genera UN creativo (dental_2) en tiempo real y devuelve resultado o error."""
+    import traceback
+    try:
+        from modules.image_gen import generate_background, compose_creative
+        step = "flux"
+        img_url = generate_background("dental", 2)
+        step = "compose"
+        composed = compose_creative(img_url, "dental", 2)
+        step = "canva"
+        from modules.canva_api import is_authorized, upload_asset_binary
+        if is_authorized():
+            canva_url = upload_asset_binary(composed, name="amy-ai-dental-e2-test")
+            return jsonify({"ok": True, "step": "done", "url": canva_url, "flux_url": img_url})
+        return jsonify({"ok": True, "step": "done_no_canva", "flux_url": img_url, "composed_kb": len(composed)//1024})
+    except Exception as e:
+        return jsonify({"ok": False, "step": step, "error": str(e), "trace": traceback.format_exc()})
+
+
 @app.route("/api/creative-image/<key>")
 def api_creative_image(key):
     """Sirve imagen compuesta desde cache en memoria (fallback sin Canva)."""
