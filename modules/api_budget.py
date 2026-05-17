@@ -14,7 +14,7 @@ USAGE_FILE = Path(__file__).parent.parent / "data" / "api_usage.json"
 DEFAULTS = {
     "google_places":  3750,
     "sunbiz":         500,
-    "meta_scraping":  300,
+    "meta_scraping":  5000,
     "claude_emails":  500,
     "resend_emails":  2800,
     "flux_images":    100,
