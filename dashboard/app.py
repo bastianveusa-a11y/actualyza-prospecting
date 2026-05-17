@@ -53,6 +53,8 @@ _pipeline_state: dict = {
     "last_started":   None,
     "last_finished":  None,
     "error":          None,
+    "auto_cycle":     False,
+    "targets":        None,
 }
 _stop_requested: bool = False
 
@@ -312,21 +314,24 @@ def api_pipeline():
         except Exception:
             pass
 
-    cities = ["Miami", "Orlando", "Dallas"]
-    cats   = ["dental", "estetica", "medspa", "wellness"]
-    segs   = {}
+    from modules.google_places import AVAILABLE_CITIES as _AV
+    cats  = ["dental", "estetica", "medspa", "wellness"]
+    segs  = {}
     for c in clinics:
         key = f"{c['ciudad']}/{c['categoria']}"
         segs[key] = segs.get(key, 0) + 1
-    seg_done  = sum(1 for city in cities for cat in cats if segs.get(f"{city}/{cat}", 0) > 0)
-    seg_total = len(cities) * len(cats)
+    us_cities  = [c["city"] for c in _AV if c.get("country", "US") == "US"]
+    seg_total  = len(us_cities) * len(cats)
+    seg_done   = sum(1 for city in us_cities for cat in cats if segs.get(f"{city}/{cat}", 0) > 0)
 
     return jsonify({
-        "last_run":  last_run,
-        "next_run":  next_run_iso,
-        "seg_done":  seg_done,
-        "seg_total": seg_total,
-        "segs":      segs,
+        "last_run":      last_run,
+        "next_run":      next_run_iso,
+        "seg_done":      seg_done,
+        "seg_total":     seg_total,
+        "segs":          segs,
+        "auto_cycle":    _pipeline_state.get("auto_cycle", False),
+        "running":       _pipeline_state["running"],
     })
 
 
@@ -394,6 +399,25 @@ def _run_pipeline_bg():
             import threading
             def _delayed_restart():
                 time.sleep(600)  # 10 minutos
+                if not _pipeline_state.get("auto_cycle") or _stop_requested:
+                    return
+                # Si todos los segmentos están completos, reset para re-escanear
+                try:
+                    from pathlib import Path as _Path
+                    pf = _Path(__file__).parent.parent / "data" / "progress.json"
+                    if pf.exists():
+                        import json as _json
+                        data = _json.loads(pf.read_text())
+                        all_done = all(
+                            seg.get("status") == "complete"
+                            for city_segs in data.values() if isinstance(city_segs, dict)
+                            for seg in city_segs.values() if isinstance(seg, dict)
+                        )
+                        if all_done:
+                            pf.unlink()
+                            print("  ♻ Auto-ciclo: todos los segmentos completos → reset para nuevo ciclo", flush=True)
+                except Exception:
+                    pass
                 if _pipeline_state.get("auto_cycle") and not _stop_requested:
                     _run_pipeline_bg()
             threading.Thread(target=_delayed_restart, daemon=True).start()
@@ -815,7 +839,7 @@ def _restore_canva_token() -> None:
     except Exception as e:
         print(f"  ⚠ No se pudo restaurar token Canva: {e}")
 
-def _notion_get_assets_page() -> dict | None:
+def _notion_get_assets_page() -> dict:
     """Busca la página de config de assets en Notion."""
     try:
         r = http.post(
@@ -1329,14 +1353,6 @@ def api_reset_progress():
     PROGRESS_FILE = Path(__file__).parent.parent / "data" / "progress.json"
     if PROGRESS_FILE.exists():
         PROGRESS_FILE.unlink()
-    return jsonify({"ok": True})
-
-
-@app.route("/api/stop-pipeline", methods=["POST"])
-@_require_auth
-def api_stop_pipeline():
-    global _stop_requested
-    _stop_requested = True
     return jsonify({"ok": True})
 
 
