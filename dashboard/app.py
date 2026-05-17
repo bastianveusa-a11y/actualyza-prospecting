@@ -257,43 +257,8 @@ def compute_stats(clinics: list) -> dict:
 
 
 def get_budget() -> dict:
-    defaults = {
-        "google_places":  int(os.getenv("GOOGLE_PLACES_MONTHLY_LIMIT", "3750")),
-        "sunbiz":         int(os.getenv("SUNBIZ_MONTHLY_LIMIT",        "500")),
-        "meta_scraping":  int(os.getenv("META_SCRAPING_MONTHLY_LIMIT", "300")),
-        "claude_emails":  int(os.getenv("CLAUDE_MONTHLY_LIMIT",        "500")),
-        "resend_emails":  int(os.getenv("RESEND_MONTHLY_LIMIT",        "2800")),
-        "flux_images":    int(os.getenv("FLUX_MONTHLY_LIMIT",          "100")),
-    }
-    # Metadata por servicio: icono, nota de costo/plan, si tiene costo real
-    meta = {
-        "google_places":  {"icon": "🗺",  "label": "Google Places",   "note": "$200 crédito/mes",       "paid": True},
-        "sunbiz":         {"icon": "⚖️",  "label": "Sunbiz",           "note": "sin costo",              "paid": False},
-        "meta_scraping":  {"icon": "📢", "label": "Meta Scraping",    "note": "sin costo",              "paid": False},
-        "claude_emails":  {"icon": "🤖", "label": "Claude (emails)",  "note": "~$0.002 por email",      "paid": True},
-        "resend_emails":  {"icon": "📨", "label": "Resend",           "note": "3,000 gratis/mes",       "paid": False},
-        "flux_images":    {"icon": "🎨", "label": "Flux (imágenes)",  "note": "~$0.004 por imagen",     "paid": True},
-    }
-    raw   = {}
-    month = datetime.now(timezone.utc).strftime("%Y-%m")
-    if BUDGET_FILE.exists():
-        try:
-            raw = json.loads(BUDGET_FILE.read_text())
-        except Exception:
-            pass
-
-    out = {}
-    for service, limit in defaults.items():
-        entry = raw.get(service, {})
-        count = entry.get("count", 0) if entry.get("month") == month else 0
-        out[service] = {
-            "count":     count,
-            "limit":     limit,
-            "pct":       round(count / limit * 100, 1) if limit else 0,
-            "remaining": max(0, limit - count),
-            **meta.get(service, {}),
-        }
-    return out
+    from modules.api_budget import get_monthly_cost
+    return get_monthly_cost()
 
 
 def get_log(n: int = 40) -> list:

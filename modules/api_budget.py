@@ -1,7 +1,6 @@
 """
-Control de presupuesto de APIs.
-Lleva un contador mensual por servicio y bloquea cuando se alcanza el límite.
-El contador se resetea automáticamente cada mes.
+Control de presupuesto de APIs con créditos gratuitos por servicio.
+Calcula costo neto real (después de free tier) por mes.
 """
 
 import json
@@ -11,14 +10,56 @@ from pathlib import Path
 
 USAGE_FILE = Path(__file__).parent.parent / "data" / "api_usage.json"
 
-# Límites mensuales por servicio
+# Límites mensuales de uso (unidades, no $)
 DEFAULTS = {
-    "google_places":  3750,  # Google Places: $200 crédito = 6,250 gratis; usamos 60%
-    "sunbiz":         500,   # Sunbiz: sin costo — límite por cortesía al servidor
-    "meta_scraping":  300,   # Meta scraping: sin costo — límite por cortesía
-    "claude_emails":  500,   # Claude API: ~$0.002/email (haiku) — alerta preventiva
-    "resend_emails":  2800,  # Resend plan gratis: 3,000/mes; margen de 200
-    "flux_images":    100,   # Replicate Flux: ~$0.004/imagen — 100 = ~$0.40/mes
+    "google_places":  3750,
+    "sunbiz":         500,
+    "meta_scraping":  300,
+    "claude_emails":  500,
+    "resend_emails":  2800,
+    "flux_images":    100,
+}
+
+# Costo y créditos gratuitos por servicio
+# free_units: unidades cubiertas por plan gratuito/crédito mensual
+# cost_per_unit: costo $ por unidad DESPUÉS del free tier
+PRICING = {
+    "google_places": {
+        "label":         "Google Places",
+        "cost_per_unit": 0.017,    # $17/1000 requests (Place Details)
+        "free_units":    11765,    # $200 crédito mensual Google / $0.017
+        "note":          "$200 crédito/mes Google Cloud",
+    },
+    "sunbiz": {
+        "label":         "Sunbiz Scraping",
+        "cost_per_unit": 0,
+        "free_units":    99999,
+        "note":          "Scraping web — gratis",
+    },
+    "meta_scraping": {
+        "label":         "Meta Ads API",
+        "cost_per_unit": 0,
+        "free_units":    99999,
+        "note":          "API gratuita",
+    },
+    "claude_emails": {
+        "label":         "Claude (emails)",
+        "cost_per_unit": 0.002,    # ~$0.002/email con Haiku
+        "free_units":    0,
+        "note":          "Sin free tier — Haiku ~$0.002/email",
+    },
+    "resend_emails": {
+        "label":         "Resend (emails)",
+        "cost_per_unit": 0.0004,   # $20/50K = $0.0004 por email después del free
+        "free_units":    3000,     # 3,000 emails/mes gratis
+        "note":          "3,000 gratis/mes",
+    },
+    "flux_images": {
+        "label":         "Replicate (Flux)",
+        "cost_per_unit": 0.04,     # $0.04 por imagen
+        "free_units":    0,
+        "note":          "Sin free tier — $0.04/imagen",
+    },
 }
 
 
@@ -41,44 +82,42 @@ def _save(data: dict) -> None:
 
 
 def get_status(service: str) -> dict:
-    """
-    Retorna el estado de uso de un servicio para el mes actual.
-    {count, limit, remaining, month, blocked}
-    """
     data    = _load()
     month   = _current_month()
     limit   = int(os.getenv(f"{service.upper()}_MONTHLY_LIMIT", DEFAULTS.get(service, 100)))
     entry   = data.get(service, {})
+    pricing = PRICING.get(service, {"cost_per_unit": 0, "free_units": 0, "label": service, "note": ""})
 
-    # Reset automático si cambió el mes
     if entry.get("month") != month:
         entry = {"month": month, "count": 0}
 
     count     = entry.get("count", 0)
     remaining = max(0, limit - count)
+    billable  = max(0, count - pricing["free_units"])
+    cost_usd  = round(billable * pricing["cost_per_unit"], 4)
 
     return {
-        "service":   service,
-        "month":     month,
-        "count":     count,
-        "limit":     limit,
-        "remaining": remaining,
-        "blocked":   remaining <= 0,
-        "pct":       round(count / limit * 100, 1) if limit > 0 else 0,
+        "service":    service,
+        "label":      pricing["label"],
+        "note":       pricing["note"],
+        "month":      month,
+        "count":      count,
+        "limit":      limit,
+        "remaining":  remaining,
+        "blocked":    remaining <= 0,
+        "pct":        round(count / limit * 100, 1) if limit > 0 else 0,
+        "free_units": pricing["free_units"],
+        "billable":   billable,
+        "cost_usd":   cost_usd,
     }
 
 
 def increment(service: str, n: int = 1) -> dict:
-    """
-    Registra n requests para el servicio dado.
-    Retorna el estado actualizado.
-    Lanza BudgetExceeded si ya se superó el límite.
-    """
     status = get_status(service)
     if status["blocked"]:
         raise BudgetExceeded(
             f"{service}: límite mensual de {status['limit']} alcanzado "
-            f"(mes {status['month']}). Resetea en el próximo mes."
+            f"(mes {status['month']})."
         )
 
     data  = _load()
@@ -94,7 +133,6 @@ def increment(service: str, n: int = 1) -> dict:
 
     updated = get_status(service)
 
-    # Alerta cuando queda menos del 20%
     if updated["remaining"] <= updated["limit"] * 0.2 and updated["remaining"] > 0:
         print(f"  ⚠ {service}: {updated['remaining']} requests restantes este mes ({updated['pct']}% usado)")
 
@@ -102,7 +140,6 @@ def increment(service: str, n: int = 1) -> dict:
 
 
 def check(service: str) -> None:
-    """Lanza BudgetExceeded si el servicio ya está bloqueado."""
     status = get_status(service)
     if status["blocked"]:
         raise BudgetExceeded(
@@ -111,16 +148,28 @@ def check(service: str) -> None:
         )
 
 
+def get_monthly_cost() -> dict:
+    """Retorna el costo total estimado del mes actual, desglosado por servicio."""
+    services = list(DEFAULTS.keys())
+    breakdown = [get_status(s) for s in services]
+    total = round(sum(s["cost_usd"] for s in breakdown), 2)
+    return {
+        "month":     _current_month(),
+        "total_usd": total,
+        "services":  breakdown,
+    }
+
+
 def print_report() -> None:
-    """Imprime un resumen del uso de todas las APIs este mes."""
-    print(f"\n── Uso de APIs — {_current_month()} ──────────────────")
-    for service in DEFAULTS:
-        s = get_status(service)
+    report = get_monthly_cost()
+    print(f"\n── Uso de APIs — {report['month']} ──────────────────")
+    for s in report["services"]:
         bar_filled = int(s["pct"] / 5)
         bar = "█" * bar_filled + "░" * (20 - bar_filled)
-        status_tag = " BLOQUEADO" if s["blocked"] else (" ⚠ CERCA" if s["pct"] >= 80 else "")
-        print(f"  {service:<20} [{bar}] {s['count']:>4}/{s['limit']:<4} ({s['pct']}%){status_tag}")
-    print()
+        cost_str = f"  ${s['cost_usd']:.2f}" if s["cost_usd"] > 0 else "  gratis"
+        tag = " BLOQUEADO" if s["blocked"] else (" ⚠ CERCA" if s["pct"] >= 80 else "")
+        print(f"  {s['label']:<22} [{bar}] {s['count']:>4}/{s['limit']:<4} ({s['pct']}%){cost_str}{tag}")
+    print(f"\n  Total estimado este mes: ${report['total_usd']:.2f}\n")
 
 
 class BudgetExceeded(Exception):

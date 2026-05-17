@@ -704,6 +704,10 @@ tbody td a:hover { color: var(--gold); }
         Presupuesto de APIs
         <span class="pill" style="background:rgba(64,200,152,0.1);color:var(--green)" id="budget-month">—</span>
       </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+        <span style="font-size:.72rem;color:var(--text3)">Costo neto este mes (después de créditos)</span>
+        <span style="font-size:1.1rem;font-weight:700;color:var(--gold)" id="budget-total-cost">$—</span>
+      </div>
       <div class="budget-items" id="budget-rows"></div>
     </div>
 
@@ -1234,28 +1238,41 @@ function renderPipeline(s) {
 
 // ── Budget ───────────────────────────────────────────────────
 function renderBudget(budget) {
-  document.getElementById('budget-month').textContent =
-    new Date().toLocaleString('es', {month:'long', year:'numeric'});
+  // Nueva estructura: { month, total_usd, services: [...] }
+  const services = budget.services || [];
+  const totalUsd = budget.total_usd ?? 0;
+  const month    = budget.month || '';
+
+  document.getElementById('budget-month').textContent = month;
+  document.getElementById('budget-total-cost').textContent = `$${totalUsd.toFixed(2)}`;
+
   const el = document.getElementById('budget-rows');
-  el.innerHTML = Object.entries(budget).map(([key, b]) => {
+  el.innerHTML = services.map(b => {
     let barColor = C.green, cls = '';
-    if (b.pct >= 80) { barColor = C.red;    cls = 'budget-danger'; }
+    if (b.pct >= 80)      { barColor = C.red;    cls = 'budget-danger'; }
     else if (b.pct >= 60) { barColor = C.orange; cls = 'budget-warning'; }
-    const icon  = b.icon  || '🔧';
-    const label = b.label || key;
-    const note  = b.note  ? `<span style="font-size:.65rem;color:var(--text3);margin-left:6px">${b.note}</span>` : '';
-    const paidDot = b.paid ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:4px;vertical-align:middle" title="Servicio con costo"></span>` : '';
+
+    const label = b.label || b.service;
+    const isFree = b.cost_usd === 0;
+    const costBadge = isFree
+      ? `<span style="font-size:.62rem;color:var(--green);margin-left:6px">gratis</span>`
+      : `<span style="font-size:.62rem;color:var(--gold);margin-left:6px">$${b.cost_usd.toFixed(2)}</span>`;
+
+    const freeNote = b.free_units > 0 && b.free_units < 99999
+      ? `<span style="font-size:.6rem;color:var(--text3)"> · ${b.free_units.toLocaleString()} gratis/mes</span>`
+      : '';
+
     return `<div class="budget-row">
       <div class="budget-header">
-        <span class="budget-name ${cls}">${icon} ${label}${paidDot}${note}</span>
-        <span class="budget-nums">${b.count} / ${b.limit}</span>
+        <span class="budget-name ${cls}">${label}${costBadge}</span>
+        <span class="budget-nums">${b.count} / ${b.limit}${freeNote}</span>
       </div>
       <div class="budget-bar-wrap">
-        <div class="budget-bar" style="width:${b.pct}%;background:${barColor}"></div>
+        <div class="budget-bar" style="width:${Math.min(b.pct,100)}%;background:${barColor}"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:3px">
-        <span style="font-size:.65rem;color:var(--text3)">${b.pct}% usado</span>
-        <span style="font-size:.65rem;color:var(--text3)">${b.remaining} restantes</span>
+        <span style="font-size:.62rem;color:var(--text3)">${b.note}</span>
+        <span style="font-size:.62rem;color:var(--text3)">${b.remaining} restantes</span>
       </div>
     </div>`;
   }).join('');
