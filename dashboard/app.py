@@ -985,6 +985,8 @@ def _generate_two_options_bg(cat: str, num: int):
         _update_approval_key(key, {"generating": True, "error": None})
         print(f"  ⟳ [{key}] Iniciando generación A+B…", flush=True)
         try:
+            from modules.api_budget import increment
+            increment("flux_images", 1)
             flux_url = generate_background(cat, num)
             print(f"  ✓ [{key}] Flux OK: {flux_url[:60]}…", flush=True)
             canva_ok = is_authorized()
