@@ -143,12 +143,21 @@ def next_pending(state: dict, resolved: list) -> Optional[Tuple[str, str, str]]:
     return None
 
 
-def process_clinic(clinic: dict, run_stats: dict) -> str:
+def process_clinic(clinic: dict, run_stats: dict, skip_existing: bool = True) -> str:
     """
     Enriquece con Meta y guarda en Notion.
-    Retorna: 'created' | 'skipped' | 'error'
+    skip_existing=True: si ya existe en Notion la salta sin enriquecer.
+    Retorna: 'created' | 'skipped' | 'updated' | 'error'
     """
     name = clinic.get("nombre", "")
+
+    if skip_existing:
+        place_id = clinic.get("google_place_id", "")
+        if place_id:
+            from modules.notion_db import _find_clinic_page_id
+            if _find_clinic_page_id(NOTION_TOKEN, NOTION_DB_ID, place_id):
+                run_stats["skipped"] = run_stats.get("skipped", 0) + 1
+                return "skipped"
 
     # Meta Ad Library — usa el sitio web de la clínica para encontrar el slug exacto de FB/IG
     meta = count_ads_for_page(
@@ -262,10 +271,10 @@ def run_pipeline(stop_flag=None, targets=None) -> None:
                 }
         save_progress(state)
 
-    run_stats = {"created": 0, "updated": 0, "errors": 0}
+    run_stats = {"created": 0, "updated": 0, "errors": 0, "skipped": 0}
     run_start = datetime.now(timezone.utc).isoformat()
 
-    while run_stats["created"] + run_stats["updated"] < MAX_PER_RUN:
+    while run_stats["created"] < MAX_PER_RUN:
         if stop_flag and stop_flag():
             log("PIPELINE DETENIDO POR EL USUARIO.")
             save_progress(state)
@@ -319,7 +328,7 @@ def run_pipeline(stop_flag=None, targets=None) -> None:
                 _print_summary(run_stats, run_start)
                 return
 
-            if run_stats["created"] + run_stats["updated"] >= MAX_PER_RUN:
+            if run_stats["created"] >= MAX_PER_RUN:
                 log(f"  Tanda de {MAX_PER_RUN} alcanzada — pausando hasta próxima ejecución.")
                 # Marca progreso parcial: la próxima ejecución re-busca esta página
                 # y la deduplicación de Notion descarta las ya insertadas
@@ -357,10 +366,145 @@ def _print_summary(stats: dict, start: str) -> None:
     log("\n" + "=" * 55)
     log("RESUMEN DE ESTA EJECUCIÓN")
     log(f"  Nuevas en Notion    : {stats['created']}")
-    log(f"  Actualizadas        : {stats['updated']}")
+    log(f"  Ya existían (skip)  : {stats.get('skipped', 0)}")
     log(f"  Errores             : {stats['errors']}")
     log(f"  Iniciado            : {start}")
     log(f"  Finalizado          : {datetime.now(timezone.utc).isoformat()}")
+    log("=" * 55)
+
+
+def run_enrichment(stop_flag=None, batch_size: int = 20) -> None:
+    """
+    Recorre todas las clínicas en Notion y actualiza sus datos:
+    Meta Ads, email de contacto, registro mercantil.
+    Solo procesa clínicas que tengan datos incompletos.
+    """
+    import requests as _req
+
+    log("=" * 55)
+    log("ENRICHMENT INICIADO — actualizando clínicas existentes")
+    log("=" * 55)
+
+    if not NOTION_TOKEN or not NOTION_DB_ID:
+        log("ERROR: Notion no configurado. Saliendo.")
+        return
+
+    # Obtener todas las clínicas de Notion
+    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+    clinics = []
+    cursor  = None
+    while True:
+        body = {"page_size": 100}
+        if cursor:
+            body["start_cursor"] = cursor
+        resp = _req.post(f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+                         headers=headers, json=body).json()
+        for page in resp.get("results", []):
+            def _txt(p, field):
+                items = p.get("properties", {}).get(field, {}).get("rich_text", [])
+                return items[0]["plain_text"] if items else ""
+            def _sel(p, field):
+                s = p.get("properties", {}).get(field, {}).get("select")
+                return s["name"] if s else ""
+            def _url(p, field):
+                return p.get("properties", {}).get(field, {}).get("url") or ""
+            def _eml(p, field):
+                return p.get("properties", {}).get(field, {}).get("email") or ""
+            def _phn(p, field):
+                return p.get("properties", {}).get(field, {}).get("phone_number") or ""
+
+            clinics.append({
+                "notion_id":   page["id"],
+                "nombre":      (page.get("properties", {}).get("Nombre", {}).get("title") or [{}])[0].get("plain_text", ""),
+                "ciudad":      _sel(page, "Ciudad"),
+                "estado":      _txt(page, "Estado") or _sel(page, "Ciudad").split(", ")[-1] if _sel(page, "Ciudad") else "",
+                "web":         _url(page, "Web"),
+                "telefono":    _phn(page, "Teléfono"),
+                "direccion":   _txt(page, "Dirección"),
+                "zip":         _txt(page, "ZIP"),
+                "email":       _eml(page, "Email Contacto"),
+                "dueno":       _txt(page, "Dueño / Manager"),
+                "inversion":   _sel(page, "Inversión Meta"),
+            })
+        if not resp.get("has_more"):
+            break
+        cursor = resp.get("next_cursor")
+
+    total = len(clinics)
+    log(f"  {total} clínicas en Notion")
+
+    stats = {"updated": 0, "skipped": 0, "errors": 0}
+    run_start = datetime.now(timezone.utc).isoformat()
+
+    for i, clinic in enumerate(clinics):
+        if stop_flag and stop_flag():
+            log("ENRICHMENT DETENIDO POR EL USUARIO.")
+            break
+
+        name      = clinic.get("nombre", "")
+        page_id   = clinic["notion_id"]
+        needs_meta  = not clinic.get("inversion")
+        needs_email = not clinic.get("email") and clinic.get("web")
+        needs_dueno = not clinic.get("dueno")
+
+        if not (needs_meta or needs_email or needs_dueno):
+            stats["skipped"] += 1
+            continue
+
+        log(f"  [{i+1}/{total}] {name}")
+        updates = {}
+
+        if needs_meta:
+            meta = count_ads_for_page(page_name=name, user_token=META_TOKEN, delay=META_DELAY,
+                                      website_url=clinic.get("web") or None)
+            updates["anuncios_activos"] = meta["count"]
+            updates["inversion_meta"]   = meta["level"]
+            updates["corre_anuncios"]   = meta.get("has_ads")
+            if meta.get("fb_slug"):
+                updates["facebook_page"] = f"https://facebook.com/{meta['fb_slug']}"
+            try:
+                increment("meta_scraping", 1)
+            except BudgetExceeded:
+                pass
+
+        if needs_email:
+            email_result = scrape_email(clinic["web"], delay=EMAIL_DELAY)
+            if email_result.get("email"):
+                updates["email_contacto"] = email_result["email"]
+                log(f"    📧 {email_result['email']}")
+
+        if needs_dueno:
+            city_meta = next((c for c in AVAILABLE_CITIES if c["city"] == clinic.get("ciudad")), {})
+            if city_meta.get("country", "US") == "US":
+                estado = city_meta.get("state", "")
+                registry = registry_lookup(state=estado, clinic_name=name,
+                                           clinic_address=clinic.get("direccion", ""),
+                                           clinic_zip=clinic.get("zip", ""),
+                                           delay=SUNBIZ_DELAY)
+                if not registry.get("error"):
+                    updates["entidad_legal"]     = registry.get("nombre_legal", "")
+                    updates["dueno"]             = registry.get("dueno", "")
+                    updates["agente_registrado"] = registry.get("agente_registrado", "")
+                    updates["sunbiz_url"]        = registry.get("sunbiz_url", "")
+                    updates["match_score"]       = registry.get("match_score", 0.0)
+                    if updates.get("dueno"):
+                        log(f"    👤 {updates['dueno']}")
+
+        if updates:
+            from modules.notion_db import update_clinic
+            ok = update_clinic(NOTION_TOKEN, page_id, updates)
+            if ok:
+                stats["updated"] += 1
+            else:
+                stats["errors"] += 1
+
+    log("\n" + "=" * 55)
+    log("ENRICHMENT COMPLETADO")
+    log(f"  Actualizadas : {stats['updated']}")
+    log(f"  Sin cambios  : {stats['skipped']}")
+    log(f"  Errores      : {stats['errors']}")
+    log(f"  Iniciado     : {run_start}")
+    log(f"  Finalizado   : {datetime.now(timezone.utc).isoformat()}")
     log("=" * 55)
 
 

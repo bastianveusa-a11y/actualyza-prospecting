@@ -56,7 +56,14 @@ _pipeline_state: dict = {
     "auto_cycle":     False,
     "targets":        None,
 }
-_stop_requested: bool = False
+_enrichment_state: dict = {
+    "running":       False,
+    "last_started":  None,
+    "last_finished": None,
+    "error":         None,
+}
+_stop_requested: bool      = False
+_stop_enrichment: bool     = False
 
 
 def _require_auth(f):
@@ -449,6 +456,54 @@ def stop_auto_cycle():
     global _stop_requested
     _stop_requested = True
     _pipeline_state["auto_cycle"] = False
+
+
+def _run_enrichment_bg():
+    global _enrichment_state, _cache, _stop_enrichment
+    _stop_enrichment                    = False
+    _enrichment_state["running"]        = True
+    _enrichment_state["last_started"]   = datetime.now(timezone.utc).isoformat()
+    _enrichment_state["error"]          = None
+    try:
+        from pipeline.orchestrator import run_enrichment
+        run_enrichment(stop_flag=lambda: _stop_enrichment)
+        _cache = {"data": None, "ts": 0.0}
+    except Exception as e:
+        _enrichment_state["error"] = str(e)
+    finally:
+        _enrichment_state["running"]        = False
+        _enrichment_state["last_finished"]  = datetime.now(timezone.utc).isoformat()
+
+
+@app.route("/api/run-enrichment", methods=["POST"])
+@_require_auth
+def api_run_enrichment():
+    if _enrichment_state["running"]:
+        return jsonify({"ok": False, "error": "Enrichment ya está corriendo"}), 409
+    if _pipeline_state["running"]:
+        return jsonify({"ok": False, "error": "Pipeline corriendo — espera que termine"}), 409
+    threading.Thread(target=_run_enrichment_bg, daemon=True).start()
+    return jsonify({"ok": True, "status": "enrichment_started"})
+
+
+@app.route("/api/stop-enrichment", methods=["POST"])
+@_require_auth
+def api_stop_enrichment():
+    global _stop_enrichment
+    _stop_enrichment = True
+    return jsonify({"ok": True})
+
+
+@app.route("/api/enrichment-status")
+@_require_auth
+def api_enrichment_status():
+    return jsonify({
+        "running":       _enrichment_state["running"],
+        "last_started":  _enrichment_state["last_started"],
+        "last_finished": _enrichment_state["last_finished"],
+        "error":         _enrichment_state["error"],
+        "log":           get_log(20),
+    })
 
 
 @app.route("/api/run-pipeline", methods=["POST"])
