@@ -16,12 +16,14 @@ from pathlib import Path
 
 import requests
 
-# Fuente: Inter descargada una vez en data/fonts/
-_FONT_DIR  = Path(__file__).parent.parent / "data" / "fonts"
-_FONT_BOLD = _FONT_DIR / "Inter-Bold.ttf"
-_FONT_REG  = _FONT_DIR / "Inter-Regular.ttf"
-_FONT_URL_BOLD = "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.ttf"
-_FONT_URL_REG  = "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Regular.ttf"
+# Fuentes descargadas una vez en data/fonts/
+_FONT_DIR    = Path(__file__).parent.parent / "data" / "fonts"
+_FONT_BOLD   = _FONT_DIR / "Inter-Bold.ttf"
+_FONT_REG    = _FONT_DIR / "Inter-Regular.ttf"
+_FONT_ITALIC = _FONT_DIR / "PlayfairDisplay-Italic.ttf"
+_FONT_URL_BOLD   = "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.ttf"
+_FONT_URL_REG    = "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Regular.ttf"
+_FONT_URL_ITALIC = "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Italic.ttf"
 
 # Copy por categoría y email_num para la composición
 _COPY = {
@@ -171,13 +173,22 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
     draw = ImageDraw.Draw(img)
     copy = _COPY.get((categoria, email_num), _COPY.get(("dental", email_num), _COPY[("dental", 2)]))
 
-    # Fuentes
+    # Fuentes: headline en Playfair Italic (elegante), subtext en Inter Regular
     try:
-        font_hl  = ImageFont.truetype(str(_FONT_BOLD), 52)
-        font_sub = ImageFont.truetype(str(_FONT_REG),  28)
-        font_wm  = ImageFont.truetype(str(_FONT_BOLD), 22)
+        font_hl  = ImageFont.truetype(str(_FONT_ITALIC), 54)
     except Exception:
-        font_hl = font_sub = font_wm = ImageFont.load_default()
+        try:
+            font_hl = ImageFont.truetype(str(_FONT_BOLD), 52)
+        except Exception:
+            font_hl = ImageFont.load_default()
+    try:
+        font_sub = ImageFont.truetype(str(_FONT_REG), 28)
+    except Exception:
+        font_sub = ImageFont.load_default()
+    try:
+        font_wm = ImageFont.truetype(str(_FONT_BOLD), 22)
+    except Exception:
+        font_wm = ImageFont.load_default()
 
     pad_x, pad_y = 64, 52
 
@@ -211,9 +222,13 @@ def compose_creative(flux_url: str, categoria: str, email_num: int) -> bytes:
 
 
 def _ensure_fonts():
-    """Descarga Inter Bold + Regular si no están presentes."""
+    """Descarga Inter Bold/Regular + Playfair Display Italic si no están presentes."""
     _FONT_DIR.mkdir(parents=True, exist_ok=True)
-    for path, url in [(_FONT_BOLD, _FONT_URL_BOLD), (_FONT_REG, _FONT_URL_REG)]:
+    for path, url in [
+        (_FONT_BOLD,   _FONT_URL_BOLD),
+        (_FONT_REG,    _FONT_URL_REG),
+        (_FONT_ITALIC, _FONT_URL_ITALIC),
+    ]:
         if not path.exists():
             try:
                 urllib.request.urlretrieve(url, path)
