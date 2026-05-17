@@ -399,6 +399,7 @@ def _run_pipeline_bg():
         from pipeline.orchestrator import run_pipeline
         run_pipeline(stop_flag=lambda: _stop_requested, targets=targets)
         _cache = {"data": None, "ts": 0.0}
+        _backup_progress()
     except Exception as e:
         _pipeline_state["error"] = str(e)
     finally:
@@ -787,7 +788,66 @@ def api_generate_creative():
 
 _NOTION_ASSETS_PAGE_TITLE  = "actualyza-creative-assets-config"
 _CANVA_TOKEN_NOTION_TITLE  = "actualyza-canva-token-config"
+_PROGRESS_NOTION_TITLE     = "actualyza-pipeline-progress"
 _ASSETS_MAX_AGE_DAYS       = 30
+
+
+def _notion_upsert_page(title: str, content: str) -> None:
+    """Crea o actualiza una página Notion con un bloque de código JSON."""
+    hdrs = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+    r = http.post("https://api.notion.com/v1/search", headers=hdrs,
+                  json={"query": title, "filter": {"value": "page", "property": "object"}}, timeout=10)
+    for result in r.json().get("results", []):
+        t = result.get("properties", {}).get("title", {}).get("title", [])
+        if t and title in t[0].get("plain_text", ""):
+            blocks = http.get(f"https://api.notion.com/v1/blocks/{result['id']}/children",
+                              headers={k: v for k, v in hdrs.items() if k != "Content-Type"}, timeout=10).json().get("results", [])
+            for block in blocks:
+                if block.get("type") == "code":
+                    http.patch(f"https://api.notion.com/v1/blocks/{block['id']}", headers=hdrs, timeout=10,
+                               json={"code": {"rich_text": [{"type": "text", "text": {"content": content}}], "language": "json"}})
+                    return
+            return
+    http.post("https://api.notion.com/v1/pages", headers=hdrs, timeout=10,
+              json={"parent": {"type": "workspace", "workspace": True},
+                    "properties": {"title": {"title": [{"text": {"content": title}}]}},
+                    "children": [{"object": "block", "type": "code",
+                                  "code": {"rich_text": [{"type": "text", "text": {"content": content}}], "language": "json"}}]})
+
+
+def _backup_progress() -> None:
+    pf = Path(__file__).parent.parent / "data" / "progress.json"
+    if not pf.exists():
+        return
+    try:
+        _notion_upsert_page(_PROGRESS_NOTION_TITLE, pf.read_text())
+    except Exception as e:
+        print(f"  ⚠ No se pudo guardar progress en Notion: {e}")
+
+
+def _restore_progress() -> None:
+    pf = Path(__file__).parent.parent / "data" / "progress.json"
+    if pf.exists():
+        return
+    try:
+        hdrs = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"}
+        r = http.post("https://api.notion.com/v1/search", headers={**hdrs, "Content-Type": "application/json"},
+                      json={"query": _PROGRESS_NOTION_TITLE, "filter": {"value": "page", "property": "object"}}, timeout=10)
+        for result in r.json().get("results", []):
+            t = result.get("properties", {}).get("title", {}).get("title", [])
+            if t and _PROGRESS_NOTION_TITLE in t[0].get("plain_text", ""):
+                blocks = http.get(f"https://api.notion.com/v1/blocks/{result['id']}/children",
+                                  headers=hdrs, timeout=10).json().get("results", [])
+                for block in blocks:
+                    if block.get("type") == "code":
+                        text = block["code"]["rich_text"]
+                        if text:
+                            pf.parent.mkdir(exist_ok=True)
+                            pf.write_text(text[0]["plain_text"])
+                            print("  ✓ Progress restaurado desde Notion")
+                            return
+    except Exception as e:
+        print(f"  ⚠ No se pudo restaurar progress: {e}")
 
 
 def _backup_canva_token() -> None:
@@ -1978,6 +2038,7 @@ def api_video_room_url(room_id):
 # ── End video translation ──────────────────────────────────────
 
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
+_restore_progress()        # recupera progress.json desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan
 
 if __name__ == "__main__":

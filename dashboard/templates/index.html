@@ -1163,6 +1163,7 @@ function startCountdown(nextCycleAt) {
       clearInterval(countdownInterval);
       countdownInterval = null;
       panel.style.display = 'none';
+      startPolling(); // retomar polling cuando termina la espera
     }
   }
   tick();
@@ -1189,9 +1190,9 @@ function startPolling() {
       if (data.error) {
         setStatus(`<span class="error-msg">Error: ${data.error}</span>`);
       } else if (data.auto_cycle && data.next_cycle_at) {
+        // Esperar sin llamar startPolling() — el countdown lo retoma al llegar a 0
         setStatus('Tanda completada — esperando próximo ciclo…');
         startCountdown(data.next_cycle_at);
-        startPolling();
         await loadAll(); updateTimestamp(); await loadCityProgress();
       } else {
         setStatus('Recolección completada — actualizando datos…');
@@ -1210,8 +1211,7 @@ async function checkPipelineOnLoad() {
   if (data.running) {
     setRunningUI(true); updateProgressUI(data.progress); startPolling();
   } else if (data.auto_cycle && data.next_cycle_at) {
-    startCountdown(data.next_cycle_at);
-    startPolling();
+    startCountdown(data.next_cycle_at); // el countdown llamará startPolling() al terminar
   }
 }
 function updateTimestamp() {
