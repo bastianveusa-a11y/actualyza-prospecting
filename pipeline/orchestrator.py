@@ -22,7 +22,7 @@ load_dotenv()
 from modules.google_places import search_clinics, CATEGORIES, AVAILABLE_CITIES
 from modules.meta_ads import count_ads_for_page
 from modules.notion_db import upsert_clinic, ensure_db_schema
-from modules.sunbiz import lookup_clinic as sunbiz_lookup
+from modules.state_registry import lookup as registry_lookup
 from modules.email_scraper import scrape_email
 from modules.api_budget import increment, check, print_report, BudgetExceeded
 
@@ -37,11 +37,11 @@ META_DELAY    = 2.5   # segundos entre calls a Meta
 SUNBIZ_DELAY  = 3.5   # segundos entre calls a Sunbiz (Cloudflare)
 EMAIL_DELAY   = 1.5   # segundos entre requests al sitio web de la clínica
 
-# Orden de procesamiento por defecto (cuando no se especifican targets)
+# Todas las ciudades US por defecto (España excluida — se agrega cuando se active)
 DEFAULT_CITIES = [
-    ("Miami",   "FL"),
-    ("Orlando", "FL"),
-    ("Dallas",  "TX"),
+    (c["city"], c["state"])
+    for c in AVAILABLE_CITIES
+    if c.get("country", "US") == "US"
 ]
 
 # Mapa city→state para lookup rápido
@@ -168,23 +168,23 @@ def process_clinic(clinic: dict, run_stats: dict) -> str:
         except BudgetExceeded:
             pass  # Meta scraping es sin costo — solo registramos, no bloqueamos
 
-    # Sunbiz — solo para clínicas de Florida (registro estatal FL)
-    city_meta  = next((c for c in AVAILABLE_CITIES if c["city"] == clinic.get("ciudad")), {})
-    use_sunbiz = city_meta.get("sunbiz", False)
-    if use_sunbiz:
-        sunbiz = sunbiz_lookup(
+    # Registro mercantil estatal — solo para clínicas de EE.UU.
+    city_meta = next((c for c in AVAILABLE_CITIES if c["city"] == clinic.get("ciudad")), {})
+    if city_meta.get("country", "US") == "US":
+        registry = registry_lookup(
+            state=clinic.get("estado", ""),
             clinic_name=name,
             clinic_address=clinic.get("direccion", ""),
             clinic_zip=clinic.get("zip", ""),
             clinic_phone=clinic.get("telefono", ""),
             delay=SUNBIZ_DELAY,
         )
-        if not sunbiz.get("error"):
-            clinic["entidad_legal"]     = sunbiz.get("nombre_legal", "")
-            clinic["dueno"]             = sunbiz.get("dueno", "")
-            clinic["agente_registrado"] = sunbiz.get("agente_registrado", "")
-            clinic["sunbiz_url"]        = sunbiz.get("sunbiz_url", "")
-            clinic["match_score"]       = sunbiz.get("match_score", 0.0)
+        if not registry.get("error"):
+            clinic["entidad_legal"]     = registry.get("nombre_legal", "")
+            clinic["dueno"]             = registry.get("dueno", "")
+            clinic["agente_registrado"] = registry.get("agente_registrado", "")
+            clinic["sunbiz_url"]        = registry.get("sunbiz_url", "")
+            clinic["match_score"]       = registry.get("match_score", 0.0)
 
     # Email de contacto desde el sitio web
     if clinic.get("web") and not clinic.get("email_contacto"):
