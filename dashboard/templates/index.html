@@ -109,6 +109,9 @@ header {
   color: var(--red);
 }
 .btn-stop:hover { background: rgba(255,80,112,0.15); border-color: rgba(255,80,112,0.5); color: var(--red); }
+.auto-cycle-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+.auto-cycle-toggle input { accent-color: var(--gold); width:15px; height:15px; cursor:pointer; }
+.auto-cycle-label { font-size:.78rem; color:var(--text2); letter-spacing:.02em; }
 
 /* Notification bar */
 .notif-strip {
@@ -531,6 +534,10 @@ tbody td a:hover { color: var(--gold); }
           </svg>
           Nueva Recolección
         </button>
+        <label class="auto-cycle-toggle" title="Repite automáticamente cada 10 min hasta cubrir todas las ciudades">
+          <input type="checkbox" id="chk-auto-cycle">
+          <span class="auto-cycle-label">Auto-ciclo</span>
+        </label>
         <button class="btn btn-stop" id="btn-stop" onclick="stopCollection()" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -900,14 +907,16 @@ function showLoader(v) { document.getElementById('loader').classList.toggle('sho
 const SECS_PER_CLINIC = 20; // ~20 segundos por clínica
 
 async function startCollection() {
-  const targets = buildTargetsPayload();
+  const targets   = buildTargetsPayload();
   if (!targets.length) { setStatus('<span class="error-msg">Selecciona al menos una ciudad y una categoría.</span>'); return; }
-  const res  = await fetch('/api/run-pipeline', {
+  const autoCycle = document.getElementById('chk-auto-cycle').checked;
+  const res = await fetch('/api/run-pipeline', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({targets}),
+    body: JSON.stringify({targets, auto_cycle: autoCycle}),
   });
   const data = await res.json();
   if (!data.ok) { setStatus(`<span class="error-msg">${data.error}</span>`); return; }
+  if (autoCycle) setStatus('Auto-ciclo activo — pipeline continúa automáticamente cada 10 min.');
   setRunningUI(true);
   startPolling();
 }
