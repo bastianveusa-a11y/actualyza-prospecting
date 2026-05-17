@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualyza — Meta Ads Library Integration Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080910; --bg2: #0d0e17; --border: rgba(255,255,255,0.07);
+  --gold: #c9a96e; --text1: #eeeef8; --text2: #7878a0; --text3: #50506a;
+  --green: #40c898; --red: #ff5070; --orange: #ff9050; --blue: #5080ff;
+  --purple: #9070ff;
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text1); min-height: 100vh; }
+
+.header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 14px 32px; display: flex; align-items: center; gap: 16px;
+}
+.logo { display: flex; align-items: center; gap: 9px; }
+.logo-mark { width: 30px; height: 30px; background: linear-gradient(135deg,var(--gold),#9a7840); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #0a0a0f; }
+.logo-text { font-size: 1rem; font-weight: 600; }
+.logo-text span { color: var(--gold); }
+.demo-badge { background: rgba(80,128,255,0.12); border: 1px solid rgba(80,128,255,0.25); color: var(--blue); font-size: .72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: .04em; }
+
+.hero {
+  max-width: 900px; margin: 48px auto; padding: 0 24px;
+}
+.hero h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
+.hero p { font-size: .88rem; color: var(--text2); line-height: 1.7; max-width: 680px; }
+
+.section { max-width: 900px; margin: 0 auto 48px; padding: 0 24px; }
+.section-title { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 14px; }
+
+/* How it works */
+.steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 40px; }
+.step-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.step-num { font-size: .7rem; font-weight: 700; color: var(--gold); letter-spacing: .06em; margin-bottom: 8px; }
+.step-card h3 { font-size: .85rem; font-weight: 600; margin-bottom: 6px; }
+.step-card p { font-size: .78rem; color: var(--text2); line-height: 1.6; }
+.step-api { display: inline-block; font-family: monospace; font-size: .7rem; background: rgba(201,169,110,0.08); border: 1px solid rgba(201,169,110,0.2); color: var(--gold); padding: 2px 8px; border-radius: 4px; margin-top: 8px; }
+
+/* Clinics table */
+.table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 12px 16px; text-align: left; font-size: .72rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+td { padding: 13px 16px; font-size: .82rem; vertical-align: middle; }
+.clinic-name { font-weight: 600; color: var(--text1); }
+.clinic-city { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+.cat-badge { font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.cat-dental  { background: rgba(80,128,255,0.1); color: var(--blue); }
+.cat-estetica { background: rgba(144,112,255,0.1); color: var(--purple); }
+.cat-medspa  { background: rgba(64,200,152,0.1); color: var(--green); }
+.cat-wellness { background: rgba(255,144,80,0.1); color: var(--orange); }
+
+.ads-badge { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 500; padding: 4px 10px; border-radius: 20px; }
+.ads-high   { background: rgba(64,200,152,0.1); color: var(--green); border: 1px solid rgba(64,200,152,0.2); }
+.ads-medium { background: rgba(255,144,80,0.1); color: var(--orange); border: 1px solid rgba(255,144,80,0.2); }
+.ads-low    { background: rgba(201,169,110,0.1); color: var(--gold); border: 1px solid rgba(201,169,110,0.2); }
+.ads-none   { background: rgba(255,255,255,0.04); color: var(--text3); border: 1px solid var(--border); }
+.ads-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.score { font-weight: 700; font-size: .85rem; }
+.method-tag { font-size: .7rem; color: var(--text3); font-family: monospace; }
+
+/* Data note */
+.data-note { background: rgba(80,128,255,0.06); border: 1px solid rgba(80,128,255,0.15); border-radius: 10px; padding: 16px 20px; margin-top: 20px; }
+.data-note p { font-size: .8rem; color: var(--text2); line-height: 1.6; margin: 0; }
+.data-note strong { color: var(--blue); }
+
+/* API call demo */
+.api-demo { background: #0a0b14; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.api-demo-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: .75rem; color: var(--text2); }
+.method-get { color: var(--green); font-weight: 700; font-family: monospace; }
+.api-demo-body { padding: 16px; font-family: 'SF Mono', monospace; font-size: .75rem; color: #c8c8e0; line-height: 1.7; }
+.key { color: #9090d0; }
+.val-str { color: #c9a96e; }
+.val-num { color: var(--green); }
+.val-bool { color: var(--blue); }
+.comment { color: var(--text3); }
+
+@media(max-width:640px) { .steps { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">A</div>
+    <div class="logo-text">Actual<span>yza</span></div>
+  </div>
+  <div class="demo-badge">REVIEWER DEMO</div>
+</div>
+
+<div class="hero">
+  <h1>Meta Ads Library API Integration</h1>
+  <p>
+    Actualyza is a B2B intelligence platform for the healthcare and wellness industry.
+    We use the <strong>Meta Ads Library API</strong> (<code>ads_archive</code> endpoint with <code>ads_read</code> permission)
+    to identify which dental, aesthetic, medical spa, and wellness clinics in the United States
+    are actively running ads on Meta platforms — helping us prioritize outreach for our AI receptionist product.
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title">How the ads_read permission is used</div>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">STEP 1</div>
+      <h3>Clinic Discovery</h3>
+      <p>We identify clinics via Google Places API by category (dental, esthetic, medspa, wellness) and city (Miami, Orlando, Dallas).</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">STEP 2</div>
+      <h3>Meta Ads Lookup</h3>
+      <p>For each clinic, we query the Meta Ads Library API to check if they have active ads in the US. We use the <code>ads_read</code> permission to access this public data.</p>
+      <div class="step-api">GET /ads_archive</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">STEP 3</div>
+      <h3>Prioritized Outreach</h3>
+      <p>Clinics with active Meta ads are scored higher — they're already investing in digital marketing and are more likely to be interested in our AI solution.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Sample API call — ads_archive endpoint</div>
+  <div class="api-demo">
+    <div class="api-demo-header">
+      <span class="method-get">GET</span>
+      graph.facebook.com/v21.0/ads_archive
+    </div>
+    <div class="api-demo-body">
+<span class="comment">// Request parameters sent to Meta Ads Library API</span>
+{
+  <span class="key">"access_token"</span>:          <span class="val-str">"[USER_ACCESS_TOKEN with ads_read]"</span>,
+  <span class="key">"ad_reached_countries"</span>:   <span class="val-str">["US"]</span>,
+  <span class="key">"ad_active_status"</span>:       <span class="val-str">"ACTIVE"</span>,
+  <span class="key">"search_terms"</span>:           <span class="val-str">"Miami Dental Studio"</span>,
+  <span class="key">"limit"</span>:                  <span class="val-num">50</span>,
+  <span class="key">"fields"</span>:                <span class="val-str">"id"</span>
+}
+
+<span class="comment">// Response — we only store the count, not the ad content</span>
+{
+  <span class="key">"data"</span>: [ { <span class="key">"id"</span>: <span class="val-str">"..."</span> }, { <span class="key">"id"</span>: <span class="val-str">"..."</span> } ],
+  <span class="key">"paging"</span>: { <span class="key">"cursors"</span>: { <span class="val-str">...</span> } }
+}
+
+<span class="comment">// We extract: count of active ads → classify as High / Medium / Low / None</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Example results — clinic ad intelligence</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Clinic</th>
+          <th>Category</th>
+          <th>Meta Ads Activity</th>
+          <th>Ad Count</th>
+          <th>Method</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="clinic-name">Brickell Dental Studio</div>
+            <div class="clinic-city">Miami, FL</div>
+          </td>
+          <td><span class="cat-badge cat-dental">Dental</span></td>
+          <td><span class="ads-badge ads-high"><span class="ads-dot"></span>High</span></td>
+          <td>14 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--green)">91</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="clinic-name">Glow Aesthetics Miami</div>
+            <div class="clinic-city">Miami, FL</div>
+          </td>
+          <td><span class="cat-badge cat-estetica">Esthetic</span></td>
+          <td><span class="ads-badge ads-high"><span class="ads-dot"></span>High</span></td>
+          <td>8 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--green)">87</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="clinic-name">Serenity MedSpa Orlando</div>
+            <div class="clinic-city">Orlando, FL</div>
+          </td>
+          <td><span class="cat-badge cat-medspa">MedSpa</span></td>
+          <td><span class="ads-badge ads-medium"><span class="ads-dot"></span>Medium</span></td>
+          <td>4 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--orange)">74</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="clinic-name">Vida Wellness Center</div>
+            <div class="clinic-city">Dallas, TX</div>
+          </td>
+          <td><span class="cat-badge cat-wellness">Wellness</span></td>
+          <td><span class="ads-badge ads-low"><span class="ads-dot"></span>Low</span></td>
+          <td>2 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--gold)">61</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="clinic-name">Northside Family Dental</div>
+            <div class="clinic-city">Orlando, FL</div>
+          </td>
+          <td><span class="cat-badge cat-dental">Dental</span></td>
+          <td><span class="ads-badge ads-none"><span class="ads-dot"></span>None</span></td>
+          <td>0 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--text3)">38</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="clinic-name">Dallas Skin & Laser</div>
+            <div class="clinic-city">Dallas, TX</div>
+          </td>
+          <td><span class="cat-badge cat-medspa">MedSpa</span></td>
+          <td><span class="ads-badge ads-medium"><span class="ads-dot"></span>Medium</span></td>
+          <td>5 active ads</td>
+          <td><span class="method-tag">ads_archive API</span></td>
+          <td><span class="score" style="color:var(--orange)">78</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="data-note">
+    <p>
+      <strong>Data usage policy:</strong> Actualyza only retrieves the <em>count</em> of active ads — we do not store ad creative content, targeting parameters, audience data, or any personal information. The ad count is used solely to calculate a <em>marketing activity score</em> that helps us prioritize which businesses to contact for our B2B outreach. Data is not shared with third parties.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

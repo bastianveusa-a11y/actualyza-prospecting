@@ -36,6 +36,8 @@ NOTION_TOKEN    = os.getenv("NOTION_TOKEN", "")
 NOTION_DB_ID    = os.getenv("NOTION_DATABASE_ID", "")
 DASH_USER       = os.getenv("DASHBOARD_USER", "actualyza")
 DASH_PASS       = os.getenv("DASHBOARD_PASS", "")
+REVIEWER_USER   = os.getenv("REVIEWER_USER", "")
+REVIEWER_PASS   = os.getenv("REVIEWER_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
 LOG_FILE        = Path(__file__).parent.parent / "data" / "runs.log"
 ASSETS_FILE     = Path(__file__).parent.parent / "data" / "creative_assets.json"
@@ -63,7 +65,9 @@ def _require_auth(f):
         if auth.startswith("Basic "):
             try:
                 user, pwd = base64.b64decode(auth[6:]).decode().split(":", 1)
-                if user == DASH_USER and pwd == DASH_PASS:
+                main_ok     = user == DASH_USER and pwd == DASH_PASS
+                reviewer_ok = REVIEWER_USER and REVIEWER_PASS and user == REVIEWER_USER and pwd == REVIEWER_PASS
+                if main_ok or reviewer_ok:
                     return f(*args, **kwargs)
             except Exception:
                 pass
@@ -1471,6 +1475,11 @@ def video_ws(ws, room_id):
 @app.route("/privacy")
 def privacy_page():
     return render_template("privacy.html")
+
+
+@app.route("/demo")
+def demo_page():
+    return render_template("demo.html")
 
 
 @app.route("/video")
