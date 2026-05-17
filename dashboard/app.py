@@ -772,27 +772,29 @@ def _generate_all_assets_bg(force: bool = False):
                     from modules.image_gen  import generate_background
                     from modules.api_budget import increment
                     increment("flux_images", 1)
+                    print(f"  ⟳ Generando background Flux para {key}…", flush=True)
                     img_url = generate_background(cat, num)
+                    print(f"  ✓ Flux OK para {key}: {img_url[:60]}…", flush=True)
                     try:
                         from modules.image_gen import compose_creative
                         from modules.canva_api import is_authorized, upload_asset_binary
                         composed = compose_creative(img_url, cat, num)
+                        print(f"  ✓ Composición OK para {key} ({len(composed)/1024:.0f}KB)", flush=True)
                         if is_authorized():
+                            print(f"  ⟳ Subiendo a Canva…", flush=True)
                             canva_url = upload_asset_binary(composed, name=f"amy-ai-{cat}-e{num}")
                             img_url   = canva_url
+                            print(f"  ✓ Canva OK para {key}: {canva_url[:60]}…", flush=True)
                         else:
-                            # Sin Canva: guardar localmente y servir desde Flask
-                            static_path = Path(__file__).parent / "static" / "img" / "creatives"
-                            static_path.mkdir(parents=True, exist_ok=True)
-                            (static_path / f"{cat}_{num}.jpg").write_bytes(composed)
-                            img_url = f"/static/img/creatives/{cat}_{num}.jpg"
+                            # Sin Canva: guardar en memoria y servir desde Flask con URL estable
+                            print(f"  ⚠ Canva no autorizado — guardando en cache interno", flush=True)
+                            _image_cache[key] = composed
+                            img_url = f"/api/creative-image/{key}"
                     except Exception as ce:
-                        print(f"    Composición falló para {key}: {ce}")
+                        print(f"  ✗ Composición/Canva falló para {key}: {ce}", flush=True)
                     existing[key] = img_url
-                    # Solo persiste en Notion si es URL de CDN (no path local efímero)
-                    if not img_url.startswith("/static/"):
-                        _save_assets(existing)
-                    print(f"  ✓ {key}")
+                    _save_assets(existing)
+                    print(f"  ✓ {key} guardado → {img_url[:60]}", flush=True)
                 except Exception as e:
                     print(f"  ✗ Error {key}: {e}")
     threading.Thread(target=_run, daemon=True).start()
@@ -814,12 +816,41 @@ def api_creative_assets():
     return jsonify({"ok": True, "assets": result})
 
 
+@app.route("/api/creative-image/<key>")
+def api_creative_image(key):
+    """Sirve imagen compuesta desde cache en memoria (fallback sin Canva)."""
+    img = _image_cache.get(key)
+    if not img:
+        return Response("Not found", 404)
+    return Response(img, mimetype="image/jpeg")
+
+
 @app.route("/api/regenerate-assets", methods=["POST"])
 @_require_auth
 def api_regenerate_assets():
-    """Fuerza la regeneración de todos los creativos (ignora caché de 30 días)."""
     _generate_all_assets_bg(force=True)
     return jsonify({"ok": True, "message": "Regenerando en background…"})
+
+
+@app.route("/api/creative-status")
+@_require_auth
+def api_creative_status():
+    """Diagnóstico: muestra qué assets existen, si Canva está activo, y si hay errores."""
+    from modules.canva_api import is_authorized
+    assets   = _load_assets()
+    canva_ok = is_authorized()
+    keys     = {f"{c}_{n}" for c in CATEGORIES for n in EMAIL_NUMS}
+    present  = {k: assets[k] for k in keys if k in assets}
+    missing  = [k for k in keys if k not in assets]
+    return jsonify({
+        "canva_authorized": canva_ok,
+        "notion_token_set": bool(NOTION_TOKEN),
+        "replicate_key_set": bool(os.getenv("REPLICATE_API_TOKEN")),
+        "assets_saved_at": assets.get("_saved_at"),
+        "assets_present": present,
+        "assets_missing": missing,
+        "local_file_exists": ASSETS_FILE.exists(),
+    })
 
 
 # ── Canva OAuth ───────────────────────────────────────────────────────────────
@@ -1330,6 +1361,7 @@ def unsubscribe():
 
 # ── Video translation ─────────────────────────────────────────
 
+_image_cache        = {}  # key (cat_num) → composed JPEG bytes (fallback when Canva unavailable)
 _video_rooms        = {}  # room_id → list of ws objects
 _video_rooms_lock   = threading.Lock()
 _daily_rooms        = {}  # room_id → daily.co room URL (in-memory; 2h TTL matches room exp)
