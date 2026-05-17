@@ -1102,15 +1102,18 @@ def api_creative_render():
     """
     Renderiza un creativo con Playwright (HTML→JPEG) usando flux_url existente.
     Fallback a Pillow si Playwright no está disponible.
-    Params: flux_url, cat (default dental), num (default 2), style (default a)
+    Params: flux_url (o test=1 para imagen placeholder), cat, num, style
     """
     import traceback
+    _TEST_IMG = "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1200&q=85"
     flux_url = request.args.get("flux_url", "")
     cat      = request.args.get("cat", "dental")
     num      = int(request.args.get("num", "2"))
     style    = request.args.get("style", "a")
+    if request.args.get("test") == "1":
+        flux_url = _TEST_IMG
     if not flux_url:
-        return Response("flux_url param required", 400)
+        return Response("Provide flux_url param or add test=1", 400)
     try:
         try:
             from modules.html_creative import render_creative
