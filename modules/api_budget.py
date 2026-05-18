@@ -11,54 +11,116 @@ from pathlib import Path
 USAGE_FILE = Path(__file__).parent.parent / "data" / "api_usage.json"
 
 # Límites mensuales de uso (unidades, no $)
+# Unidades: requests, minutos, emails, imágenes según el servicio
 DEFAULTS = {
-    "google_places":  3750,
-    "sunbiz":         500,
-    "meta_scraping":  5000,
-    "claude_emails":  500,
-    "resend_emails":  2800,
-    "flux_images":    100,
+    # ── Prospecting ──────────────────────────────
+    "google_places":  3750,    # requests/mes
+    "sunbiz":         500,     # lookups/mes
+    "meta_scraping":  5000,    # requests/mes
+    "claude_emails":  500,     # emails generados/mes
+    "resend_emails":  2800,    # emails enviados/mes
+    "flux_images":    100,     # imágenes/mes
+    # ── Agencia / Voz ────────────────────────────
+    "retell_calls":   500,     # minutos de llamada/mes
+    "retell_web":     200,     # minutos de demo web/mes
+    "openai":         1000,    # requests LLM/mes (si se usa directo)
+    # ── Infraestructura ──────────────────────────
+    "railway":        1,       # instancias activas (costo fijo mensual)
+    "vercel":         1,       # proyectos activos (costo fijo mensual)
+    "notion":         1,       # workspace (costo fijo mensual)
 }
 
 # Costo y créditos gratuitos por servicio
 # free_units: unidades cubiertas por plan gratuito/crédito mensual
 # cost_per_unit: costo $ por unidad DESPUÉS del free tier
+# fixed_cost: costo fijo mensual independiente del uso
 PRICING = {
+    # ── Prospecting ──────────────────────────────
     "google_places": {
-        "label":         "Google Places",
-        "cost_per_unit": 0.017,    # $17/1000 requests (Place Details)
-        "free_units":    11765,    # $200 crédito mensual Google / $0.017
+        "label":         "Google Places API",
+        "cost_per_unit": 0.017,
+        "free_units":    11765,    # $200 crédito / $0.017
+        "fixed_cost":    0,
         "note":          "$200 crédito/mes Google Cloud",
     },
     "sunbiz": {
-        "label":         "Sunbiz Scraping",
+        "label":         "Sunbiz / State Registry",
         "cost_per_unit": 0,
         "free_units":    99999,
+        "fixed_cost":    0,
         "note":          "Scraping web — gratis",
     },
     "meta_scraping": {
-        "label":         "Meta Ads API",
+        "label":         "Meta Ads Library API",
         "cost_per_unit": 0,
         "free_units":    99999,
+        "fixed_cost":    0,
         "note":          "API gratuita",
     },
     "claude_emails": {
-        "label":         "Claude (emails)",
-        "cost_per_unit": 0.002,    # ~$0.002/email con Haiku
+        "label":         "Claude AI (emails)",
+        "cost_per_unit": 0.002,
         "free_units":    0,
-        "note":          "Sin free tier — Haiku ~$0.002/email",
+        "fixed_cost":    0,
+        "note":          "Haiku ~$0.002/email",
     },
     "resend_emails": {
-        "label":         "Resend (emails)",
-        "cost_per_unit": 0.0004,   # $20/50K = $0.0004 por email después del free
-        "free_units":    3000,     # 3,000 emails/mes gratis
-        "note":          "3,000 gratis/mes",
+        "label":         "Resend (email delivery)",
+        "cost_per_unit": 0.0004,
+        "free_units":    3000,
+        "fixed_cost":    0,
+        "note":          "3,000 gratis/mes · $0.0004 c/u después",
     },
     "flux_images": {
-        "label":         "Replicate (Flux)",
-        "cost_per_unit": 0.04,     # $0.04 por imagen
+        "label":         "Replicate / Flux (imágenes)",
+        "cost_per_unit": 0.04,
         "free_units":    0,
-        "note":          "Sin free tier — $0.04/imagen",
+        "fixed_cost":    0,
+        "note":          "$0.04/imagen",
+    },
+    # ── Agencia / Voz ────────────────────────────
+    "retell_calls": {
+        "label":         "Retell AI (llamadas salientes)",
+        "cost_per_unit": 0.11,     # ~$0.11/min · varía por modelo de voz
+        "free_units":    0,
+        "fixed_cost":    0,
+        "note":          "~$0.11/min · actualizar según plan",
+    },
+    "retell_web": {
+        "label":         "Retell AI (demo web)",
+        "cost_per_unit": 0.11,
+        "free_units":    0,
+        "fixed_cost":    0,
+        "note":          "Misma tarifa · demo en landing page",
+    },
+    "openai": {
+        "label":         "OpenAI (LLM directo)",
+        "cost_per_unit": 0.003,    # ~$0.003/request GPT-4o-mini promedio
+        "free_units":    0,
+        "fixed_cost":    0,
+        "note":          "GPT-4o-mini ~$0.003/req promedio",
+    },
+    # ── Infraestructura ──────────────────────────
+    "railway": {
+        "label":         "Railway (backend hosting)",
+        "cost_per_unit": 0,
+        "free_units":    99999,
+        "fixed_cost":    20,       # ~$20/mes Hobby/Pro plan
+        "note":          "~$20/mes plan Hobby + uso",
+    },
+    "vercel": {
+        "label":         "Vercel (web hosting)",
+        "cost_per_unit": 0,
+        "free_units":    99999,
+        "fixed_cost":    0,        # Free tier por ahora
+        "note":          "Free tier activo",
+    },
+    "notion": {
+        "label":         "Notion (base de datos)",
+        "cost_per_unit": 0,
+        "free_units":    99999,
+        "fixed_cost":    0,        # Free tier
+        "note":          "Free tier activo",
     },
 }
 
