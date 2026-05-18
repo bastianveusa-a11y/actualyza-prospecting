@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consejo Estratégico — Actualyza</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080910;
+  --bg2:      #0d0e1a;
+  --bg3:      #12131f;
+  --card:     rgba(255,255,255,0.03);
+  --border:   rgba(255,255,255,0.07);
+  --border-h: rgba(201,169,110,0.3);
+  --gold:     #c9a96e;
+  --gold-l:   #e8c97a;
+  --gold-d:   #9a7840;
+  --text:     #eeeef8;
+  --text2:    #7878a0;
+  --text3:    #50506a;
+  --green:    #40c898;
+  --blue:     #5080ff;
+  --teal:     #40d0c0;
+  --orange:   #ff9050;
+  --purple:   #b060f0;
+  --red:      #ff5070;
+  --r:        12px;
+  --r-sm:     8px;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80,128,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(201,169,110,0.05) 0%, transparent 60%);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.shell { max-width: 1280px; margin: 0 auto; padding: 24px 28px 60px; }
+
+/* ── Header ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 32px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-d) 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #0a0a0f;
+}
+.logo-text { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.logo-text span { color: var(--gold); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: all .2s; font-family: 'Inter', sans-serif;
+  text-decoration: none;
+}
+.btn:hover { border-color: var(--border-h); color: var(--gold); background: rgba(201,169,110,0.06); }
+.btn svg { width: 14px; height: 14px; }
+
+/* ── Page title ── */
+.page-title {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 28px;
+}
+.page-title-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(201,169,110,0.2), rgba(201,169,110,0.08));
+  border: 1px solid rgba(201,169,110,0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.page-title h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; }
+.page-title p { font-size: 0.8rem; color: var(--text2); margin-top: 3px; }
+
+/* ── Input area ── */
+.input-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  margin-bottom: 28px;
+  transition: border-color .2s;
+}
+.input-card:focus-within { border-color: rgba(201,169,110,0.25); }
+.input-label {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 10px;
+}
+.question-textarea {
+  width: 100%; min-height: 88px; max-height: 240px;
+  background: transparent; border: none; outline: none; resize: vertical;
+  font-family: 'Inter', sans-serif; font-size: 0.95rem; color: var(--text);
+  line-height: 1.6;
+}
+.question-textarea::placeholder { color: var(--text3); }
+.input-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.seat-count { font-size: 0.75rem; color: var(--text3); }
+.btn-run {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 22px; border-radius: var(--r-sm);
+  background: linear-gradient(135deg, var(--gold-d), var(--gold));
+  border: none; color: #0a0a0f; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all .2s; font-family: 'Inter', sans-serif;
+}
+.btn-run:hover { filter: brightness(1.1); }
+.btn-run:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+.btn-run svg { width: 15px; height: 15px; }
+
+/* ── Progress bar ── */
+.progress-bar-wrap {
+  height: 3px; background: var(--bg3); border-radius: 99px;
+  margin-bottom: 24px; overflow: hidden; display: none;
+}
+.progress-bar-inner {
+  height: 100%; background: linear-gradient(90deg, var(--gold-d), var(--gold));
+  border-radius: 99px; width: 0%; transition: width .4s ease;
+}
+
+/* ── Round label ── */
+.round-label {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.round-label-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold); opacity: 0.6;
+}
+
+/* ── Seat grid ── */
+.seats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+/* ── Seat card ── */
+.seat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .3s ease, transform .3s ease, border-color .2s;
+  animation: none;
+}
+.seat-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.seat-card:hover { border-color: rgba(255,255,255,0.1); }
+
+.seat-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.seat-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.seat-name { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.seat-round-badge {
+  margin-left: auto; font-size: 0.65rem; padding: 2px 7px;
+  border-radius: 99px; font-weight: 600; letter-spacing: 0.06em;
+}
+.seat-content {
+  font-size: 0.82rem; color: var(--text2); line-height: 1.65;
+  white-space: pre-wrap;
+}
+.seat-content .tag-dato   { color: var(--green);  font-weight: 600; }
+.seat-content .tag-supuesto { color: var(--orange); font-weight: 600; }
+
+/* color variants */
+.c-green  { background: rgba(64,200,152,0.12); }
+.c-blue   { background: rgba(80,128,255,0.12); }
+.c-teal   { background: rgba(64,208,192,0.12); }
+.c-orange { background: rgba(255,144,80,0.12); }
+.c-purple { background: rgba(176,96,240,0.12); }
+.c-red    { background: rgba(255,80,112,0.12); }
+.c-gold   { background: rgba(201,169,110,0.12); }
+
+.n-green  { color: var(--green); }
+.n-blue   { color: var(--blue); }
+.n-teal   { color: var(--teal); }
+.n-orange { color: var(--orange); }
+.n-purple { color: var(--purple); }
+.n-red    { color: var(--red); }
+.n-gold   { color: var(--gold); }
+
+.badge-green  { background: rgba(64,200,152,0.15); color: var(--green); }
+.badge-blue   { background: rgba(80,128,255,0.15); color: var(--blue); }
+.badge-teal   { background: rgba(64,208,192,0.15); color: var(--teal); }
+.badge-orange { background: rgba(255,144,80,0.15); color: var(--orange); }
+.badge-purple { background: rgba(176,96,240,0.15); color: var(--purple); }
+.badge-red    { background: rgba(255,80,112,0.15); color: var(--red); }
+.badge-gold   { background: rgba(201,169,110,0.15); color: var(--gold); }
+
+/* ── Judge card ── */
+.judge-card {
+  background: linear-gradient(135deg, rgba(201,169,110,0.06), rgba(201,169,110,0.02));
+  border: 1px solid rgba(201,169,110,0.2);
+  border-radius: var(--r);
+  padding: 24px;
+  margin-bottom: 28px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.judge-card.visible { opacity: 1; transform: translateY(0); }
+.judge-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; padding-bottom: 16px;
+  border-bottom: 1px solid rgba(201,169,110,0.12);
+}
+.judge-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(201,169,110,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.judge-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.judge-subtitle { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+.judge-content {
+  font-size: 0.85rem; color: var(--text2); line-height: 1.7;
+  white-space: pre-wrap;
+}
+.judge-content .tag-dato     { color: var(--green); font-weight: 600; }
+.judge-content .tag-supuesto { color: var(--orange); font-weight: 600; }
+
+/* ── Thinking indicator ── */
+.thinking {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--text3);
+  margin-bottom: 10px;
+}
+.thinking-dots span {
+  display: inline-block; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--gold);
+  margin: 0 1px;
+  animation: blink 1.2s infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: .2s; }
+.thinking-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100% { opacity:.15; } 40% { opacity:1; } }
+
+/* ── History ── */
+.history-section { margin-top: 40px; }
+.section-title {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 14px;
+}
+.history-list { display: flex; flex-direction: column; gap: 6px; }
+.history-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: var(--card);
+  cursor: pointer; transition: all .15s;
+}
+.history-item:hover { border-color: var(--border-h); background: rgba(201,169,110,0.04); }
+.history-ts { font-size: 0.7rem; color: var(--text3); flex-shrink: 0; }
+.history-q  { font-size: 0.8rem; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-icon { color: var(--text3); }
+
+/* ── Divider ── */
+.divider {
+  height: 1px; background: var(--border);
+  margin: 28px 0;
+}
+
+/* ── Status bar ── */
+#status-bar {
+  font-size: 0.75rem; color: var(--text3);
+  margin-top: 6px; min-height: 18px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .seats-grid { grid-template-columns: 1fr; }
+  .shell { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div class="logo-text">Actualyza <span>AI</span></div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="/campaigns" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>
+        </svg>
+        Campañas
+      </a>
+    </div>
+  </header>
+
+  <!-- Page title -->
+  <div class="page-title">
+    <div class="page-title-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" width="22" height="22">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Consejo Estratégico</h1>
+      <p>8 asientos · 3 rondas · veredicto del Juez</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">Pregunta o decisión a debatir</div>
+    <textarea
+      id="question"
+      class="question-textarea"
+      placeholder="Ej: ¿Debería lanzar un plan de $497/mes para clínicas en lugar del actual de $297/mes? El argumento es que las clínicas que ya usan AMY tienen baja sensibilidad al precio..."
+    ></textarea>
+    <div class="input-footer">
+      <span class="seat-count">7 asientos debaten · El Juez sintetiza al final</span>
+      <button class="btn-run" id="btn-run" onclick="runConsejo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Convocar Consejo
+      </button>
+    </div>
+    <div id="status-bar"></div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar-wrap" id="progress-wrap">
+    <div class="progress-bar-inner" id="progress-bar"></div>
+  </div>
+
+  <!-- Results area -->
+  <div id="results-area"></div>
+
+  <!-- History -->
+  {% if history %}
+  <div class="history-section">
+    <div class="section-title">Consultas anteriores</div>
+    <div class="history-list" id="history-list">
+      {% for h in history %}
+      <div class="history-item" onclick="loadConsulta({{ h.id }})">
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="history-ts">{{ h.ts[:10] }}</span>
+        <span class="history-q">{{ h.question }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="color:var(--text3);flex-shrink:0">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const SEATS_META = {
+  1: {name:"FINANZAS",  color:"green",  r1label:"R1", r2label:"R2"},
+  2: {name:"MERCADO",   color:"blue",   r1label:"R1", r2label:"R2"},
+  3: {name:"CLIENTE",   color:"teal",   r1label:"R1", r2label:"R2"},
+  4: {name:"MARKETING", color:"orange", r1label:"R1", r2label:"R2"},
+  5: {name:"RETENCIÓN", color:"purple", r1label:"R1", r2label:"R2"},
+  6: {name:"ESTRATEGIA",color:"gold",   r1label:"R1", r2label:"R2"},
+  7: {name:"ESCÉPTICO", color:"red",    r1label:"R1", r2label:"R2"},
+  8: {name:"EL JUEZ",   color:"gold",   r1label:"R3", r2label:"R3"},
+};
+
+const SEAT_ICONS = {
+  1: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z",
+  2: "M3.5 18.5l6-6 4 4L22 6.92",
+  3: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z",
+  4: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+  5: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+  6: "M13 10V3L4 14h7v7l9-11h-7z",
+  7: "M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
+  8: "M3 6l9-4 9 4v6c0 5.25-3.9 10.14-9 11.25C6.9 22.14 3 17.25 3 12V6z",
+};
+
+let running = false;
+let seatsReceived = 0;
+const TOTAL_NON_JUDGE = 14; // 7 R1 + 7 R2
+
+function setStatus(msg) {
+  document.getElementById("status-bar").textContent = msg;
+}
+
+function formatContent(text) {
+  return text
+    .replace(/\[DATO\]/g,     '<span class="tag-dato">[DATO]</span>')
+    .replace(/\[SUPUESTO\]/g, '<span class="tag-supuesto">[SUPUESTO]</span>');
+}
+
+function seatIcon(id) {
+  const d = SEAT_ICONS[id] || "";
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="${d}"/></svg>`;
+}
+
+function renderSeatCard(data) {
+  const m = SEATS_META[data.id] || {name: data.name, color: "gold"};
+  const c = m.color;
+  const roundLabel = data.round === 1 ? "Ronda 1" : data.round === 2 ? "Ronda 2" : "Ronda 3";
+
+  if (data.id === 8) {
+    // Judge gets special rendering
+    const card = document.createElement("div");
+    card.className = "judge-card";
+    card.id = `judge-card`;
+    card.innerHTML = `
+      <div class="judge-header">
+        <div class="judge-icon">${seatIcon(8)}</div>
+        <div>
+          <div class="judge-title">El Juez — Veredicto Final</div>
+          <div class="judge-subtitle">Síntesis de las 3 rondas</div>
+        </div>
+      </div>
+      <div class="judge-content">${formatContent(escHtml(data.content))}</div>
+    `;
+    return card;
+  }
+
+  const card = document.createElement("div");
+  card.className = "seat-card";
+  card.id = `seat-${data.id}-r${data.round}`;
+  card.innerHTML = `
+    <div class="seat-header">
+      <div class="seat-icon c-${c}">${seatIcon(data.id)}</div>
+      <span class="seat-name n-${c}">${data.name}</span>
+      <span class="seat-round-badge badge-${c}">${roundLabel}</span>
+    </div>
+    <div class="seat-content">${formatContent(escHtml(data.content))}</div>
+  `;
+  return card;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function getOrCreateRoundSection(round) {
+  let section = document.getElementById(`round-section-${round}`);
+  if (!section) {
+    section = document.createElement("div");
+    section.id = `round-section-${round}`;
+    section.innerHTML = `
+      <div class="round-label">
+        <div class="round-label-dot"></div>
+        ${round === 1 ? "Ronda 1 — Apertura" : round === 2 ? "Ronda 2 — Confrontación" : "Ronda 3 — Veredicto"}
+      </div>
+      ${round < 3 ? '<div class="seats-grid" id="round-grid-' + round + '"></div>' : ''}
+    `;
+    document.getElementById("results-area").appendChild(section);
+  }
+  return section;
+}
+
+function addThinking(round) {
+  removeThinking();
+  const el = document.createElement("div");
+  el.className = "thinking";
+  el.id = "thinking-indicator";
+  el.innerHTML = `
+    <div class="thinking-dots"><span></span><span></span><span></span></div>
+    <span>${round === 3 ? "El Juez está analizando todo el debate..." : "Los asientos están deliberando..."}</span>
+  `;
+  document.getElementById("results-area").appendChild(el);
+}
+
+function removeThinking() {
+  const el = document.getElementById("thinking-indicator");
+  if (el) el.remove();
+}
+
+async function runConsejo() {
+  if (running) return;
+  const question = document.getElementById("question").value.trim();
+  if (!question) { setStatus("Escribe una pregunta antes de convocar el Consejo."); return; }
+
+  running = true;
+  seatsReceived = 0;
+  document.getElementById("btn-run").disabled = true;
+  document.getElementById("results-area").innerHTML = "";
+  document.getElementById("progress-wrap").style.display = "block";
+  document.getElementById("progress-bar").style.width = "0%";
+  setStatus("Convocando el Consejo...");
+
+  let progressStep = 0;
+  const TOTAL_STEPS = 16; // 7 R1 + 7 R2 + 1 Judge + done
+
+  function advanceProgress() {
+    progressStep++;
+    const pct = Math.min(98, Math.round(progressStep / TOTAL_STEPS * 100));
+    document.getElementById("progress-bar").style.width = pct + "%";
+  }
+
+  try {
+    const resp = await fetch("/consejo/run", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({question}),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      setStatus("Error: " + (err.error || resp.statusText));
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop();
+      for (const part of parts) {
+        if (!part.startsWith("data:")) continue;
+        const raw = part.slice(5).trim();
+        let ev;
+        try { ev = JSON.parse(raw); } catch { continue; }
+        handleEvent(ev, advanceProgress);
+      }
+    }
+  } catch (err) {
+    setStatus("Error de conexión: " + err.message);
+  } finally {
+    running = false;
+    document.getElementById("btn-run").disabled = false;
+    document.getElementById("progress-bar").style.width = "100%";
+    setTimeout(() => { document.getElementById("progress-wrap").style.display = "none"; }, 800);
+  }
+}
+
+function handleEvent(ev, advanceProgress) {
+  switch (ev.type) {
+    case "start":
+      removeThinking();
+      getOrCreateRoundSection(ev.round);
+      addThinking(ev.round);
+      setStatus(ev.round === 1 ? "Ronda 1 — Los 7 asientos están abriendo posiciones..." :
+                ev.round === 2 ? "Ronda 2 — Los asientos se leen entre sí y confrontan..." :
+                "Ronda 3 — El Juez delibera...");
+      break;
+
+    case "seat": {
+      removeThinking();
+      advanceProgress();
+      const card = renderSeatCard(ev);
+      if (ev.id === 8) {
+        // Judge: append directly to results area
+        document.getElementById("results-area").appendChild(card);
+      } else {
+        const grid = document.getElementById(`round-grid-${ev.round}`);
+        if (grid) grid.appendChild(card);
+      }
+      requestAnimationFrame(() => card.classList.add("visible"));
+      seatsReceived++;
+      const inRound = (ev.round === 1 || ev.round === 2)
+        ? `Ronda ${ev.round} — ${ev.name} respondió`
+        : "El Juez entregó el veredicto";
+      setStatus(inRound);
+      break;
+    }
+
+    case "round_done":
+      removeThinking();
+      if (ev.round < 3) {
+        const div = document.createElement("div");
+        div.className = "divider";
+        document.getElementById("results-area").appendChild(div);
+      }
+      break;
+
+    case "done":
+      setStatus(ev.consulta_id ? `Consulta #${ev.consulta_id} guardada en historial.` : "Consulta completada.");
+      // Refresh history
+      fetch("/consejo/history").then(r => r.json()).then(renderHistory);
+      break;
+
+    case "error":
+      removeThinking();
+      setStatus("Error del agente: " + ev.message);
+      break;
+  }
+}
+
+function renderHistory(items) {
+  let section = document.querySelector(".history-section");
+  if (!items.length) return;
+  if (!section) {
+    section = document.createElement("div");
+    section.className = "history-section";
+    section.innerHTML = `<div class="section-title">Consultas anteriores</div><div class="history-list" id="history-list"></div>`;
+    document.querySelector(".shell").appendChild(section);
+  }
+  const list = document.getElementById("history-list");
+  if (!list) return;
+  list.innerHTML = items.map(h => `
+    <div class="history-item" onclick="loadConsulta(${h.id})">
+      <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span class="history-ts">${h.ts.slice(0,10)}</span>
+      <span class="history-q">${escHtml(h.question)}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="color:var(--text3);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  `).join("");
+}
+
+async function loadConsulta(id) {
+  const resp = await fetch(`/consejo/consulta/${id}`);
+  if (!resp.ok) return;
+  const data = await resp.json();
+
+  document.getElementById("question").value = data.question;
+  document.getElementById("results-area").innerHTML = "";
+
+  const seats = data.result.seats || [];
+  const byRound = {1:[], 2:[], 3:[]};
+  for (const s of seats) byRound[s.round] = [...(byRound[s.round]||[]), s];
+
+  for (const round of [1, 2, 3]) {
+    if (!byRound[round].length) continue;
+    getOrCreateRoundSection(round);
+    for (const seat of byRound[round]) {
+      const card = renderSeatCard(seat);
+      if (seat.id === 8) {
+        document.getElementById("results-area").appendChild(card);
+      } else {
+        const grid = document.getElementById(`round-grid-${round}`);
+        if (grid) grid.appendChild(card);
+      }
+      requestAnimationFrame(() => card.classList.add("visible"));
+    }
+    if (round < 3) {
+      const div = document.createElement("div");
+      div.className = "divider";
+      document.getElementById("results-area").appendChild(div);
+    }
+  }
+  setStatus(`Consulta #${id} — ${data.ts.slice(0,10)}`);
+  document.getElementById("results-area").scrollIntoView({behavior:"smooth"});
+}
+
+// Allow Ctrl+Enter to submit
+document.getElementById("question").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runConsejo();
+});
+</script>
+</body>
+</html>

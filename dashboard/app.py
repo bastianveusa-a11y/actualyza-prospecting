@@ -2111,6 +2111,55 @@ def api_video_room_url(room_id):
 
 # ── End video translation ──────────────────────────────────────
 
+
+# ── Consejo Estratégico ────────────────────────────────────────
+
+@app.route("/consejo")
+@_require_auth
+def consejo_page():
+    from modules.consejo import get_history
+    history = get_history(30)
+    return render_template("consejo.html", history=history)
+
+
+@app.route("/consejo/run", methods=["POST"])
+@_require_auth
+def consejo_run():
+    from modules.consejo import stream_consejo
+    data     = request.get_json(force=True)
+    question = (data.get("question") or "").strip()
+    if not question:
+        return jsonify({"error": "Pregunta vacía"}), 400
+
+    def generate():
+        yield from stream_consejo(question)
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.route("/consejo/history")
+@_require_auth
+def consejo_history():
+    from modules.consejo import get_history
+    return jsonify(get_history(30))
+
+
+@app.route("/consejo/consulta/<int:consulta_id>")
+@_require_auth
+def consejo_consulta(consulta_id):
+    from modules.consejo import get_consulta
+    row = get_consulta(consulta_id)
+    if not row:
+        return jsonify({"error": "No encontrada"}), 404
+    return jsonify(row)
+
+
+# ── End Consejo ────────────────────────────────────────────────
+
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _restore_progress()        # recupera progress.json desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan
