@@ -2200,8 +2200,8 @@ def consejo_consulta(consulta_id):
 @app.route("/studio")
 @_require_auth
 def studio_page():
-    from modules.studio import get_calendar
-    return render_template("studio.html", calendar=get_calendar())
+    from modules.studio import get_calendar_days
+    return render_template("studio.html", calendar_days=get_calendar_days())
 
 
 @app.route("/studio/generate", methods=["POST"])

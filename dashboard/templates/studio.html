@@ -143,34 +143,25 @@
       <div class="card">
         <div class="card-title">Calendario — 3 meses</div>
         <div class="cal-list">
-          {% set ns = namespace(day=0) %}
-          {% for item in calendar %}
-            {% if item.track == 'en' %}
-              {% set ns.day = item.day %}
-              {% set en_item = item %}
-              {% set es_item = calendar[loop.index0 + 1] if loop.index0 + 1 < calendar|length else None %}
-              {% if es_item and es_item.track == 'es' %}
-              <div class="cal-item cal-day" id="cal-day-{{ns.day}}"
-                onclick="loadCalPair('{{en_item.id}}','{{es_item.id}}','{{en_item.concept|replace("'","\\'")}}','{{es_item.concept|replace("'","\\'")}}')"
-              >
-                <div class="cal-day-num">Día {{ns.day}}</div>
-                <div class="cal-pair">
-                  <div class="cal-half">
-                    <span class="cal-lang">🇺🇸</span>
-                    <span class="cal-id">{{en_item.id}}</span>
-                    <span class="cal-concept">{{en_item.concept}}</span>
-                    <span class="pill p-{{en_item.pillar}}">{{en_item.pillar}}</span>
-                  </div>
-                  <div class="cal-half">
-                    <span class="cal-lang">🇪🇸</span>
-                    <span class="cal-id">{{es_item.id}}</span>
-                    <span class="cal-concept">{{es_item.concept}}</span>
-                    <span class="pill p-{{es_item.pillar}}">{{es_item.pillar}}</span>
-                  </div>
-                </div>
+          {% for dp in calendar_days %}
+          <div class="cal-item cal-day" id="cal-day-{{dp.day}}"
+            onclick="loadCalPair('{{dp.en.id}}','{{dp.es.id}}','{{dp.en.concept|replace("'","&#39;")}}','{{dp.es.concept|replace("'","&#39;")}}')">
+            <div class="cal-day-num">Día {{dp.day}} — Semana {{dp.week}}</div>
+            <div class="cal-pair">
+              <div class="cal-half">
+                <span class="cal-lang">🇺🇸</span>
+                <span class="cal-id">{{dp.en.id}}</span>
+                <span class="cal-concept">{{dp.en.concept}}</span>
+                <span class="pill p-{{dp.en.pillar}}">{{dp.en.pillar}}</span>
               </div>
-              {% endif %}
-            {% endif %}
+              <div class="cal-half">
+                <span class="cal-lang">🇪🇸</span>
+                <span class="cal-id">{{dp.es.id}}</span>
+                <span class="cal-concept">{{dp.es.concept}}</span>
+                <span class="pill p-{{dp.es.pillar}}">{{dp.es.pillar}}</span>
+              </div>
+            </div>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -296,8 +287,12 @@ function switchLang(lang) {
 }
 
 function loadCalPair(idEN, idES, conceptEN, conceptES) {
+  // decode HTML entities from Jinja2 escaping
+  const decode = s => s.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+  conceptEN = decode(conceptEN);
+  conceptES = decode(conceptES);
+
   document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
-  // find and highlight the parent day row
   document.querySelectorAll('.cal-day').forEach(el => {
     const ids = Array.from(el.querySelectorAll('.cal-id')).map(s => s.textContent.trim());
     if (ids.includes(idEN)) el.classList.add('active');

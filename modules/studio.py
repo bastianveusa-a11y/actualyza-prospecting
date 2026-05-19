@@ -363,3 +363,13 @@ def _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es):
 
 def get_calendar():
     return CALENDAR
+
+
+def get_calendar_days():
+    """Return [{day, week, en, es}] — one entry per day, pre-paired."""
+    en_items = [c for c in CALENDAR if c["track"] == "en"]
+    es_items = [c for c in CALENDAR if c["track"] == "es"]
+    return [
+        {"day": en["day"], "week": en["week"], "en": en, "es": es}
+        for en, es in zip(en_items, es_items)
+    ]
