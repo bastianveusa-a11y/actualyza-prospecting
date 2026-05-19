@@ -296,25 +296,56 @@ def stream_studio_generate(concept: str, cal_id: str = ""):
         yield f"data: {json.dumps({'type': 'log', 'msg': f'Config saved → out/{slug}.json ✓'})}\n\n"
 
         # Register both videos in publish DB
-        from modules.publish import save_video
+        from modules.publish import save_video, get_videos
         save_video(slug, concept, "en", config_en)
         save_video(slug, concept, "es", config_es)
         yield f"data: {json.dumps({'type': 'log', 'msg': 'Videos registrados en Publicar ✓'})}\n\n"
 
-        # Render output filenames (unique per video)
+        # Get video IDs for GitHub Actions payload
+        all_videos = get_videos(limit=10)
+        id_en = next((v["id"] for v in all_videos if v["slug"] == slug and v["lang"] == "en"), None)
+        id_es = next((v["id"] for v in all_videos if v["slug"] == slug and v["lang"] == "es"), None)
+
+        # Trigger GitHub Actions render workflow
+        gh_result = _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es)
+        if gh_result:
+            yield f"data: {json.dumps({'type': 'log', 'msg': '🚀 GitHub Actions render iniciado — sin tocar nada más ✓'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'type': 'log', 'msg': '⚠️  GitHub Actions no configurado — render manual con npm run go:en'})}\n\n"
+
         out_en = f"out/{slug}-en.mp4"
         out_es = f"out/{slug}-es.mp4"
-
-        props_en = json.dumps(config_en).replace("'", "\\'")
-        props_es = json.dumps(config_es).replace("'", "\\'")
-
-        cmd_en = "cd ~/scrapy/actualyza-videos && npm run go:en"
-        cmd_es = "cd ~/scrapy/actualyza-videos && npm run go:es"
-
-        yield f"data: {json.dumps({'type': 'done', 'cmd_en': cmd_en, 'cmd_es': cmd_es, 'slug': slug, 'out_en': out_en, 'out_es': out_es, 'en': config_en, 'es': config_es})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'slug': slug, 'out_en': out_en, 'out_es': out_es, 'en': config_en, 'es': config_es, 'github_triggered': bool(gh_result)})}\n\n"
 
     except Exception as e:
         yield f"data: {json.dumps({'type': 'error', 'msg': str(e)})}\n\n"
+
+
+def _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es):
+    """Dispatch a repository_dispatch event to GitHub Actions to render the video."""
+    import requests as _req
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo  = os.getenv("GITHUB_RENDER_REPO", "bastianveusa-a11y/actualyza-videos")
+    if not token:
+        return False
+    payload = {
+        "event_type": "render-video",
+        "client_payload": {
+            "slug": slug,
+            "concept": concept,
+            "lang": "both",
+            "video_id_en": id_en,
+            "video_id_es": id_es,
+            "config": {"slug": slug, "concept": concept, "en": config_en, "es": config_es},
+        }
+    }
+    r = _req.post(
+        f"https://api.github.com/repos/{repo}/dispatches",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        json=payload,
+        timeout=10,
+    )
+    return r.status_code == 204
 
 
 def get_calendar():
