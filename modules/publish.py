@@ -1,9 +1,15 @@
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "data" / "videos.db"
+
+# EST = UTC-5  (covers Miami/Dallas/Orlando)
+EST = timezone(timedelta(hours=-5))
+
+# Fixed daily slots: EN at 8am EST, ES at 8pm EST
+SLOT_HOURS = {"en": 8, "es": 20}
 
 PLATFORMS = [
     {"id": "instagram", "label": "Instagram Reels", "icon": "📸", "color": "#E1306C",
@@ -27,31 +33,31 @@ def init_db():
     with _conn() as db:
         db.execute("""
             CREATE TABLE IF NOT EXISTS videos (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                slug       TEXT NOT NULL,
-                concept    TEXT,
-                lang       TEXT NOT NULL,
-                config     TEXT NOT NULL,
-                created_at TEXT DEFAULT (datetime('now')),
-                published  INTEGER DEFAULT 0,
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug                TEXT NOT NULL,
+                concept             TEXT,
+                lang                TEXT NOT NULL,
+                config              TEXT NOT NULL,
+                created_at          TEXT DEFAULT (datetime('now')),
+                published           INTEGER DEFAULT 0,
                 published_platforms TEXT DEFAULT '[]',
-                published_at TEXT,
-                cloud_url  TEXT
+                published_at        TEXT,
+                cloud_url           TEXT,
+                scheduled_at        TEXT,
+                buffer_post_id      TEXT
             )
         """)
-        # migrate: add cloud_url if missing (existing DBs)
-        try:
-            db.execute("ALTER TABLE videos ADD COLUMN cloud_url TEXT")
-        except Exception:
-            pass
+        for col in ("cloud_url TEXT", "scheduled_at TEXT", "buffer_post_id TEXT"):
+            try:
+                db.execute(f"ALTER TABLE videos ADD COLUMN {col}")
+            except Exception:
+                pass
         db.commit()
 
 
 def save_video(slug: str, concept: str, lang: str, config: dict):
-    """Called when Studio generates a video. Saves to DB."""
     init_db()
     with _conn() as db:
-        # upsert by slug+lang
         existing = db.execute(
             "SELECT id FROM videos WHERE slug=? AND lang=?", (slug, lang)
         ).fetchone()
@@ -100,6 +106,43 @@ def save_cloud_url(video_id: int, cloud_url: str):
     with _conn() as db:
         db.execute("UPDATE videos SET cloud_url=? WHERE id=?", (cloud_url, video_id))
         db.commit()
+
+
+def save_scheduled(video_id: int, scheduled_at: str, buffer_post_id: str = ""):
+    init_db()
+    with _conn() as db:
+        db.execute(
+            "UPDATE videos SET scheduled_at=?, buffer_post_id=? WHERE id=?",
+            (scheduled_at, buffer_post_id, video_id)
+        )
+        db.commit()
+
+
+def get_next_slot(lang: str) -> datetime:
+    """Returns next free Buffer slot for this lang in UTC.
+    EN = 8:00 AM EST daily, ES = 8:00 PM EST daily.
+    Skips dates already taken.
+    """
+    init_db()
+    hour = SLOT_HOURS.get(lang, 8)
+    now_est = datetime.now(EST)
+
+    # Build candidate starting today or tomorrow
+    candidate = now_est.replace(hour=hour, minute=0, second=0, microsecond=0)
+    if candidate <= now_est + timedelta(hours=1):
+        candidate += timedelta(days=1)
+
+    # Collect already-scheduled dates for this lang
+    with _conn() as db:
+        rows = db.execute(
+            "SELECT scheduled_at FROM videos WHERE scheduled_at IS NOT NULL AND lang=?", (lang,)
+        ).fetchall()
+    taken = {r["scheduled_at"][:10] for r in rows if r["scheduled_at"]}
+
+    while candidate.strftime("%Y-%m-%d") in taken:
+        candidate += timedelta(days=1)
+
+    return candidate.astimezone(timezone.utc)
 
 
 def get_platforms():

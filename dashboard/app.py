@@ -2246,17 +2246,65 @@ def publish_mark():
 @app.route("/publish/upload/<int:video_id>", methods=["POST"])
 @_require_auth
 def publish_upload(video_id):
-    """Receive .mp4, upload to Cloudinary, save URL in DB."""
+    """Receive .mp4 → Cloudinary → auto-schedule in Buffer at next free slot."""
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
     f = request.files["file"]
+
     from modules.cloudinary_client import upload_video_unsigned
-    from modules.publish import save_cloud_url
+    from modules.publish import save_cloud_url, get_next_slot, save_scheduled, get_videos
+    from modules.buffer_client import get_profiles, create_post
+
     try:
+        # 1. Upload to Cloudinary
         slug = f"video-{video_id}"
         url = upload_video_unsigned(f, slug)
         save_cloud_url(video_id, url)
-        return jsonify({"ok": True, "url": url})
+
+        # 2. Get video data
+        videos = [v for v in get_videos() if v["id"] == video_id]
+        if not videos:
+            return jsonify({"ok": True, "url": url, "scheduled": False})
+        v = videos[0]
+        lang = v.get("lang", "en")
+        social = v["config"].get("social", {})
+        caption = social.get("description", "")
+        hashtags = " ".join(social.get("hashtags", []))
+        text = f"{caption}\n\n{hashtags}".strip()
+
+        # 3. Get next free slot (8am EST for EN, 8pm EST for ES)
+        slot_utc = get_next_slot(lang)
+        scheduled_at_iso = slot_utc.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+        # 4. Get all Buffer profiles and schedule
+        profiles = get_profiles()
+        profile_ids = [p["id"] for p in profiles]
+        buffer_result = {}
+        buffer_post_id = ""
+        if profile_ids:
+            buffer_result = create_post(profile_ids, text, url, scheduled_at=scheduled_at_iso)
+            updates = buffer_result.get("updates", [])
+            if updates:
+                buffer_post_id = updates[0].get("id", "")
+
+        # 5. Save scheduled_at to DB
+        save_scheduled(video_id, scheduled_at_iso, buffer_post_id)
+
+        # Format for display (EST)
+        from datetime import timezone, timedelta
+        est = timezone(timedelta(hours=-5))
+        slot_est = slot_utc.astimezone(est)
+        slot_display = slot_est.strftime("%a %d %b · %-I:%M %p EST")
+
+        return jsonify({
+            "ok": True,
+            "url": url,
+            "scheduled": True,
+            "scheduled_at": scheduled_at_iso,
+            "slot_display": slot_display,
+            "buffer": buffer_result,
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

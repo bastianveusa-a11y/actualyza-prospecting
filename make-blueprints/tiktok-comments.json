@@ -1,0 +1,67 @@
+{
+  "name": "TikTok Comments → Actualyza CRM",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": null,
+        "maxResults": 1
+      },
+      "mappings": [],
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": {
+          "parameters": {
+            "hook": { "label": "TikTok Comments Hook" }
+          }
+        },
+        "parameters": [
+          { "name": "hook", "type": "hook:gateway-webhook", "label": "Webhook" },
+          { "name": "maxResults", "type": "number", "label": "Maximum number of results" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+      },
+      "mappings": {
+        "url": "https://actualyza-prospecting-production.up.railway.app/webhook/social-comment",
+        "method": "post",
+        "headers": [{ "name": "Content-Type", "value": "application/json" }],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "gzip": true,
+        "body": "{\"username\":\"{{1.username}}\",\"full_name\":\"{{1.display_name}}\",\"comment_text\":\"{{1.text}}\",\"post_id\":\"{{1.video_id}}\",\"source\":\"tiktok_comment\"}"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] }
+  }
+}

@@ -204,7 +204,7 @@
 
         <!-- Cloud upload -->
         {% if v.cloud_url %}
-        <div class="cloud-badge">☁️ En nube · listo para publicar</div>
+        <div class="cloud-badge">☁️ En nube{% if v.scheduled_at %} · 📅 {{ v.scheduled_at[5:10] }} {{ '8:00 AM' if v.lang == 'en' else '8:00 PM' }} EST{% endif %}</div>
         {% else %}
         <div class="copy-label" style="margin-bottom:6px">1. Sube el video renderizado</div>
         <div class="upload-zone" id="zone-{{ v.id }}" ondragover="onDrag(event,{{ v.id }})" ondragleave="offDrag({{ v.id }})" ondrop="onDrop(event,{{ v.id }})">
@@ -350,15 +350,22 @@ async function uploadFile(id, file) {
       bar.style.width = '100%';
       zone.classList.remove('drag');
       zone.classList.add('uploaded');
-      zoneText.textContent = '✅ ' + file.name;
       cloudUrls[id] = data.url;
-      // Enable push button
       const pushBtn = document.getElementById('push-' + id);
-      if (pushBtn) {
-        pushBtn.disabled = false;
-        pushBtn.dataset.url = data.url;
+      if (pushBtn) { pushBtn.disabled = false; pushBtn.dataset.url = data.url; }
+
+      if (data.scheduled) {
+        zoneText.textContent = '✅ ' + file.name;
+        showToast('☁️ Subido · 📅 Programado ' + data.slot_display);
+        // Update cloud badge
+        const badge = document.querySelector(`#card-${id} .cloud-badge`);
+        if (badge) badge.textContent = '☁️ En nube · 📅 ' + data.slot_display;
+        // Disable push button since already scheduled
+        if (pushBtn) { pushBtn.textContent = '📅 Ya programado en Buffer'; pushBtn.disabled = true; }
+      } else {
+        zoneText.textContent = '✅ ' + file.name;
+        showToast('Video en la nube ✓');
       }
-      showToast('Video en la nube ✓');
     } else {
       throw new Error(data.error || 'Error al subir');
     }

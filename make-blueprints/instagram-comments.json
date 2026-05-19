@@ -1,0 +1,60 @@
+{
+  "name": "Instagram Comments → Actualyza CRM",
+  "flow": [
+    {
+      "id": 1,
+      "module": "instagram-business-sdk:TriggerWatchComments",
+      "version": 1,
+      "parameters": {
+        "accountId": null
+      },
+      "mappings": [],
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "parameters": [
+          { "name": "accountId", "type": "select", "label": "Business Account" }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+      },
+      "mappings": {
+        "url": "https://actualyza-prospecting-production.up.railway.app/webhook/social-comment",
+        "method": "post",
+        "headers": [{ "name": "Content-Type", "value": "application/json" }],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "parseResponse": true,
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "gzip": true,
+        "body": "{\"username\":\"{{1.username}}\",\"full_name\":\"{{1.username}}\",\"comment_text\":\"{{1.text}}\",\"post_id\":\"{{1.media_id}}\",\"source\":\"instagram_comment\"}"
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] }
+  }
+}
