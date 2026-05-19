@@ -2377,7 +2377,7 @@ def publish_push(video_id):
 
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _restore_progress()        # recupera progress.json desde Notion si se perdió en redeploy
-_generate_all_assets_bg()  # genera creativos al arrancar si faltan
+# _generate_all_assets_bg()  # desactivado — disparar manualmente desde /creatives si se necesita regenerar
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5055))
