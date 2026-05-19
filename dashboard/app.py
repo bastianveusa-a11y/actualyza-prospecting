@@ -2160,6 +2160,36 @@ def consejo_consulta(consulta_id):
 
 # ── End Consejo ────────────────────────────────────────────────
 
+
+# ── Studio de Videos ───────────────────────────────────────────
+
+@app.route("/studio")
+@_require_auth
+def studio_page():
+    from modules.studio import get_calendar
+    return render_template("studio.html", calendar=get_calendar())
+
+
+@app.route("/studio/generate", methods=["POST"])
+@_require_auth
+def studio_generate():
+    from modules.studio import stream_studio_generate
+    data    = request.get_json(force=True)
+    concept = (data.get("concept") or "").strip()
+    if not concept:
+        return jsonify({"error": "Concepto vacío"}), 400
+
+    def generate():
+        yield from stream_studio_generate(concept)
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+    )
+
+# ── End Studio ─────────────────────────────────────────────────
+
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _restore_progress()        # recupera progress.json desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan
