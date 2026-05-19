@@ -267,8 +267,14 @@
 
 <div class="modal-overlay" id="ig-modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
-    <h3>📸 Agregar lead de Instagram</h3>
+    <h3>💬 Agregar lead de redes sociales</h3>
     <p>Alguien comentó en tu post — agrégalo al CRM en un click.</p>
+    <select id="ig-platform" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;margin-bottom:10px;outline:none">
+      <option value="instagram_comment">📸 Instagram</option>
+      <option value="facebook_comment">👥 Facebook</option>
+      <option value="tiktok_comment">🎵 TikTok</option>
+      <option value="youtube_comment">▶️ YouTube</option>
+    </select>
     <input type="text" id="ig-username" placeholder="@username" />
     <input type="text" id="ig-fullname" placeholder="Nombre completo (opcional)" />
     <textarea id="ig-comment" placeholder="Comentario que dejó…"></textarea>
@@ -466,10 +472,11 @@ async function saveIgLead() {
   const post_id = document.getElementById('ig-post').value.trim();
   if (!username) { showToast('Falta el @username', true); return; }
 
-  const r = await fetch('/webhook/instagram-comment', {
+  const platform = document.getElementById('ig-platform').value;
+  const r = await fetch('/webhook/social-comment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, full_name, comment_text: comment, post_id })
+    body: JSON.stringify({ username, full_name, comment_text: comment, post_id, source: platform })
   });
   const data = await r.json();
   if (data.ok) {

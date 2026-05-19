@@ -1744,19 +1744,20 @@ def api_pause_campaign():
 
 # ── Resend webhook (open / click tracking) ────────────────────
 
-@app.route("/webhook/instagram-comment", methods=["POST"])
-def webhook_instagram_comment():
+@app.route("/webhook/social-comment", methods=["POST"])
+@app.route("/webhook/instagram-comment", methods=["POST"])  # backwards compat
+def webhook_social_comment():
     """
-    Called by n8n when someone comments on an Instagram post.
-    Payload from n8n: { username, full_name, comment_text, post_id, timestamp }
-    Creates a lead in the campaigns CRM automatically.
+    Receives a social media comment from Make.com (or manual entry).
+    Works for Instagram, Facebook, TikTok, YouTube.
+    Payload: { username, full_name, comment_text, post_id, source }
     """
     data = request.get_json(force=True) or {}
-    username   = data.get("username", "")
-    full_name  = data.get("full_name", username)
-    comment    = data.get("comment_text", "")
-    post_id    = data.get("post_id", "")
-    timestamp  = data.get("timestamp", "")
+    username  = data.get("username", "")
+    full_name = data.get("full_name", username)
+    comment   = data.get("comment_text", "")
+    post_id   = data.get("post_id", "")
+    source    = data.get("source", "social_comment")
 
     if not username:
         return jsonify({"error": "no username"}), 400
@@ -1768,12 +1769,11 @@ def webhook_instagram_comment():
             full_name=full_name,
             comment=comment,
             post_id=post_id,
-            source="instagram_comment",
+            source=source,
         )
         return jsonify({"ok": True, "notion_id": result})
     except Exception as e:
-        # Log but don't fail — n8n should still get 200 to not retry endlessly
-        print(f"[webhook/instagram-comment] error: {e}")
+        print(f"[webhook/social-comment] error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
