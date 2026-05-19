@@ -357,6 +357,7 @@ def _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es):
         json=payload,
         timeout=10,
     )
+    print(f"[GH dispatch] status={r.status_code} body={r.text[:300]}", flush=True)
     return r.status_code == 204
 
 
