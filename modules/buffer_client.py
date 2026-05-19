@@ -27,16 +27,19 @@ def get_profiles() -> list:
     return []
 
 
-def create_post(profile_ids: list, text: str, video_url: str, now: bool = False) -> dict:
-    """Create a Buffer post with a video URL."""
-    params = [
-        ("text", text),
-        ("now", "true" if now else "false"),
-    ]
+def create_post(profile_ids: list, text: str, video_url: str,
+                now: bool = False, scheduled_at: str = None) -> dict:
+    """Create a Buffer post. scheduled_at is ISO 8601 string; if None and now=False, adds to queue."""
+    params = [("text", text)]
     for pid in profile_ids:
         params.append(("profile_ids[]", pid))
     if video_url:
         params.append(("media[video]", video_url))
+    if scheduled_at:
+        params.append(("scheduled_at", scheduled_at))
+        params.append(("now", "false"))
+    else:
+        params.append(("now", "true" if now else "false"))
 
     r = requests.post(
         f"{BASE}/updates/create.json",

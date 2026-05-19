@@ -2260,8 +2260,9 @@ def publish_push(video_id):
     text = f"{caption}\n\n{hashtags}".strip()
     cloud_url = v.get("cloud_url") or ""
 
+    scheduled_at = data.get("scheduled_at")
     try:
-        result = create_post(profile_ids, text, cloud_url, now=now)
+        result = create_post(profile_ids, text, cloud_url, now=now, scheduled_at=scheduled_at)
         return jsonify({"ok": True, "buffer": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
