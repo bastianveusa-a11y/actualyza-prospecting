@@ -104,6 +104,22 @@
   .toast.error { border-color:var(--red); color:var(--red); }
 
   .cloud-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--green); background:rgba(16,185,129,0.1); border-radius:4px; padding:2px 7px; margin-bottom:8px; }
+
+  /* Instagram lead modal */
+  .ig-fab { position:fixed; bottom:24px; left:24px; background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); color:#fff; border:none; border-radius:50px; padding:12px 20px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.4); z-index:100; transition:transform .2s; }
+  .ig-fab:hover { transform:scale(1.05); }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; width:100%; max-width:420px; }
+  .modal h3 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  .modal p { font-size:12px; color:var(--muted); margin-bottom:20px; }
+  .modal input, .modal textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:13px; margin-bottom:10px; outline:none; font-family:inherit; }
+  .modal input:focus, .modal textarea:focus { border-color:var(--blue); }
+  .modal textarea { resize:vertical; min-height:72px; }
+  .modal-btns { display:flex; gap:8px; margin-top:4px; }
+  .modal-btns button { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; }
+  .btn-cancel { background:transparent; border:1px solid var(--border); color:var(--muted); }
+  .btn-save { background:linear-gradient(135deg,#833ab4,#fd1d1d); border:none; color:#fff; }
 </style>
 </head>
 <body>
@@ -243,6 +259,26 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Instagram lead quick-add -->
+<button class="ig-fab" onclick="document.getElementById('ig-modal').classList.add('open')">
+  📸 + Lead de Instagram
+</button>
+
+<div class="modal-overlay" id="ig-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <h3>📸 Agregar lead de Instagram</h3>
+    <p>Alguien comentó en tu post — agrégalo al CRM en un click.</p>
+    <input type="text" id="ig-username" placeholder="@username" />
+    <input type="text" id="ig-fullname" placeholder="Nombre completo (opcional)" />
+    <textarea id="ig-comment" placeholder="Comentario que dejó…"></textarea>
+    <input type="text" id="ig-post" placeholder="ID o URL del post (opcional)" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="document.getElementById('ig-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn-save" onclick="saveIgLead()">Guardar en CRM →</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── State ────────────────────────────────────────────────────────
@@ -421,6 +457,29 @@ function filterLang(lang, btn) { setActive(btn); document.querySelectorAll('.car
 function filterPending(btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.published === '0' ? '' : 'none'; }); }
 function filterDone(btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.published === '1' ? '' : 'none'; }); }
 function setActive(btn) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+
+// ── Instagram lead quick-add ─────────────────────────────────────
+async function saveIgLead() {
+  const username = document.getElementById('ig-username').value.replace('@','').trim();
+  const full_name = document.getElementById('ig-fullname').value.trim();
+  const comment = document.getElementById('ig-comment').value.trim();
+  const post_id = document.getElementById('ig-post').value.trim();
+  if (!username) { showToast('Falta el @username', true); return; }
+
+  const r = await fetch('/webhook/instagram-comment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, full_name, comment_text: comment, post_id })
+  });
+  const data = await r.json();
+  if (data.ok) {
+    showToast('✅ Lead agregado al CRM');
+    document.getElementById('ig-modal').classList.remove('open');
+    ['ig-username','ig-fullname','ig-comment','ig-post'].forEach(id => document.getElementById(id).value = '');
+  } else {
+    showToast('Error: ' + (data.error || 'unknown'), true);
+  }
+}
 
 // ── Init ─────────────────────────────────────────────────────────
 loadProfiles();
