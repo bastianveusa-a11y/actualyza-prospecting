@@ -1744,6 +1744,39 @@ def api_pause_campaign():
 
 # ── Resend webhook (open / click tracking) ────────────────────
 
+@app.route("/webhook/instagram-comment", methods=["POST"])
+def webhook_instagram_comment():
+    """
+    Called by n8n when someone comments on an Instagram post.
+    Payload from n8n: { username, full_name, comment_text, post_id, timestamp }
+    Creates a lead in the campaigns CRM automatically.
+    """
+    data = request.get_json(force=True) or {}
+    username   = data.get("username", "")
+    full_name  = data.get("full_name", username)
+    comment    = data.get("comment_text", "")
+    post_id    = data.get("post_id", "")
+    timestamp  = data.get("timestamp", "")
+
+    if not username:
+        return jsonify({"error": "no username"}), 400
+
+    try:
+        from modules.notion_db import add_lead_from_instagram
+        result = add_lead_from_instagram(
+            username=username,
+            full_name=full_name,
+            comment=comment,
+            post_id=post_id,
+            source="instagram_comment",
+        )
+        return jsonify({"ok": True, "notion_id": result})
+    except Exception as e:
+        # Log but don't fail — n8n should still get 200 to not retry endlessly
+        print(f"[webhook/instagram-comment] error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/webhook/resend", methods=["POST"])
 def webhook_resend():
     global _cache

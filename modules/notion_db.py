@@ -267,6 +267,32 @@ def _build_properties(data: dict) -> dict:
     return props
 
 
+def add_lead_from_instagram(username: str, full_name: str, comment: str,
+                            post_id: str, source: str = "instagram_comment") -> str:
+    """Creates a Notion lead row from an Instagram comment. Returns page ID."""
+    import requests as _req
+    from datetime import datetime
+
+    token = os.getenv("NOTION_TOKEN", "")
+    db_id = os.getenv("NOTION_DATABASE_ID", "")
+    if not token or not db_id:
+        raise ValueError("NOTION_TOKEN or NOTION_DATABASE_ID not set")
+
+    note = f"IG @{username}: \"{comment}\" — post {post_id} — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC"
+    payload = {
+        "parent": {"database_id": db_id},
+        "properties": {
+            "Nombre": {"title": [{"text": {"content": full_name or f"@{username}"}}]},
+            "Estado": {"select": {"name": "Nuevo"}},
+            "Notas": {"rich_text": [{"text": {"content": note}}]},
+        },
+    }
+    hdrs = {"Authorization": f"Bearer {token}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+    r = _req.post("https://api.notion.com/v1/pages", headers=hdrs, json=payload, timeout=15)
+    r.raise_for_status()
+    return r.json().get("id", "")
+
+
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
