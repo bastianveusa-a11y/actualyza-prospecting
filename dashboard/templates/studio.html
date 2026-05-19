@@ -6,92 +6,98 @@
 <title>Studio — Actualyza</title>
 <style>
   :root {
-    --bg: #0a0f1a; --surface: #111827; --surface2: #1a2235;
-    --gold: #f59e0b; --blue: #4C8EFF; --purple: #7B3FE8;
-    --green: #10b981; --red: #ef4444;
-    --text: #e5e7eb; --muted: #6b7280; --border: rgba(255,255,255,0.08);
+    --bg:#0a0f1a; --surface:#111827; --surface2:#1a2235;
+    --gold:#f59e0b; --blue:#4C8EFF; --purple:#7B3FE8;
+    --green:#10b981; --red:#ef4444;
+    --text:#e5e7eb; --muted:#6b7280; --border:rgba(255,255,255,0.08);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; min-height:100vh; }
 
-  /* Nav */
-  .nav { display: flex; align-items: center; gap: 8px; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .nav a { color: var(--muted); text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; }
-  .nav a:hover, .nav a.active { background: rgba(255,255,255,0.06); color: var(--text); }
-  .nav-logo { font-size: 14px; font-weight: 600; color: var(--text); margin-right: 16px; letter-spacing: 0.05em; }
+  .nav { display:flex; align-items:center; gap:8px; padding:16px 24px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:6px 12px; border-radius:6px; transition:all .2s; }
+  .nav a:hover,.nav a.active { background:rgba(255,255,255,0.06); color:var(--text); }
+  .nav-logo { font-size:14px; font-weight:600; color:var(--text); margin-right:16px; letter-spacing:.05em; }
 
-  /* Layout */
-  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
-  .header { margin-bottom: 32px; }
-  .header h1 { font-size: 24px; font-weight: 600; }
-  .header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .container { max-width:1400px; margin:0 auto; padding:32px 24px; }
+  .header { margin-bottom:28px; }
+  .header h1 { font-size:22px; font-weight:600; }
+  .header p { color:var(--muted); font-size:13px; margin-top:4px; }
 
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .layout { display:grid; grid-template-columns:340px 1fr; gap:20px; }
+  @media(max-width:1000px){ .layout { grid-template-columns:1fr; } }
 
-  /* Card */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
-  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .card + .card { margin-top:16px; }
+  .card-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px; }
 
-  /* Input */
-  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; padding: 14px; resize: vertical; min-height: 120px; line-height: 1.6; transition: border 0.2s; }
-  textarea:focus { outline: none; border-color: var(--blue); }
-  textarea::placeholder { color: var(--muted); }
+  textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:inherit; font-size:13px; padding:12px; resize:vertical; min-height:100px; line-height:1.6; transition:border .2s; }
+  textarea:focus { outline:none; border-color:var(--blue); }
+  textarea::placeholder { color:var(--muted); }
 
-  /* Buttons */
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
-  .btn-primary { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; }
-  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
-  .btn-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; border:none; transition:all .2s; }
+  .btn-primary { background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff; }
+  .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+  .btn-primary:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-ghost { background:rgba(255,255,255,0.06); color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { background:rgba(255,255,255,0.1); }
+  .btn-green { background:rgba(16,185,129,.12); color:var(--green); border:1px solid rgba(16,185,129,.3); }
+  .btn-sm { padding:7px 14px; font-size:12px; }
+
+  .log { background:var(--surface2); border-radius:8px; padding:12px 14px; font-family:monospace; font-size:11px; color:var(--muted); min-height:48px; max-height:100px; overflow-y:auto; line-height:1.9; margin-top:12px; }
+  .log .ok { color:var(--green); }
+  .log .err { color:var(--red); }
 
   /* Calendar */
-  .calendar-grid { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; }
-  .cal-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
-  .cal-item:hover { border-color: var(--blue); background: rgba(76,142,255,0.05); }
-  .cal-item.active { border-color: var(--blue); background: rgba(76,142,255,0.08); }
-  .cal-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
-  .pillar-Dolor { background: rgba(239,68,68,0.15); color: #ef4444; }
-  .pillar-Prueba { background: rgba(76,142,255,0.15); color: var(--blue); }
-  .pillar-Resultado { background: rgba(16,185,129,0.15); color: var(--green); }
-  .pillar-Objeción { background: rgba(245,158,11,0.15); color: var(--gold); }
-  .pillar-Especialidad { background: rgba(123,63,232,0.15); color: var(--purple); }
-  .pillar-Cierre { background: rgba(236,72,153,0.15); color: #ec4899; }
-  .cal-id { font-size: 11px; color: var(--muted); font-weight: 600; min-width: 24px; }
-  .cal-concept { font-size: 13px; line-height: 1.4; }
-  .cal-week { font-size: 11px; color: var(--muted); }
+  .cal-list { display:flex; flex-direction:column; gap:6px; max-height:460px; overflow-y:auto; }
+  .cal-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
+  .cal-item:hover { border-color:var(--blue); background:rgba(76,142,255,.05); }
+  .cal-item.active { border-color:var(--blue); background:rgba(76,142,255,.08); }
+  .cal-id { font-size:10px; font-weight:700; color:var(--muted); min-width:22px; margin-top:1px; }
+  .cal-concept { font-size:12px; line-height:1.4; flex:1; }
+  .pill { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; flex-shrink:0; }
+  .p-Dolor      { background:rgba(239,68,68,.15);   color:#ef4444; }
+  .p-Prueba     { background:rgba(76,142,255,.15);   color:var(--blue); }
+  .p-Resultado  { background:rgba(16,185,129,.15);  color:var(--green); }
+  .p-Objeción   { background:rgba(245,158,11,.15);  color:var(--gold); }
+  .p-Especialidad{ background:rgba(123,63,232,.15); color:var(--purple); }
+  .p-Cierre     { background:rgba(236,72,153,.15);  color:#ec4899; }
 
-  /* Progress */
-  .log { background: var(--surface2); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--muted); min-height: 60px; max-height: 120px; overflow-y: auto; line-height: 1.8; }
-  .log .log-ok { color: var(--green); }
-  .log .log-err { color: var(--red); }
+  /* Results */
+  .results { display:none; }
+  .results.show { display:block; }
 
-  /* Result sections */
-  .result-section { display: none; }
-  .result-section.visible { display: block; }
+  .lang-tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .lang-tab { padding:8px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--muted); transition:all .2s; }
+  .lang-tab.active { background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff; border-color:transparent; }
 
-  .social-box { background: var(--surface2); border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; border: 1px solid var(--border); }
-  .hashtags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .hashtag { background: rgba(76,142,255,0.12); color: var(--blue); border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer; }
-  .hashtag:hover { background: rgba(76,142,255,0.2); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
 
-  .render-cmd { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; color: #79c0ff; word-break: break-all; line-height: 1.6; }
-  .copy-btn { cursor: pointer; }
+  .scene-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
+  .scene-card { background:var(--surface2); border-radius:8px; padding:12px; border:1px solid var(--border); }
+  .scene-label { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:5px; }
+  .scene-text { font-size:11px; color:var(--text); line-height:1.5; }
+  .grad { background:linear-gradient(90deg,var(--blue),var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:700; }
 
-  .scene-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .scene-card { background: var(--surface2); border-radius: 8px; padding: 12px; border: 1px solid var(--border); }
-  .scene-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .scene-text { font-size: 12px; color: var(--text); line-height: 1.5; }
-  .scene-gradient { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .badge-week { font-size: 10px; color: var(--muted); float: right; }
+  .social-box { background:var(--surface2); border-radius:8px; padding:14px; font-size:12px; line-height:1.8; white-space:pre-wrap; border:1px solid var(--border); color:var(--text); }
+  .tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+  .tag { background:rgba(76,142,255,.1); color:var(--blue); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+  .tag:hover { background:rgba(76,142,255,.2); }
 
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
-  .row { display: flex; align-items: center; gap: 12px; }
-  .flex1 { flex: 1; }
-  .mt-12 { margin-top: 12px; }
-  .mt-20 { margin-top: 20px; }
+  .cmd-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:14px; font-family:monospace; font-size:11px; color:#79c0ff; word-break:break-all; line-height:1.7; }
+
+  .sub-list { display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto; }
+  .sub-item { display:flex; gap:10px; font-size:11px; padding:4px 8px; border-radius:4px; background:var(--surface2); }
+  .sub-time { color:var(--muted); font-family:monospace; flex-shrink:0; }
+  .sub-text { color:var(--text); }
+
+  .row { display:flex; align-items:center; gap:10px; }
+  .flex1 { flex:1; }
+  .mt-12 { margin-top:12px; }
+  .mt-16 { margin-top:16px; }
+  .divider { height:1px; background:var(--border); margin:14px 0; }
+  .muted { color:var(--muted); font-size:11px; }
 </style>
 </head>
 <body>
@@ -108,234 +114,279 @@
 <div class="container">
   <div class="header">
     <h1>🎬 Studio de Videos</h1>
-    <p>Describe el video que quieres → Claude genera el guión, el copy social y el comando de render.</p>
+    <p>Describe el concepto → Claude genera guión EN + ES, subtítulos, copy social y comando de render.</p>
   </div>
 
-  <div class="grid">
+  <div class="layout">
 
-    <!-- LEFT: Input + Calendar -->
+    <!-- LEFT PANEL -->
     <div>
       <div class="card">
         <div class="card-title">Concepto del video</div>
-        <textarea id="concept" placeholder="Ej: Video para clínicas dentales mostrando que AMY agenda citas de noche mientras el equipo duerme. Tono urgente, estadísticas reales." rows="5"></textarea>
+        <textarea id="concept" placeholder="Ej: Video para clínicas dentales mostrando que AMY agenda citas a las 3am mientras el equipo duerme. Tono urgente." rows="4"></textarea>
         <div class="row mt-12">
-          <button class="btn btn-primary flex1" id="generateBtn" onclick="generate()">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-            Generar Video
+          <button class="btn btn-primary flex1" id="genBtn" onclick="generate()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            Generar EN + ES
           </button>
-          <button class="btn btn-ghost" onclick="clearAll()">Limpiar</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearAll()">Limpiar</button>
         </div>
-        <div class="log mt-12" id="log">Esperando...</div>
+        <div class="log" id="log">Esperando concepto...</div>
       </div>
 
-      <div class="card mt-20">
-        <div class="card-title">Calendario — 3 meses (18 videos)</div>
-        <div class="calendar-grid" id="calendarGrid">
+      <div class="card">
+        <div class="card-title">Calendario — 3 meses</div>
+        <div class="cal-list">
           {% for item in calendar %}
-          <div class="cal-item" id="cal-{{item.id}}" onclick="loadCalendarItem('{{item.id}}', '{{item.concept|replace("'", "\\'")}}')">
+          <div class="cal-item" id="cal-{{item.id}}" onclick="loadCal('{{item.id}}','{{item.concept|replace("'","\\'")}}')">
             <span class="cal-id">{{item.id}}</span>
-            <div class="flex1">
-              <div class="cal-concept">{{item.concept}}</div>
-            </div>
-            <span class="cal-badge pillar-{{item.pillar}}">{{item.pillar}}</span>
-            <span class="badge-week">S{{item.week}}</span>
+            <span class="cal-concept">{{item.concept}}</span>
+            <span class="pill p-{{item.pillar}}">{{item.pillar}}</span>
           </div>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- RIGHT: Results -->
+    <!-- RIGHT PANEL -->
     <div>
+      <div class="results" id="results">
 
-      <!-- Scene Preview -->
-      <div class="card result-section" id="scenesSection">
-        <div class="card-title">Vista previa de escenas</div>
-        <div class="scene-preview" id="scenesPreview"></div>
-      </div>
-
-      <!-- Social Copy -->
-      <div class="card result-section mt-20" id="socialSection" style="margin-top:0">
-        <div class="card-title">Copy para redes sociales</div>
-        <div class="social-box" id="socialDesc"></div>
-        <div class="hashtags" id="hashtags"></div>
-        <div class="divider"></div>
-        <div style="font-size:12px; color:var(--muted);">
-          ⏰ <strong style="color:var(--text)">Mejor horario:</strong> <span id="bestTime"></span>
+        <!-- Language tabs -->
+        <div class="lang-tabs">
+          <button class="lang-tab active" onclick="switchLang('en')">🇺🇸 English</button>
+          <button class="lang-tab" onclick="switchLang('es')">🇪🇸 Español</button>
         </div>
-        <div class="row mt-12">
-          <button class="btn btn-ghost copy-btn flex1" onclick="copyDesc()">📋 Copiar descripción</button>
-          <button class="btn btn-ghost copy-btn" onclick="copyHashtags()">📋 Hashtags</button>
+
+        <!-- EN tab -->
+        <div class="tab-content active" id="tab-en">
+
+          <div class="card">
+            <div class="card-title">Escenas — EN</div>
+            <div class="scene-grid" id="scenes-en"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Subtítulos quemados — EN</div>
+            <div class="sub-list" id="subs-en"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Voz en off — EN</div>
+            <div class="social-box" id="voice-en"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Copy social — EN</div>
+            <div class="social-box" id="desc-en"></div>
+            <div class="tags" id="tags-en"></div>
+            <div class="divider"></div>
+            <p class="muted">⏰ <strong style="color:var(--text)">Mejor hora:</strong> <span id="time-en"></span></p>
+            <div class="row mt-12">
+              <button class="btn btn-ghost btn-sm flex1" onclick="copyDesc('en')">📋 Copiar descripción</button>
+              <button class="btn btn-ghost btn-sm" onclick="copyTags('en')">📋 Hashtags</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Render — English</div>
+            <div class="cmd-box" id="cmd-en"></div>
+            <div class="row mt-12">
+              <button class="btn btn-green btn-sm flex1" onclick="copyCmd('en')">📋 Copiar comando</button>
+            </div>
+            <p class="muted mt-12">Output: <code>~/scrapy/actualyza-videos/out/video-en.mp4</code></p>
+          </div>
+
+        </div>
+
+        <!-- ES tab -->
+        <div class="tab-content" id="tab-es">
+
+          <div class="card">
+            <div class="card-title">Escenas — ES</div>
+            <div class="scene-grid" id="scenes-es"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Subtítulos quemados — ES</div>
+            <div class="sub-list" id="subs-es"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Voz en off — ES</div>
+            <div class="social-box" id="voice-es"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Copy social — ES</div>
+            <div class="social-box" id="desc-es"></div>
+            <div class="tags" id="tags-es"></div>
+            <div class="divider"></div>
+            <p class="muted">⏰ <strong style="color:var(--text)">Mejor hora:</strong> <span id="time-es"></span></p>
+            <div class="row mt-12">
+              <button class="btn btn-ghost btn-sm flex1" onclick="copyDesc('es')">📋 Copiar descripción</button>
+              <button class="btn btn-ghost btn-sm" onclick="copyTags('es')">📋 Hashtags</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Render — Español</div>
+            <div class="cmd-box" id="cmd-es"></div>
+            <div class="row mt-12">
+              <button class="btn btn-green btn-sm flex1" onclick="copyCmd('es')">📋 Copiar comando</button>
+            </div>
+            <p class="muted mt-12">Output: <code>~/scrapy/actualyza-videos/out/video-es.mp4</code></p>
+          </div>
+
         </div>
       </div>
-
-      <!-- Voiceover -->
-      <div class="card result-section mt-20" id="voiceSection">
-        <div class="card-title">Guión — Voz en off</div>
-        <div class="social-box" id="voiceScript"></div>
-      </div>
-
-      <!-- Render Command -->
-      <div class="card result-section mt-20" id="renderSection">
-        <div class="card-title">Renderizar el video</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Corre este comando en tu terminal para renderizar el MP4:</p>
-        <div class="render-cmd" id="renderCmd"></div>
-        <div class="row mt-12">
-          <button class="btn btn-green flex1" onclick="copyRenderCmd()">📋 Copiar comando</button>
-        </div>
-        <p style="font-size:11px;color:var(--muted);margin-top:10px;">El video se guarda en <code>~/scrapy/actualyza-videos/out/video-latest.mp4</code></p>
-      </div>
-
     </div>
   </div>
 </div>
 
 <script>
-let currentConfig = null;
+let configs = { en: null, es: null };
+let activeLang = 'en';
 
-function log(msg, type = '') {
+function log(msg, type='') {
   const el = document.getElementById('log');
-  const line = document.createElement('div');
-  line.className = type ? `log-${type}` : '';
-  line.textContent = `› ${msg}`;
-  el.appendChild(line);
+  const d = document.createElement('div');
+  d.className = type;
+  d.textContent = '› ' + msg;
+  el.appendChild(d);
   el.scrollTop = el.scrollHeight;
 }
 
-function clearLog() {
-  document.getElementById('log').innerHTML = '';
+function switchLang(lang) {
+  activeLang = lang;
+  document.querySelectorAll('.lang-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&lang==='en')||(i===1&&lang==='es')));
+  document.getElementById('tab-en').classList.toggle('active', lang==='en');
+  document.getElementById('tab-es').classList.toggle('active', lang==='es');
 }
 
-function showSection(id) {
-  document.getElementById(id).classList.add('visible');
-  document.getElementById(id).style.display = 'block';
+function loadCal(id, concept) {
+  document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
+  document.getElementById('cal-'+id).classList.add('active');
+  document.getElementById('concept').value = concept;
 }
 
 function clearAll() {
   document.getElementById('concept').value = '';
-  clearLog();
-  log('Esperando...');
-  ['scenesSection','socialSection','voiceSection','renderSection'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('visible');
-    el.style.display = 'none';
-  });
-  document.querySelectorAll('.cal-item').forEach(el => el.classList.remove('active'));
-  currentConfig = null;
+  document.getElementById('log').innerHTML = '';
+  log('Esperando concepto...');
+  document.getElementById('results').classList.remove('show');
+  document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
+  configs = { en: null, es: null };
 }
 
-function loadCalendarItem(id, concept) {
-  document.querySelectorAll('.cal-item').forEach(el => el.classList.remove('active'));
-  document.getElementById(`cal-${id}`).classList.add('active');
-  document.getElementById('concept').value = concept;
-  document.getElementById('concept').focus();
+function fmtFrames(f) {
+  const s = (f/30).toFixed(1);
+  return `${f}f (${s}s)`;
 }
 
-function renderScenes(config) {
+function renderConfig(lang, cfg) {
+  // Scenes
   const scenes = [
-    { label: 'Hook', text: `${config.hook.line1}\n${config.hook.line2}`, gradient: true },
-    { label: 'Problema', text: config.problem.stats.map(s => `${s.value} — ${s.label}`).join('\n') },
-    { label: 'AMY en acción', text: config.chat.messages.slice(0,2).map(m => `[${m.from}] ${m.text}`).join('\n') + `\n…\n${config.chat.footer}` },
-    { label: 'Resultado', text: `${config.result.mainStat}× ${config.result.mainLabel}\n${config.result.subStats.map(s=>`${s.n} ${s.l}`).join(' · ')}` },
-    { label: 'CTA', text: `${config.cta.button}\n${config.cta.url}`, gradient: true },
-    { label: 'Voz en off (preview)', text: config.voice.script.slice(0, 120) + '...' },
+    { label:'Hook', text:`${cfg.hook.line1}\n${cfg.hook.line2}${cfg.hook.subline?'\n'+cfg.hook.subline:''}`, grad:true },
+    { label:'Problema', text: cfg.problem.stats.map(s=>`${s.value} — ${s.label}`).join('\n') },
+    { label:'AMY Chat', text: cfg.chat.messages.slice(0,2).map(m=>`[${m.from}] ${m.text}`).join('\n')+'…\n'+cfg.chat.footer },
+    { label:'Resultado', text:`${cfg.result.mainStat}× ${cfg.result.mainLabel}\n${cfg.result.subStats.map(s=>s.n+' '+s.l).join(' · ')}`, grad:true },
+    { label:'CTA', text:`${cfg.cta.button}\n${cfg.cta.url}` },
+    { label:'Voz preview', text: cfg.voice.script.slice(0,100)+'…' },
   ];
-  document.getElementById('scenesPreview').innerHTML = scenes.map(s =>
-    `<div class="scene-card">
-      <div class="scene-label">${s.label}</div>
-      <div class="scene-text ${s.gradient ? 'scene-gradient' : ''}">${s.text}</div>
-    </div>`
+  document.getElementById('scenes-'+lang).innerHTML = scenes.map(s =>
+    `<div class="scene-card"><div class="scene-label">${s.label}</div><div class="scene-text ${s.grad?'grad':''}">${s.text}</div></div>`
   ).join('');
+
+  // Subtitles
+  document.getElementById('subs-'+lang).innerHTML = (cfg.subtitles||[]).map(c =>
+    `<div class="sub-item"><span class="sub-time">${fmtFrames(c.start)}→${fmtFrames(c.end)}</span><span class="sub-text">${c.text}</span></div>`
+  ).join('');
+
+  // Voice
+  document.getElementById('voice-'+lang).textContent = cfg.voice.script;
+
+  // Social
+  document.getElementById('desc-'+lang).textContent = cfg.social.description;
+  document.getElementById('tags-'+lang).innerHTML = (cfg.social.hashtags||[]).map(h =>
+    `<span class="tag" onclick="navigator.clipboard.writeText('${h}')">${h}</span>`
+  ).join('');
+  document.getElementById('time-'+lang).textContent = cfg.social.bestTime;
 }
 
 async function generate() {
   const concept = document.getElementById('concept').value.trim();
-  if (!concept) { alert('Escribe el concepto del video primero.'); return; }
+  if (!concept) { alert('Escribe el concepto primero.'); return; }
 
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.textContent = 'Generando...';
-  clearLog();
-  ['scenesSection','socialSection','voiceSection','renderSection'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-    document.getElementById(id).classList.remove('visible');
-  });
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = 'Generando...';
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('results').classList.remove('show');
 
   try {
     const res = await fetch('/studio/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ concept }),
     });
-
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const dec = new TextDecoder();
+    let buf = '';
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
+      buf += dec.decode(value, { stream:true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        const data = JSON.parse(line.slice(6));
+        const d = JSON.parse(line.slice(6));
 
-        if (data.type === 'start') log(data.msg);
-        if (data.type === 'log') log(data.msg, 'ok');
-        if (data.type === 'error') log(data.msg, 'err');
+        if (d.type === 'start') log(d.msg);
+        if (d.type === 'log')   log(d.msg, 'ok');
+        if (d.type === 'error') log(d.msg, 'err');
 
-        if (data.type === 'config' || data.type === 'done') {
-          const config = data.config;
-          currentConfig = config;
+        if (d.type === 'configs' || d.type === 'done') {
+          const en = d.en || d.config;
+          const es = d.es;
+          configs.en = en; configs.es = es;
 
-          renderScenes(config);
-          showSection('scenesSection');
-
-          document.getElementById('socialDesc').textContent = config.social.description;
-          document.getElementById('hashtags').innerHTML = config.social.hashtags.map(h =>
-            `<span class="hashtag" onclick="navigator.clipboard.writeText('${h}')">${h}</span>`
-          ).join('');
-          document.getElementById('bestTime').textContent = config.social.bestTime;
-          showSection('socialSection');
-
-          document.getElementById('voiceScript').textContent = config.voice.script;
-          showSection('voiceSection');
+          if (en) renderConfig('en', en);
+          if (es) renderConfig('es', es);
+          document.getElementById('results').classList.add('show');
         }
 
-        if (data.type === 'done') {
-          document.getElementById('renderCmd').textContent = data.render_cmd;
-          showSection('renderSection');
-          log('¡Todo listo! Copia el comando de render y ejecútalo en tu terminal.', 'ok');
+        if (d.type === 'done') {
+          document.getElementById('cmd-en').textContent = d.cmd_en || '';
+          document.getElementById('cmd-es').textContent = d.cmd_es || '';
+          log('¡Listo! Elige idioma y copia el comando de render.', 'ok');
         }
       }
     }
   } catch(e) {
-    log('Error: ' + e.message, 'err');
+    log('Error: '+e.message, 'err');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Generar Video';
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Generar EN + ES';
   }
 }
 
-function copyDesc() {
-  if (!currentConfig) return;
-  const text = currentConfig.social.description + '\n\n' + currentConfig.social.hashtags.join(' ');
-  navigator.clipboard.writeText(text).then(() => alert('¡Copiado al portapapeles!'));
+function copyDesc(lang) {
+  if (!configs[lang]) return;
+  const text = configs[lang].social.description + '\n\n' + (configs[lang].social.hashtags||[]).join(' ');
+  navigator.clipboard.writeText(text).then(() => alert('¡Copiado!'));
+}
+function copyTags(lang) {
+  if (!configs[lang]) return;
+  navigator.clipboard.writeText((configs[lang].social.hashtags||[]).join(' ')).then(() => alert('¡Hashtags copiados!'));
+}
+function copyCmd(lang) {
+  const el = document.getElementById('cmd-'+lang);
+  navigator.clipboard.writeText(el.textContent).then(() => alert('¡Comando copiado! Pégalo en tu terminal.'));
 }
 
-function copyHashtags() {
-  if (!currentConfig) return;
-  navigator.clipboard.writeText(currentConfig.social.hashtags.join(' ')).then(() => alert('¡Hashtags copiados!'));
-}
-
-function copyRenderCmd() {
-  const cmd = document.getElementById('renderCmd').textContent;
-  navigator.clipboard.writeText(cmd).then(() => alert('¡Comando copiado! Pégalo en tu terminal.'));
-}
-
-document.getElementById('concept').addEventListener('keydown', (e) => {
+document.getElementById('concept').addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'Enter') generate();
 });
 </script>
