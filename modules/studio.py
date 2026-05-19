@@ -214,16 +214,8 @@ def stream_studio_generate(concept: str, cal_id: str = ""):
         props_en = json.dumps(config_en).replace("'", "\\'")
         props_es = json.dumps(config_es).replace("'", "\\'")
 
-        cmd_en = (
-            f"cd ~/scrapy/actualyza-videos && "
-            f"railway run npm run audio:en && "
-            f"npx remotion render src/index.ts AmyReel-EN {out_en} --props='{props_en}'"
-        )
-        cmd_es = (
-            f"cd ~/scrapy/actualyza-videos && "
-            f"railway run npm run audio:es && "
-            f"npx remotion render src/index.ts AmyReel-ES {out_es} --props='{props_es}'"
-        )
+        cmd_en = "cd ~/scrapy/actualyza-videos && npm run go:en"
+        cmd_es = "cd ~/scrapy/actualyza-videos && npm run go:es"
 
         yield f"data: {json.dumps({'type': 'done', 'cmd_en': cmd_en, 'cmd_es': cmd_es, 'slug': slug, 'out_en': out_en, 'out_es': out_es, 'en': config_en, 'es': config_es})}\n\n"
 
