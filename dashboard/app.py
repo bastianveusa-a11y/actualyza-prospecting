@@ -2191,6 +2191,26 @@ def studio_generate():
 
 # ── End Studio ─────────────────────────────────────────────────
 
+
+# ── Publicar ───────────────────────────────────────────────────
+
+@app.route("/publish")
+@_require_auth
+def publish_page():
+    from modules.publish import get_videos, get_platforms
+    return render_template("publish.html", videos=get_videos(), platforms=get_platforms())
+
+
+@app.route("/publish/mark", methods=["POST"])
+@_require_auth
+def publish_mark():
+    from modules.publish import mark_published
+    data = request.get_json(force=True)
+    mark_published(data["id"], data.get("platforms", []))
+    return jsonify({"ok": True})
+
+# ── End Publicar ───────────────────────────────────────────────
+
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy
 _restore_progress()        # recupera progress.json desde Notion si se perdió en redeploy
 _generate_all_assets_bg()  # genera creativos al arrancar si faltan

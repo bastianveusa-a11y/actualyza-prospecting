@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publicar — Actualyza</title>
+<style>
+  :root {
+    --bg:#0a0f1a; --surface:#111827; --surface2:#1a2235;
+    --blue:#4C8EFF; --purple:#7B3FE8; --green:#10b981;
+    --gold:#f59e0b; --red:#ef4444; --pink:#ec4899;
+    --text:#e5e7eb; --muted:#6b7280; --border:rgba(255,255,255,0.08);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; min-height:100vh; }
+
+  .nav { display:flex; align-items:center; gap:8px; padding:16px 24px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:6px 12px; border-radius:6px; transition:all .2s; }
+  .nav a:hover,.nav a.active { background:rgba(255,255,255,0.06); color:var(--text); }
+  .nav-logo { font-size:14px; font-weight:600; color:var(--text); margin-right:16px; letter-spacing:.05em; }
+
+  .container { max-width:1200px; margin:0 auto; padding:32px 24px; }
+  .header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:28px; }
+  .header h1 { font-size:22px; font-weight:600; }
+  .header p { color:var(--muted); font-size:13px; margin-top:4px; }
+
+  .filters { display:flex; gap:8px; margin-bottom:20px; }
+  .filter-btn { padding:7px 16px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--muted); transition:all .2s; }
+  .filter-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+  .filter-btn.active { background:rgba(76,142,255,0.12); border-color:var(--blue); color:var(--blue); }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border .2s; }
+  .card:hover { border-color:rgba(76,142,255,0.3); }
+  .card.done { border-color:rgba(16,185,129,0.25); }
+
+  .card-header { padding:16px 18px 12px; display:flex; align-items:flex-start; gap:12px; }
+  .lang-badge { flex-shrink:0; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .lang-en { background:rgba(76,142,255,0.12); }
+  .lang-es { background:rgba(236,72,153,0.12); }
+  .card-meta { flex:1; min-width:0; }
+  .card-slug { font-size:11px; font-family:monospace; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-concept { font-size:13px; font-weight:500; color:var(--text); margin-top:3px; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card-date { font-size:10px; color:var(--muted); margin-top:4px; }
+
+  .status-done { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--green); }
+  .status-pending { font-size:11px; color:var(--muted); }
+
+  .card-body { padding:0 18px 16px; }
+
+  /* Copy boxes */
+  .copy-section { margin-bottom:12px; }
+  .copy-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:5px; }
+  .copy-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:12px; line-height:1.6; color:var(--text); max-height:80px; overflow:hidden; position:relative; cursor:pointer; transition:border .15s; white-space:pre-wrap; }
+  .copy-box:hover { border-color:var(--blue); }
+  .copy-box::after { content:'📋'; position:absolute; top:8px; right:10px; font-size:14px; opacity:0; transition:opacity .15s; }
+  .copy-box:hover::after { opacity:1; }
+  .copy-box.expanded { max-height:none; }
+
+  .tags-row { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
+  .tag { background:rgba(76,142,255,0.1); color:var(--blue); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; transition:background .15s; }
+  .tag:hover { background:rgba(76,142,255,0.2); }
+
+  /* Platform buttons */
+  .platforms { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px; }
+  .plat-btn { display:flex; align-items:center; gap:7px; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; text-decoration:none; }
+  .plat-btn:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.04); transform:translateY(-1px); }
+  .plat-icon { font-size:15px; }
+
+  .divider { height:1px; background:var(--border); margin:12px 0; }
+
+  .mark-btn { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.08); color:var(--green); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+  .mark-btn:hover { background:rgba(16,185,129,0.15); }
+  .mark-btn.done { background:rgba(16,185,129,0.12); color:var(--green); cursor:default; }
+
+  .empty { text-align:center; padding:80px 24px; color:var(--muted); }
+  .empty a { color:var(--blue); text-decoration:none; }
+
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--green); border-radius:10px; padding:12px 20px; font-size:13px; color:var(--green); opacity:0; transform:translateY(8px); transition:all .3s; pointer-events:none; z-index:999; }
+  .toast.show { opacity:1; transform:translateY(0); }
+
+  .best-time { font-size:11px; color:var(--muted); margin-bottom:10px; }
+  .best-time strong { color:var(--gold); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">ACTUALYZA</span>
+  <a href="/">Dashboard</a>
+  <a href="/consejo">Consejo</a>
+  <a href="/studio">Studio</a>
+  <a href="/publish" class="active">Publicar</a>
+  <a href="/campaigns">Campañas</a>
+  <a href="https://actualyza-web-actualyza-s-projects.vercel.app" target="_blank">Ver Web</a>
+</nav>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>📤 Publicar Videos</h1>
+      <p>Copia el copy, abre Buffer y sube el video. Marca como publicado cuando esté live.</p>
+    </div>
+    <a href="/studio" style="font-size:13px;color:var(--blue);text-decoration:none;">+ Generar nuevo →</a>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterAll(this)">Todos</button>
+    <button class="filter-btn" onclick="filterLang('en', this)">🇺🇸 English</button>
+    <button class="filter-btn" onclick="filterLang('es', this)">🇪🇸 Español</button>
+    <button class="filter-btn" onclick="filterPending(this)">⏳ Pendientes</button>
+    <button class="filter-btn" onclick="filterDone(this)">✅ Publicados</button>
+  </div>
+
+  {% if videos %}
+  <div class="grid" id="grid">
+    {% for v in videos %}
+    <div class="card {% if v.published %}done{% endif %}"
+         data-lang="{{ v.lang }}"
+         data-published="{{ v.published }}"
+         id="card-{{ v.id }}">
+
+      <div class="card-header">
+        <div class="lang-badge lang-{{ v.lang }}">{{ '🇺🇸' if v.lang == 'en' else '🇪🇸' }}</div>
+        <div class="card-meta">
+          <div class="card-slug">{{ v.slug }}-{{ v.lang }}.mp4</div>
+          <div class="card-concept">{{ v.concept }}</div>
+          <div class="card-date">{{ v.created_at[:16] }}</div>
+        </div>
+        {% if v.published %}
+        <div class="status-done">✅ Live</div>
+        {% else %}
+        <div class="status-pending">Pendiente</div>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+
+        <!-- Hook -->
+        <div class="copy-section">
+          <div class="copy-label">Hook (primera línea)</div>
+          <div class="copy-box" onclick="copyText(this, '{{ v.config.social.hookText | replace("'", "\\'") | replace('\n', '\\n') }}')">
+            {{ v.config.social.hookText }}
+          </div>
+        </div>
+
+        <!-- Caption -->
+        <div class="copy-section">
+          <div class="copy-label">Caption completo</div>
+          <div class="copy-box" onclick="copyText(this, `{{ v.config.social.description | replace('`', '\\`') | replace('\n', '\\n') }}\n\n{{ v.config.social.hashtags | join(' ') }}`)">
+            {{ v.config.social.description[:120] }}…
+          </div>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="tags-row">
+          {% for tag in v.config.social.hashtags %}
+          <span class="tag" onclick="copyText(null, '{{ tag }}')">{{ tag }}</span>
+          {% endfor %}
+        </div>
+
+        <!-- Best time -->
+        <div class="best-time">⏰ <strong>Publicar:</strong> {{ v.config.social.bestTime }}</div>
+
+        <!-- Platforms -->
+        <div class="copy-label" style="margin-bottom:7px">Abrir en</div>
+        <div class="platforms">
+          {% for p in platforms %}
+          <a class="plat-btn" href="{{ p.url }}" target="_blank">
+            <span class="plat-icon">{{ p.icon }}</span>
+            {{ p.label }}
+          </a>
+          {% endfor %}
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="mark-btn {% if v.published %}done{% endif %}"
+                id="btn-{{ v.id }}"
+                onclick="markPublished({{ v.id }})">
+          {% if v.published %}✅ Publicado{% else %}Marcar como publicado{% endif %}
+        </button>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <p style="font-size:48px;margin-bottom:16px">📭</p>
+    <p style="font-size:16px;margin-bottom:8px">No hay videos aún.</p>
+    <p>Ve al <a href="/studio">Studio</a> y genera tu primer video.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function copyText(el, text) {
+  const clean = text.replace(/\\n/g, '\n');
+  navigator.clipboard.writeText(clean).then(() => showToast('¡Copiado!'));
+  if (el) {
+    el.style.borderColor = 'var(--green)';
+    setTimeout(() => el.style.borderColor = '', 1000);
+  }
+}
+
+async function markPublished(id) {
+  const btn = document.getElementById('btn-' + id);
+  if (btn.classList.contains('done')) return;
+  await fetch('/publish/mark', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ id, platforms: [] })
+  });
+  btn.textContent = '✅ Publicado';
+  btn.classList.add('done');
+  document.getElementById('card-' + id).classList.add('done');
+  showToast('¡Marcado como publicado!');
+}
+
+function filterAll(btn) {
+  setActive(btn);
+  document.querySelectorAll('.card').forEach(c => c.style.display = '');
+}
+function filterLang(lang, btn) {
+  setActive(btn);
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.display = c.dataset.lang === lang ? '' : 'none';
+  });
+}
+function filterPending(btn) {
+  setActive(btn);
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.display = c.dataset.published === '0' ? '' : 'none';
+  });
+}
+function filterDone(btn) {
+  setActive(btn);
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.display = c.dataset.published === '1' ? '' : 'none';
+  });
+}
+function setActive(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

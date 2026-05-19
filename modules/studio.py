@@ -207,6 +207,12 @@ def stream_studio_generate(concept: str, cal_id: str = ""):
             json.dump({"slug": slug, "concept": concept, "en": config_en, "es": config_es}, f, indent=2)
         yield f"data: {json.dumps({'type': 'log', 'msg': f'Config saved → out/{slug}.json ✓'})}\n\n"
 
+        # Register both videos in publish DB
+        from modules.publish import save_video
+        save_video(slug, concept, "en", config_en)
+        save_video(slug, concept, "es", config_es)
+        yield f"data: {json.dumps({'type': 'log', 'msg': 'Videos registrados en Publicar ✓'})}\n\n"
+
         # Render output filenames (unique per video)
         out_en = f"out/{slug}-en.mp4"
         out_es = f"out/{slug}-es.mp4"
