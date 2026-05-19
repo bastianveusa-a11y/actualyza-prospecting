@@ -7,47 +7,81 @@ from datetime import datetime
 CLIENT = anthropic.Anthropic()
 VIDEO_PROJECT = os.path.expanduser("~/scrapy/actualyza-videos")
 
-SYSTEM_PROMPT = """You are a creative director and social media strategist for Actualyza, a company that sells AI infrastructure to clinics and medical practices. Your specialty is short-form vertical video (30s Reels/TikTok).
+SYSTEM_PROMPT = """You are a creative director and social media strategist for Actualyza. Your specialty is short-form vertical video (30s Reels/TikTok) that converts clinic owners into customers.
 
-AMY is Actualyza's flagship product: an AI voice agent that answers calls 24/7, books appointments, and follows up with leads — fully automated.
+━━━ WHAT ACTUALYZA IS ━━━
+Actualyza is a complete AI infrastructure company — NOT just a voice agent. We build and deploy fully customized AI systems for clinics and medical practices. Every deployment is tailored to the client's business: their voice, their workflows, their CRM, their pricing.
 
-Target audience: owners of dental, medical, and aesthetic clinics in the US (Miami, Orlando, Dallas). They are busy, stressed about missed calls and lost patients, skeptical of tech.
+The flagship product is called AMY — but AMY is the face of a full infrastructure stack:
 
-SCENE TIMING (30fps, 900 frames total):
-- S1 HOOK:    0–75   (2.5s) — Two lines. Line1: Inter Black 900. Line2: Playfair italic gradient. Optional subline (light, 300).
-- REHOOK:     75–120 (1.5s) — Auto-generated pattern interrupt (62% stat), no copy needed.
-- S2 PROBLEM: 120–270 (5s) — 3 stats. Value: Inter Black 900, huge. Label: Playfair italic, soft.
-- S3 AMY:     270–480 (7s) — Chat. AMY messages: Playfair italic. Patient: Inter light. Delays: 10/35/65/90.
-- S4 RESULT:  480–690 (7s) — Animated counter + label + 3 mini stats.
-- S5 CTA:     690–900 (7s) — Logo + gradient button + URL (Playfair italic).
+CORE CAPABILITIES (all customizable per client):
+1. AI Voice Agent (AMY) — answers every call 24/7, speaks the caller's language naturally (10+ languages: English, Spanish, Portuguese, French, Mandarin, and more). Never misses a call. 2am, Sundays, holidays.
+2. Real-time appointment booking — connects to Cal.com, checks availability live, books during the call, sends automatic email confirmation. Under 60 seconds.
+3. Automatic lead follow-up — every hour, reviews the CRM and calls all uncontacted leads. Competitors take hours, AMY takes under 30 seconds.
+4. AI call analysis — after every call: Lead Score 0–100, Hot/Warm/Cold temperature, urgency level, estimated payment capacity, detected objections, recommended next action. 7 data points per call.
+5. Real-time dashboard — live view of calls, appointments booked, hottest leads, most requested treatments, revenue pipeline.
+6. CRM integration — updates automatically after every call. Zero manual data entry.
+7. Meta Ads integration — lead fills form → AMY calls in under 30 seconds automatically.
+8. Full customization — AMY's voice, name, personality, treatment menu, pricing, scripts — all configured for each client's brand.
 
-TYPOGRAPHY RULE: Mix Inter Black (900) for numbers/impact + Playfair Display italic for emotion/AMY voice/copy.
+WHAT MAKES ACTUALYZA DIFFERENT FROM COMPETITORS:
+- It's not a generic chatbot or off-the-shelf tool. It's a bespoke AI infrastructure.
+- Clients don't manage the tech — Actualyza handles everything. They just show up to appointments.
+- Setup takes 48 hours. Live in 72.
+- 14-day free trial, no credit card required, fully operational from day 1.
+- Multilingual by default — AMY detects the caller's language and responds naturally.
+- Fraction of the cost of a human receptionist. Zero absences, errors, or sick days.
 
-SUBTITLE CHUNKS: 12 timed captions covering the full 900 frames. Each chunk: {start, end, text}. Keep text short (max 6 words). Spread evenly across scenes.
+BEFORE vs AFTER ACTUALYZA:
+Before: Leads not contacted for hours → AMY: contacted within 30 seconds
+Before: Human agent only during business hours → AMY: 24/7, 365 days
+Before: Data lost or poorly captured → CRM updated in real time
+Before: Don't know which leads to prioritize → Lead Score + temperature on every call
+Before: Team wastes time on cold calls → only speaks with pre-qualified leads
+Before: High monthly staffing cost → fraction of the cost
 
-Generate BOTH English (lang:"en") and Spanish (lang:"es") configs in one response.
+TARGET AUDIENCE: Owners of dental, medical, and aesthetic clinics in the US — Miami, Orlando, Dallas. They are busy, stressed about missed calls, losing patients to competitors, and skeptical of tech promises. They need to see ROI fast and feel the pain before they'll listen to the solution.
 
-Always output a SINGLE valid JSON with two keys: "en" and "es". No markdown, no explanation."""
+━━━ VIDEO STRUCTURE ━━━
+SCENE TIMING (30fps, 900 frames = 30 seconds):
+- S1 HOOK:    0–75   (2.5s) — Specific pain point. Inter Black 900 + Playfair italic gradient. Optional subline.
+- REHOOK:     75–120 (1.5s) — Auto pattern interrupt, no copy needed from you.
+- S2 PROBLEM: 120–270 (5s) — 3 stats quantifying the pain. Inter Black 900 value + Playfair italic label.
+- S3 AMY:     270–480 (7s) — Chat showing AMY solving the exact problem. Delays: 10/35/65/90.
+- S4 RESULT:  480–690 (7s) — Big animated counter + label + 3 supporting mini stats.
+- S5 CTA:     690–900 (7s) — Logo + gradient CTA button + URL.
+
+TYPOGRAPHY RULE: Inter Black 900 for numbers/impact. Playfair Display italic for emotion, AMY's voice, and supporting copy.
+SUBTITLE CHUNKS: 12 timed captions, max 6 words each, spread across all 900 frames.
+
+Generate BOTH English (lang:"en") and Spanish (lang:"es") in one response.
+Output ONLY a valid JSON with keys "en" and "es". No markdown, no explanation."""
 
 CALENDAR = [
-  {"id": "A1", "week": 1,  "pillar": "Dolor",      "concept": "3 patients called today. 3 hung up. Show the exact dollar amount lost."},
-  {"id": "A2", "week": 1,  "pillar": "Dolor",      "concept": "It's 11pm. Your competition just booked 3 patients while you slept."},
-  {"id": "A3", "week": 2,  "pillar": "Dolor",      "concept": "The math: how much your clinic loses per month from missed calls. Show the calculator."},
-  {"id": "B1", "week": 3,  "pillar": "Prueba",     "concept": "AMY handles 3 simultaneous calls at 2am. Show the chat in real time."},
-  {"id": "B2", "week": 3,  "pillar": "Prueba",     "concept": "Lead comes in at midnight → AMY calls in 28 seconds → appointment booked. Full flow."},
-  {"id": "B3", "week": 4,  "pillar": "Prueba",     "concept": "Patient didn't pick up — AMY follows up 3 times automatically. Show each attempt."},
-  {"id": "C1", "week": 5,  "pillar": "Resultado",  "concept": "$2,160/month in lost patients — and exactly how AMY gets it back."},
-  {"id": "C2", "week": 5,  "pillar": "Resultado",  "concept": "30 days with AMY: the timeline of what changes week by week."},
-  {"id": "C3", "week": 6,  "pillar": "Resultado",  "concept": "Receptionist vs AMY: side-by-side cost and availability comparison."},
-  {"id": "D1", "week": 7,  "pillar": "Objeción",   "concept": "'But I already have a receptionist' — handled in 15 seconds with facts."},
-  {"id": "D2", "week": 7,  "pillar": "Objeción",   "concept": "'It sounds robotic' — play AMY's actual conversation, let them hear it."},
-  {"id": "D3", "week": 8,  "pillar": "Objeción",   "concept": "'It's too expensive' — ROI calculator on screen, math does the selling."},
-  {"id": "E1", "week": 9,  "pillar": "Especialidad","concept": "Dental clinics: no-shows cost $300 each. AMY reduces them 80% with reminders."},
-  {"id": "E2", "week": 9,  "pillar": "Especialidad","concept": "Aesthetic clinics: high-ticket appointments + AMY qualifies before booking."},
-  {"id": "E3", "week": 10, "pillar": "Especialidad","concept": "Medical practices: after-hours patient routing + emergency triage with AMY."},
-  {"id": "F1", "week": 11, "pillar": "Cierre",     "concept": "Free trial CTA: what happens in the first 14 days, step by step."},
-  {"id": "F2", "week": 11, "pillar": "Cierre",     "concept": "Setup takes 48 hours. Your clinic runs itself in 72. Show the timeline."},
-  {"id": "F3", "week": 12, "pillar": "Cierre",     "concept": "Final urgency: limited spots available. Waitlist is growing. Act now."},
+  # ── DOLOR (semanas 1-2) ──────────────────────────────────────
+  {"id": "A1", "week": 1,  "pillar": "Dolor",       "concept": "3 patients called today. 3 hung up. Show the exact dollar amount lost and what that means per month."},
+  {"id": "A2", "week": 1,  "pillar": "Dolor",       "concept": "It's 11pm. Your competitor just booked 3 patients through their AI while your phone went to voicemail."},
+  {"id": "A3", "week": 2,  "pillar": "Dolor",       "concept": "Your receptionist is great — but she can't answer 3 calls at once at 2am on a Sunday. Show the gap."},
+  # ── INFRAESTRUCTURA (semanas 3-4) ────────────────────────────
+  {"id": "B1", "week": 3,  "pillar": "Infra",       "concept": "It's not a chatbot. Actualyza builds a complete AI infrastructure: voice agent + CRM + dashboard + analytics — all customized for your clinic."},
+  {"id": "B2", "week": 3,  "pillar": "Infra",       "concept": "Real-time dashboard: see every call, every appointment booked, every hot lead — live. Your whole clinic in one panel."},
+  {"id": "B3", "week": 4,  "pillar": "Infra",       "concept": "After every call: Lead Score 0-100, temperature Hot/Warm/Cold, objections detected, next action recommended. 7 data points, automatically."},
+  # ── PRUEBA EN ACCIÓN (semanas 5-6) ───────────────────────────
+  {"id": "C1", "week": 5,  "pillar": "Prueba",      "concept": "Lead fills out a Meta Ads form → AMY calls in under 30 seconds → appointment booked. Show the full automated flow."},
+  {"id": "C2", "week": 5,  "pillar": "Prueba",      "concept": "AMY speaks English, Spanish, Portuguese, French, Mandarin — detects the language automatically. No accent. No hesitation."},
+  {"id": "C3", "week": 6,  "pillar": "Prueba",      "concept": "Patient didn't pick up — AMY follows up automatically. Lead goes cold in 5 minutes. AMY never lets that happen."},
+  # ── RESULTADO (semanas 7-8) ──────────────────────────────────
+  {"id": "D1", "week": 7,  "pillar": "Resultado",   "concept": "Before Actualyza vs After: leads contacted in hours vs 30 seconds, data lost vs CRM updated in real time. Side by side."},
+  {"id": "D2", "week": 7,  "pillar": "Resultado",   "concept": "Cost of a full-time receptionist vs Actualyza AI infrastructure. Show the math. Same coverage, fraction of the cost."},
+  {"id": "D3", "week": 8,  "pillar": "Resultado",   "concept": "30 days with Actualyza: week-by-week timeline of what changes — calls answered, appointments booked, revenue recovered."},
+  # ── OBJECIONES (semanas 9-10) ────────────────────────────────
+  {"id": "E1", "week": 9,  "pillar": "Objeción",    "concept": "'But I already have a receptionist.' She can't work 24/7, speak 10 languages, and score every lead. AMY can."},
+  {"id": "E2", "week": 9,  "pillar": "Objeción",    "concept": "'It sounds robotic.' No — it's fully personalized to your clinic name, voice, tone, and treatment menu."},
+  {"id": "E3", "week": 10, "pillar": "Objeción",    "concept": "'Setup sounds complicated.' 48 hours to configure, 72 hours live. Actualyza handles everything. You just show up."},
+  # ── ESPECIALIDAD (semanas 11-12) ─────────────────────────────
+  {"id": "F1", "week": 11, "pillar": "Especialidad","concept": "Dental clinics: no-shows cost $300 each. AMY sends reminders, confirms, and reschedules automatically. 80% reduction."},
+  {"id": "F2", "week": 11, "pillar": "Especialidad","concept": "Aesthetic clinics: high-ticket patients need pre-qualification. AMY screens before booking so only serious leads get through."},
+  {"id": "F3", "week": 12, "pillar": "Cierre",      "concept": "14-day free trial. No credit card. Fully operational from day 1. Your AI infrastructure, live in 72 hours."},
 ]
 
 CONFIG_TEMPLATE = {
