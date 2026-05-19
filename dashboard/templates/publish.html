@@ -189,7 +189,7 @@
         <div class="copy-label" style="margin-bottom:6px">1. Sube el video renderizado</div>
         <div class="upload-zone" id="zone-{{ v.id }}" ondragover="onDrag(event,{{ v.id }})" ondragleave="offDrag({{ v.id }})" ondrop="onDrop(event,{{ v.id }})">
           <input type="file" accept="video/mp4,video/*" onchange="uploadFile({{ v.id }}, this.files[0])">
-          <div class="upload-zone-text" id="zone-text-{{ v.id }}>📁 Arrastra el .mp4 o haz click</div>
+          <div class="upload-zone-text" id="zone-text-{{ v.id }}">📁 Arrastra el .mp4 o haz click</div>
           <div class="upload-progress" id="prog-{{ v.id }}">
             <div class="upload-progress-bar" id="prog-bar-{{ v.id }}"></div>
           </div>
