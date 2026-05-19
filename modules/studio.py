@@ -338,6 +338,7 @@ def _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es):
     import requests as _req
     token = os.getenv("GITHUB_TOKEN", "")
     repo  = os.getenv("GITHUB_RENDER_REPO", "bastianveusa-a11y/actualyza-videos")
+    print(f"[GH dispatch] token={'SET('+str(len(token))+'chars)' if token else 'MISSING'} repo={repo}", flush=True)
     if not token:
         return False
     payload = {
