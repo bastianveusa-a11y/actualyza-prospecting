@@ -50,16 +50,12 @@
 
   /* Calendar */
   .cal-list { display:flex; flex-direction:column; gap:6px; max-height:460px; overflow-y:auto; }
-  .cal-item { border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:all .2s; overflow:hidden; }
+  .cal-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
   .cal-item:hover { border-color:var(--blue); background:rgba(76,142,255,.05); }
   .cal-item.active { border-color:var(--blue); background:rgba(76,142,255,.08); }
-  .cal-day-num { font-size:10px; font-weight:700; color:var(--muted); padding:5px 12px; border-bottom:1px solid var(--border); }
-  .cal-pair { display:flex; flex-direction:column; }
-  .cal-half { display:flex; align-items:flex-start; gap:8px; padding:8px 12px; }
-  .cal-half:first-child { border-bottom:1px solid var(--border); }
-  .cal-lang { font-size:12px; min-width:18px; flex-shrink:0; }
-  .cal-id { font-size:10px; font-weight:700; color:var(--blue); min-width:28px; margin-top:2px; flex-shrink:0; }
-  .cal-concept { font-size:12px; line-height:1.4; flex:1; color:var(--text); }
+  .cal-id { font-size:10px; font-weight:700; color:var(--muted); min-width:22px; margin-top:1px; }
+  .cal-concept { font-size:12px; line-height:1.4; flex:1; }
+  .cal-day-badge { font-size:9px; color:var(--muted); white-space:nowrap; }
   .pill { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; flex-shrink:0; }
   .p-Dolor      { background:rgba(239,68,68,.15);   color:#ef4444; }
   .p-Prueba     { background:rgba(76,142,255,.15);   color:var(--blue); }
@@ -144,23 +140,11 @@
         <div class="card-title">Calendario — 3 meses ({{calendar_days|length}} días)</div>
         <div class="cal-list">
           {% for dp in calendar_days %}
-          <div class="cal-item cal-day" id="cal-day-{{dp.day}}"
+          <div class="cal-item" id="cal-day-{{dp.day}}"
             onclick="loadCalPair('{{dp.en.id}}','{{dp.es.id}}','{{dp.en.concept|replace("'","&#39;")}}','{{dp.es.concept|replace("'","&#39;")}}')">
-            <div class="cal-day-num">Día {{dp.day}} — Semana {{dp.week}}</div>
-            <div class="cal-pair">
-              <div class="cal-half">
-                <span class="cal-lang">🇺🇸</span>
-                <span class="cal-id">{{dp.en.id}}</span>
-                <span class="cal-concept">{{dp.en.concept}}</span>
-                <span class="pill p-{{dp.en.pillar}}">{{dp.en.pillar}}</span>
-              </div>
-              <div class="cal-half">
-                <span class="cal-lang">🇪🇸</span>
-                <span class="cal-id">{{dp.es.id}}</span>
-                <span class="cal-concept">{{dp.es.concept}}</span>
-                <span class="pill p-{{dp.es.pillar}}">{{dp.es.pillar}}</span>
-              </div>
-            </div>
+            <span class="cal-id">D{{dp.day}}</span>
+            <span class="cal-concept">🇺🇸 {{dp.en.concept}}</span>
+            <span class="pill p-{{dp.en.pillar}}">{{dp.en.pillar}}</span>
           </div>
           {% endfor %}
         </div>
