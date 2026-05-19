@@ -4,7 +4,9 @@ import re
 import anthropic
 from datetime import datetime
 
-CLIENT = anthropic.Anthropic()
+CLIENT = anthropic.Anthropic(
+    api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+)
 VIDEO_PROJECT = os.path.expanduser("~/scrapy/actualyza-videos")
 
 SYSTEM_PROMPT = """You are a creative director and social media strategist for Actualyza. Your specialty is short-form vertical video (30s Reels/TikTok) that converts clinic owners into customers.
