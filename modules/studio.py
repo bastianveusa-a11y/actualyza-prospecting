@@ -336,7 +336,7 @@ def stream_studio_generate(concept: str, cal_id: str = "", concept_en: str = "",
 def _trigger_github_render(slug, concept, config_en, config_es, id_en, id_es):
     """Dispatch a repository_dispatch event to GitHub Actions to render the video."""
     import requests as _req
-    token = os.getenv("GITHUB_TOKEN", "")
+    token = os.getenv("GH_RENDER_TOKEN", "") or os.getenv("GITHUB_TOKEN", "")
     repo  = os.getenv("GITHUB_RENDER_REPO", "bastianveusa-a11y/actualyza-videos")
     print(f"[GH dispatch] token={'SET('+str(len(token))+'chars)' if token else 'MISSING'} repo={repo}", flush=True)
     if not token:
