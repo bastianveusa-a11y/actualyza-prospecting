@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "data" / "videos.db"
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # EST = UTC-5  (covers Miami/Dallas/Orlando)
 EST = timezone(timedelta(hours=-5))
