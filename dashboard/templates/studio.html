@@ -194,7 +194,7 @@
             <div class="row mt-12">
               <button class="btn btn-green btn-sm flex1" onclick="copyCmd('en')">📋 Copiar comando</button>
             </div>
-            <p class="muted mt-12">Output: <code>~/scrapy/actualyza-videos/out/video-en.mp4</code></p>
+            <p class="muted mt-12">Output: <code id="out-en">~/scrapy/actualyza-videos/out/…-en.mp4</code></p>
           </div>
 
         </div>
@@ -235,7 +235,7 @@
             <div class="row mt-12">
               <button class="btn btn-green btn-sm flex1" onclick="copyCmd('es')">📋 Copiar comando</button>
             </div>
-            <p class="muted mt-12">Output: <code>~/scrapy/actualyza-videos/out/video-es.mp4</code></p>
+            <p class="muted mt-12">Output: <code id="out-es">~/scrapy/actualyza-videos/out/…-es.mp4</code></p>
           </div>
 
         </div>
@@ -247,6 +247,7 @@
 <script>
 let configs = { en: null, es: null };
 let activeLang = 'en';
+let activeCalId = '';
 
 function log(msg, type='') {
   const el = document.getElementById('log');
@@ -268,6 +269,7 @@ function loadCal(id, concept) {
   document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
   document.getElementById('cal-'+id).classList.add('active');
   document.getElementById('concept').value = concept;
+  activeCalId = id;
 }
 
 function clearAll() {
@@ -327,7 +329,7 @@ async function generate() {
     const res = await fetch('/studio/generate', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ concept }),
+      body: JSON.stringify({ concept, cal_id: activeCalId }),
     });
     const reader = res.body.getReader();
     const dec = new TextDecoder();
@@ -360,7 +362,9 @@ async function generate() {
         if (d.type === 'done') {
           document.getElementById('cmd-en').textContent = d.cmd_en || '';
           document.getElementById('cmd-es').textContent = d.cmd_es || '';
-          log('¡Listo! Elige idioma y copia el comando de render.', 'ok');
+          document.getElementById('out-en').textContent = d.out_en || '';
+          document.getElementById('out-es').textContent = d.out_es || '';
+          log(`¡Listo! Archivos: ${d.slug}-en.mp4 / ${d.slug}-es.mp4`, 'ok');
         }
       }
     }

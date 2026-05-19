@@ -1,6 +1,8 @@
 import json
 import os
+import re
 import anthropic
+from datetime import datetime
 
 CLIENT = anthropic.Anthropic()
 VIDEO_PROJECT = os.path.expanduser("~/scrapy/actualyza-videos")
@@ -136,7 +138,16 @@ Rules:
     return json.loads(raw)
 
 
-def stream_studio_generate(concept: str):
+def _make_slug(concept: str, cal_id: str = "") -> str:
+    """Turn concept into a short filesystem-safe slug."""
+    base = cal_id + "-" if cal_id else ""
+    words = re.sub(r"[^a-z0-9 ]", "", concept.lower()).split()
+    slug = "-".join(words[:5])
+    date = datetime.now().strftime("%m%d")
+    return f"{base}{slug}-{date}"
+
+
+def stream_studio_generate(concept: str, cal_id: str = ""):
     """Generator: yields SSE events for the full video creation pipeline."""
 
     yield f"data: {json.dumps({'type': 'start', 'msg': 'Generating EN + ES configs...'})}\n\n"
@@ -149,28 +160,36 @@ def stream_studio_generate(concept: str):
         yield f"data: {json.dumps({'type': 'configs', 'en': config_en, 'es': config_es})}\n\n"
         yield f"data: {json.dumps({'type': 'log', 'msg': 'Scripts and social copy ready ✓'})}\n\n"
 
-        # Save both configs to video project
-        config_path = os.path.join(VIDEO_PROJECT, "render-config.json")
-        with open(config_path, "w") as f:
-            json.dump({"en": config_en, "es": config_es}, f, indent=2)
-        yield f"data: {json.dumps({'type': 'log', 'msg': 'Configs saved to video project ✓'})}\n\n"
+        # Build unique slug for this video
+        slug = _make_slug(concept, cal_id)
+        out_dir = os.path.join(VIDEO_PROJECT, "out", slug)
 
-        # Build render commands for both
+        # Save configs per-video (never overwritten)
+        config_path = os.path.join(VIDEO_PROJECT, "out", f"{slug}.json")
+        os.makedirs(os.path.join(VIDEO_PROJECT, "out"), exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump({"slug": slug, "concept": concept, "en": config_en, "es": config_es}, f, indent=2)
+        yield f"data: {json.dumps({'type': 'log', 'msg': f'Config saved → out/{slug}.json ✓'})}\n\n"
+
+        # Render output filenames (unique per video)
+        out_en = f"out/{slug}-en.mp4"
+        out_es = f"out/{slug}-es.mp4"
+
         props_en = json.dumps(config_en).replace("'", "\\'")
         props_es = json.dumps(config_es).replace("'", "\\'")
 
         cmd_en = (
             f"cd ~/scrapy/actualyza-videos && "
             f"railway run npm run audio:en && "
-            f"npx remotion render src/index.ts AmyReel-EN out/video-en.mp4 --props='{props_en}'"
+            f"npx remotion render src/index.ts AmyReel-EN {out_en} --props='{props_en}'"
         )
         cmd_es = (
             f"cd ~/scrapy/actualyza-videos && "
             f"railway run npm run audio:es && "
-            f"npx remotion render src/index.ts AmyReel-ES out/video-es.mp4 --props='{props_es}'"
+            f"npx remotion render src/index.ts AmyReel-ES {out_es} --props='{props_es}'"
         )
 
-        yield f"data: {json.dumps({'type': 'done', 'cmd_en': cmd_en, 'cmd_es': cmd_es, 'en': config_en, 'es': config_es})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'cmd_en': cmd_en, 'cmd_es': cmd_es, 'slug': slug, 'out_en': out_en, 'out_es': out_es, 'en': config_en, 'es': config_es})}\n\n"
 
     except Exception as e:
         yield f"data: {json.dumps({'type': 'error', 'msg': str(e)})}\n\n"

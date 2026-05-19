@@ -2176,11 +2176,12 @@ def studio_generate():
     from modules.studio import stream_studio_generate
     data    = request.get_json(force=True)
     concept = (data.get("concept") or "").strip()
+    cal_id  = (data.get("cal_id") or "").strip()
     if not concept:
         return jsonify({"error": "Concepto vacío"}), 400
 
     def generate():
-        yield from stream_studio_generate(concept)
+        yield from stream_studio_generate(concept, cal_id)
 
     return Response(
         generate(),
