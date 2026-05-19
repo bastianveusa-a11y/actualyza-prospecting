@@ -2209,6 +2209,63 @@ def publish_mark():
     mark_published(data["id"], data.get("platforms", []))
     return jsonify({"ok": True})
 
+
+@app.route("/publish/upload/<int:video_id>", methods=["POST"])
+@_require_auth
+def publish_upload(video_id):
+    """Receive .mp4, upload to Cloudinary, save URL in DB."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file"}), 400
+    f = request.files["file"]
+    from modules.cloudinary_client import upload_video_unsigned
+    from modules.publish import save_cloud_url
+    try:
+        slug = f"video-{video_id}"
+        url = upload_video_unsigned(f, slug)
+        save_cloud_url(video_id, url)
+        return jsonify({"ok": True, "url": url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/publish/profiles")
+@_require_auth
+def publish_profiles():
+    """Return connected Buffer profiles."""
+    from modules.buffer_client import get_profiles
+    try:
+        return jsonify(get_profiles())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/publish/push/<int:video_id>", methods=["POST"])
+@_require_auth
+def publish_push(video_id):
+    """Push video to Buffer with caption + hashtags."""
+    from modules.publish import get_videos
+    from modules.buffer_client import create_post
+    data = request.get_json(force=True)
+    profile_ids = data.get("profile_ids", [])
+    now = data.get("now", False)
+
+    videos = [v for v in get_videos() if v["id"] == video_id]
+    if not videos:
+        return jsonify({"error": "Video not found"}), 404
+    v = videos[0]
+
+    social = v["config"].get("social", {})
+    caption = social.get("description", "")
+    hashtags = " ".join(social.get("hashtags", []))
+    text = f"{caption}\n\n{hashtags}".strip()
+    cloud_url = v.get("cloud_url") or ""
+
+    try:
+        result = create_post(profile_ids, text, cloud_url, now=now)
+        return jsonify({"ok": True, "buffer": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ── End Publicar ───────────────────────────────────────────────
 
 _restore_canva_token()     # recupera token Canva desde Notion si se perdió en redeploy

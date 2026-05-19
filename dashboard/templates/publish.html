@@ -50,39 +50,56 @@
 
   .card-body { padding:0 18px 16px; }
 
-  /* Copy boxes */
   .copy-section { margin-bottom:12px; }
   .copy-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:5px; }
   .copy-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:12px; line-height:1.6; color:var(--text); max-height:80px; overflow:hidden; position:relative; cursor:pointer; transition:border .15s; white-space:pre-wrap; }
   .copy-box:hover { border-color:var(--blue); }
   .copy-box::after { content:'📋'; position:absolute; top:8px; right:10px; font-size:14px; opacity:0; transition:opacity .15s; }
   .copy-box:hover::after { opacity:1; }
-  .copy-box.expanded { max-height:none; }
 
   .tags-row { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
   .tag { background:rgba(76,142,255,0.1); color:var(--blue); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; transition:background .15s; }
   .tag:hover { background:rgba(76,142,255,0.2); }
 
-  /* Platform buttons */
-  .platforms { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px; }
-  .plat-btn { display:flex; align-items:center; gap:7px; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; text-decoration:none; }
-  .plat-btn:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.04); transform:translateY(-1px); }
-  .plat-icon { font-size:15px; }
+  .best-time { font-size:11px; color:var(--muted); margin-bottom:10px; }
+  .best-time strong { color:var(--gold); }
 
   .divider { height:1px; background:var(--border); margin:12px 0; }
 
-  .mark-btn { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.08); color:var(--green); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+  /* Upload zone */
+  .upload-zone { border:1.5px dashed var(--border); border-radius:8px; padding:14px; text-align:center; cursor:pointer; transition:all .2s; margin-bottom:10px; position:relative; }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--blue); background:rgba(76,142,255,0.05); }
+  .upload-zone.uploaded { border-color:var(--green); background:rgba(16,185,129,0.05); }
+  .upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .upload-zone-text { font-size:12px; color:var(--muted); pointer-events:none; }
+  .upload-zone.uploaded .upload-zone-text { color:var(--green); }
+  .upload-progress { height:3px; background:var(--border); border-radius:2px; margin-top:8px; overflow:hidden; display:none; }
+  .upload-progress-bar { height:100%; background:var(--blue); width:0%; transition:width .3s; border-radius:2px; }
+
+  /* Buffer publish */
+  .buffer-section { margin-bottom:10px; }
+  .profiles-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .profile-pill { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; border:1px solid var(--border); font-size:11px; cursor:pointer; transition:all .15s; user-select:none; }
+  .profile-pill.selected { border-color:var(--blue); background:rgba(76,142,255,0.12); color:var(--blue); }
+  .profile-pill.selected .pill-check { opacity:1; }
+  .pill-check { opacity:0; font-size:10px; }
+
+  .push-btn { width:100%; padding:10px; border-radius:8px; border:none; background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff; font-size:12px; font-weight:700; cursor:pointer; transition:opacity .2s; letter-spacing:.02em; }
+  .push-btn:hover { opacity:0.88; }
+  .push-btn:disabled { opacity:0.4; cursor:default; }
+
+  .mark-btn { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.08); color:var(--green); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; margin-top:8px; }
   .mark-btn:hover { background:rgba(16,185,129,0.15); }
-  .mark-btn.done { background:rgba(16,185,129,0.12); color:var(--green); cursor:default; }
+  .mark-btn.done { opacity:0.6; cursor:default; }
 
   .empty { text-align:center; padding:80px 24px; color:var(--muted); }
   .empty a { color:var(--blue); text-decoration:none; }
 
   .toast { position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--green); border-radius:10px; padding:12px 20px; font-size:13px; color:var(--green); opacity:0; transform:translateY(8px); transition:all .3s; pointer-events:none; z-index:999; }
   .toast.show { opacity:1; transform:translateY(0); }
+  .toast.error { border-color:var(--red); color:var(--red); }
 
-  .best-time { font-size:11px; color:var(--muted); margin-bottom:10px; }
-  .best-time strong { color:var(--gold); }
+  .cloud-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--green); background:rgba(16,185,129,0.1); border-radius:4px; padding:2px 7px; margin-bottom:8px; }
 </style>
 </head>
 <body>
@@ -101,7 +118,7 @@
   <div class="header">
     <div>
       <h1>📤 Publicar Videos</h1>
-      <p>Copia el copy, abre Buffer y sube el video. Marca como publicado cuando esté live.</p>
+      <p>Sube el .mp4, elige canales en Buffer y publica con un click.</p>
     </div>
     <a href="/studio" style="font-size:13px;color:var(--blue);text-decoration:none;">+ Generar nuevo →</a>
   </div>
@@ -140,7 +157,7 @@
 
         <!-- Hook -->
         <div class="copy-section">
-          <div class="copy-label">Hook (primera línea)</div>
+          <div class="copy-label">Hook</div>
           <div class="copy-box" onclick="copyText(this, '{{ v.config.social.hookText | replace("'", "\\'") | replace('\n', '\\n') }}')">
             {{ v.config.social.hookText }}
           </div>
@@ -161,21 +178,36 @@
           {% endfor %}
         </div>
 
-        <!-- Best time -->
         <div class="best-time">⏰ <strong>Publicar:</strong> {{ v.config.social.bestTime }}</div>
 
-        <!-- Platforms -->
-        <div class="copy-label" style="margin-bottom:7px">Abrir en</div>
-        <div class="platforms">
-          {% for p in platforms %}
-          <a class="plat-btn" href="{{ p.url }}" target="_blank">
-            <span class="plat-icon">{{ p.icon }}</span>
-            {{ p.label }}
-          </a>
-          {% endfor %}
-        </div>
-
         <div class="divider"></div>
+
+        <!-- Cloud upload -->
+        {% if v.cloud_url %}
+        <div class="cloud-badge">☁️ En nube · listo para publicar</div>
+        {% else %}
+        <div class="copy-label" style="margin-bottom:6px">1. Sube el video renderizado</div>
+        <div class="upload-zone" id="zone-{{ v.id }}" ondragover="onDrag(event,{{ v.id }})" ondragleave="offDrag({{ v.id }})" ondrop="onDrop(event,{{ v.id }})">
+          <input type="file" accept="video/mp4,video/*" onchange="uploadFile({{ v.id }}, this.files[0])">
+          <div class="upload-zone-text" id="zone-text-{{ v.id }}>📁 Arrastra el .mp4 o haz click</div>
+          <div class="upload-progress" id="prog-{{ v.id }}">
+            <div class="upload-progress-bar" id="prog-bar-{{ v.id }}"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Buffer publish -->
+        <div class="buffer-section">
+          <div class="copy-label" style="margin-bottom:6px">2. Elige canales de Buffer</div>
+          <div class="profiles-grid" id="profiles-{{ v.id }}">
+            <span style="font-size:11px;color:var(--muted)">Cargando canales…</span>
+          </div>
+          <button class="push-btn" id="push-{{ v.id }}"
+                  onclick="pushToBuffer({{ v.id }}, '{{ v.cloud_url or '' }}')"
+                  {% if not v.cloud_url %}disabled{% endif %}>
+            🚀 Publicar en Buffer
+          </button>
+        </div>
 
         <button class="mark-btn {% if v.published %}done{% endif %}"
                 id="btn-{{ v.id }}"
@@ -200,13 +232,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
-function showToast(msg) {
+// ── State ────────────────────────────────────────────────────────
+const cloudUrls = {};  // videoId → url (set after upload)
+let bufferProfiles = [];
+
+// ── Toast ────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// ── Copy ─────────────────────────────────────────────────────────
 function copyText(el, text) {
   const clean = text.replace(/\\n/g, '\n');
   navigator.clipboard.writeText(clean).then(() => showToast('¡Copiado!'));
@@ -216,46 +255,158 @@ function copyText(el, text) {
   }
 }
 
+// ── Drag & drop helpers ──────────────────────────────────────────
+function onDrag(e, id) { e.preventDefault(); document.getElementById('zone-' + id)?.classList.add('drag'); }
+function offDrag(id) { document.getElementById('zone-' + id)?.classList.remove('drag'); }
+function onDrop(e, id) {
+  e.preventDefault();
+  offDrag(id);
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(id, file);
+}
+
+// ── Upload to Cloudinary via backend ────────────────────────────
+async function uploadFile(id, file) {
+  if (!file) return;
+  const zone = document.getElementById('zone-' + id);
+  const zoneText = document.getElementById('zone-text-' + id);
+  const prog = document.getElementById('prog-' + id);
+  const bar = document.getElementById('prog-bar-' + id);
+
+  zone.classList.add('drag');
+  prog.style.display = 'block';
+  zoneText.textContent = '⬆️ Subiendo…';
+
+  // Fake progress animation while uploading
+  let pct = 0;
+  const ticker = setInterval(() => {
+    pct = Math.min(pct + 2, 90);
+    bar.style.width = pct + '%';
+  }, 300);
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const r = await fetch(`/publish/upload/${id}`, { method: 'POST', body: fd });
+    const data = await r.json();
+    clearInterval(ticker);
+    if (data.ok) {
+      bar.style.width = '100%';
+      zone.classList.remove('drag');
+      zone.classList.add('uploaded');
+      zoneText.textContent = '✅ ' + file.name;
+      cloudUrls[id] = data.url;
+      // Enable push button
+      const pushBtn = document.getElementById('push-' + id);
+      if (pushBtn) {
+        pushBtn.disabled = false;
+        pushBtn.dataset.url = data.url;
+      }
+      showToast('Video en la nube ✓');
+    } else {
+      throw new Error(data.error || 'Error al subir');
+    }
+  } catch (err) {
+    clearInterval(ticker);
+    zone.classList.remove('drag');
+    zoneText.textContent = '❌ ' + err.message;
+    showToast(err.message, true);
+  }
+}
+
+// ── Load Buffer profiles ─────────────────────────────────────────
+async function loadProfiles() {
+  try {
+    const r = await fetch('/publish/profiles');
+    bufferProfiles = await r.json();
+    if (!Array.isArray(bufferProfiles)) bufferProfiles = [];
+  } catch { bufferProfiles = []; }
+
+  document.querySelectorAll('[id^="profiles-"]').forEach(container => {
+    const id = container.id.replace('profiles-', '');
+    renderProfiles(container, id);
+  });
+}
+
+const SERVICE_ICONS = { instagram:'📸', facebook:'👥', tiktok:'🎵', youtube:'▶️', twitter:'🐦', linkedin:'💼' };
+
+function renderProfiles(container, videoId) {
+  if (!bufferProfiles.length) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--muted)">Sin canales conectados en Buffer</span>';
+    return;
+  }
+  container.innerHTML = bufferProfiles.map(p => {
+    const icon = SERVICE_ICONS[p.service] || '📡';
+    return `<div class="profile-pill selected" data-pid="${p.id}" data-vid="${videoId}" onclick="toggleProfile(this)">
+      <span class="pill-check">✓</span>
+      <span>${icon} ${p.username || p.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleProfile(el) {
+  el.classList.toggle('selected');
+}
+
+// ── Push to Buffer ───────────────────────────────────────────────
+async function pushToBuffer(videoId, existingUrl) {
+  const url = existingUrl || cloudUrls[videoId];
+  if (!url) { showToast('Primero sube el video ☝️', true); return; }
+
+  const pills = document.querySelectorAll(`[data-vid="${videoId}"].selected`);
+  const profileIds = [...pills].map(p => p.dataset.pid);
+  if (!profileIds.length) { showToast('Elige al menos un canal', true); return; }
+
+  const btn = document.getElementById('push-' + videoId);
+  btn.disabled = true;
+  btn.textContent = '⏳ Publicando…';
+
+  try {
+    const r = await fetch(`/publish/push/${videoId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_ids: profileIds, now: true })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      btn.textContent = '✅ En Buffer';
+      showToast('¡Publicado en Buffer!');
+      // Also mark as published
+      markPublished(videoId);
+    } else {
+      throw new Error(JSON.stringify(data.error || data.buffer));
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '🚀 Publicar en Buffer';
+    showToast('Error: ' + err.message, true);
+  }
+}
+
+// ── Mark published ───────────────────────────────────────────────
 async function markPublished(id) {
   const btn = document.getElementById('btn-' + id);
-  if (btn.classList.contains('done')) return;
+  if (btn?.classList.contains('done')) return;
   await fetch('/publish/mark', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, platforms: [] })
   });
-  btn.textContent = '✅ Publicado';
-  btn.classList.add('done');
-  document.getElementById('card-' + id).classList.add('done');
+  if (btn) { btn.textContent = '✅ Publicado'; btn.classList.add('done'); }
+  document.getElementById('card-' + id)?.classList.add('done');
   showToast('¡Marcado como publicado!');
 }
 
-function filterAll(btn) {
-  setActive(btn);
-  document.querySelectorAll('.card').forEach(c => c.style.display = '');
-}
-function filterLang(lang, btn) {
-  setActive(btn);
-  document.querySelectorAll('.card').forEach(c => {
-    c.style.display = c.dataset.lang === lang ? '' : 'none';
-  });
-}
-function filterPending(btn) {
-  setActive(btn);
-  document.querySelectorAll('.card').forEach(c => {
-    c.style.display = c.dataset.published === '0' ? '' : 'none';
-  });
-}
-function filterDone(btn) {
-  setActive(btn);
-  document.querySelectorAll('.card').forEach(c => {
-    c.style.display = c.dataset.published === '1' ? '' : 'none';
-  });
-}
-function setActive(btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
+// ── Filters ──────────────────────────────────────────────────────
+function filterAll(btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => c.style.display = ''); }
+function filterLang(lang, btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.lang === lang ? '' : 'none'; }); }
+function filterPending(btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.published === '0' ? '' : 'none'; }); }
+function filterDone(btn) { setActive(btn); document.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.published === '1' ? '' : 'none'; }); }
+function setActive(btn) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+
+// ── Init ─────────────────────────────────────────────────────────
+loadProfiles();
 </script>
 </body>
 </html>

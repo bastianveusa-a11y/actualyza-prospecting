@@ -35,9 +35,15 @@ def init_db():
                 created_at TEXT DEFAULT (datetime('now')),
                 published  INTEGER DEFAULT 0,
                 published_platforms TEXT DEFAULT '[]',
-                published_at TEXT
+                published_at TEXT,
+                cloud_url  TEXT
             )
         """)
+        # migrate: add cloud_url if missing (existing DBs)
+        try:
+            db.execute("ALTER TABLE videos ADD COLUMN cloud_url TEXT")
+        except Exception:
+            pass
         db.commit()
 
 
@@ -86,6 +92,13 @@ def mark_published(video_id: int, platforms: list):
                WHERE id=?""",
             (json.dumps(platforms), video_id)
         )
+        db.commit()
+
+
+def save_cloud_url(video_id: int, cloud_url: str):
+    init_db()
+    with _conn() as db:
+        db.execute("UPDATE videos SET cloud_url=? WHERE id=?", (cloud_url, video_id))
         db.commit()
 
 
