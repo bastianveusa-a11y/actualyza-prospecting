@@ -2208,14 +2208,16 @@ def studio_page():
 @_require_auth
 def studio_generate():
     from modules.studio import stream_studio_generate
-    data    = request.get_json(force=True)
-    concept = (data.get("concept") or "").strip()
-    cal_id  = (data.get("cal_id") or "").strip()
-    if not concept:
+    data       = request.get_json(force=True)
+    concept    = (data.get("concept") or "").strip()
+    cal_id     = (data.get("cal_id") or "").strip()
+    concept_en = (data.get("concept_en") or concept).strip()
+    concept_es = (data.get("concept_es") or concept).strip()
+    if not concept_en:
         return jsonify({"error": "Concepto vacío"}), 400
 
     def generate():
-        yield from stream_studio_generate(concept, cal_id)
+        yield from stream_studio_generate(concept, cal_id, concept_en=concept_en, concept_es=concept_es)
 
     return Response(
         generate(),

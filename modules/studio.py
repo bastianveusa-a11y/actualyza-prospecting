@@ -230,7 +230,12 @@ CONFIG_TEMPLATE = {
 
 
 def generate_video_configs(concept: str) -> dict:
-    """Returns {'en': VideoConfig, 'es': VideoConfig}."""
+    """Returns {'en': VideoConfig, 'es': VideoConfig} from a single concept (translated)."""
+    return generate_video_configs_pair(concept, concept)
+
+
+def generate_video_configs_pair(concept_en: str, concept_es: str) -> dict:
+    """Returns {'en': VideoConfig, 'es': VideoConfig} using separate concepts per language."""
     template_str = json.dumps({"en": CONFIG_TEMPLATE, "es": {**CONFIG_TEMPLATE, "lang": "es"}}, indent=2)
     message = CLIENT.messages.create(
         model="claude-sonnet-4-6",
@@ -238,9 +243,15 @@ def generate_video_configs(concept: str) -> dict:
         system=SYSTEM_PROMPT,
         messages=[{
             "role": "user",
-            "content": f"""Generate complete VideoConfig JSON for BOTH English and Spanish for this concept:
+            "content": f"""Generate complete VideoConfig JSON for BOTH English and Spanish.
 
-"{concept}"
+IMPORTANT: Each language has its OWN independent concept — do NOT translate one into the other. Generate each script entirely from its own concept.
+
+English concept:
+"{concept_en}"
+
+Spanish concept:
+"{concept_es}"
 
 Follow this exact structure (fill in all "..." fields):
 {template_str}
@@ -251,7 +262,6 @@ Rules:
 - Hook subline: quantifies the pain (e.g. "That's $540 gone.")
 - Chat delays MUST be: 10, 35, 65, 90 (faster pacing for retention)
 - Subtitles: 12 chunks, max 6 words each, match the voiceover script timing
-- Spanish: translate concept + adapt culturally, don't just translate word-for-word
 - CTA button EN: "Start Free Trial — 14 days" | ES: "Prueba Gratis — 14 días"
 - Return ONLY valid JSON with keys "en" and "es". No markdown."""
         }]
@@ -271,13 +281,15 @@ def _make_slug(concept: str, cal_id: str = "") -> str:
     return f"{base}{slug}-{date}"
 
 
-def stream_studio_generate(concept: str, cal_id: str = ""):
+def stream_studio_generate(concept: str, cal_id: str = "", concept_en: str = "", concept_es: str = ""):
     """Generator: yields SSE events for the full video creation pipeline."""
 
     yield f"data: {json.dumps({'type': 'start', 'msg': 'Generating EN + ES configs...'})}\n\n"
 
     try:
-        configs = generate_video_configs(concept)
+        en = concept_en or concept
+        es = concept_es or concept
+        configs = generate_video_configs_pair(en, es)
         config_en = configs.get("en", {})
         config_es = configs.get("es", {})
 

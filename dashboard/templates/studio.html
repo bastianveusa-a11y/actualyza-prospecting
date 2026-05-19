@@ -50,14 +50,20 @@
 
   /* Calendar */
   .cal-list { display:flex; flex-direction:column; gap:6px; max-height:460px; overflow-y:auto; }
-  .cal-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
+  .cal-item { border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:all .2s; overflow:hidden; }
   .cal-item:hover { border-color:var(--blue); background:rgba(76,142,255,.05); }
   .cal-item.active { border-color:var(--blue); background:rgba(76,142,255,.08); }
-  .cal-id { font-size:10px; font-weight:700; color:var(--muted); min-width:22px; margin-top:1px; }
-  .cal-concept { font-size:12px; line-height:1.4; flex:1; }
+  .cal-day-num { font-size:10px; font-weight:700; color:var(--muted); padding:6px 12px 3px; border-bottom:1px solid var(--border); }
+  .cal-pair { display:flex; flex-direction:column; gap:0; }
+  .cal-half { display:flex; align-items:flex-start; gap:8px; padding:7px 12px; }
+  .cal-half:first-child { border-bottom:1px solid rgba(255,255,255,.04); }
+  .cal-lang { font-size:11px; min-width:16px; }
+  .cal-id { font-size:10px; font-weight:700; color:var(--muted); min-width:26px; margin-top:1px; }
+  .cal-concept { font-size:11px; line-height:1.35; flex:1; }
   .pill { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; flex-shrink:0; }
   .p-Dolor      { background:rgba(239,68,68,.15);   color:#ef4444; }
   .p-Prueba     { background:rgba(76,142,255,.15);   color:var(--blue); }
+  .p-Infra      { background:rgba(76,142,255,.15);   color:var(--blue); }
   .p-Resultado  { background:rgba(16,185,129,.15);  color:var(--green); }
   .p-Objeción   { background:rgba(245,158,11,.15);  color:var(--gold); }
   .p-Especialidad{ background:rgba(123,63,232,.15); color:var(--purple); }
@@ -137,12 +143,34 @@
       <div class="card">
         <div class="card-title">Calendario — 3 meses</div>
         <div class="cal-list">
+          {% set ns = namespace(day=0) %}
           {% for item in calendar %}
-          <div class="cal-item" id="cal-{{item.id}}" onclick="loadCal('{{item.id}}','{{item.concept|replace("'","\\'")}}')">
-            <span class="cal-id">{{item.id}}</span>
-            <span class="cal-concept">{{item.concept}}</span>
-            <span class="pill p-{{item.pillar}}">{{item.pillar}}</span>
-          </div>
+            {% if item.track == 'en' %}
+              {% set ns.day = item.day %}
+              {% set en_item = item %}
+              {% set es_item = calendar[loop.index0 + 1] if loop.index0 + 1 < calendar|length else None %}
+              {% if es_item and es_item.track == 'es' %}
+              <div class="cal-item cal-day" id="cal-day-{{ns.day}}"
+                onclick="loadCalPair('{{en_item.id}}','{{es_item.id}}','{{en_item.concept|replace("'","\\'")}}','{{es_item.concept|replace("'","\\'")}}')"
+              >
+                <div class="cal-day-num">Día {{ns.day}}</div>
+                <div class="cal-pair">
+                  <div class="cal-half">
+                    <span class="cal-lang">🇺🇸</span>
+                    <span class="cal-id">{{en_item.id}}</span>
+                    <span class="cal-concept">{{en_item.concept}}</span>
+                    <span class="pill p-{{en_item.pillar}}">{{en_item.pillar}}</span>
+                  </div>
+                  <div class="cal-half">
+                    <span class="cal-lang">🇪🇸</span>
+                    <span class="cal-id">{{es_item.id}}</span>
+                    <span class="cal-concept">{{es_item.concept}}</span>
+                    <span class="pill p-{{es_item.pillar}}">{{es_item.pillar}}</span>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            {% endif %}
           {% endfor %}
         </div>
       </div>
@@ -248,6 +276,8 @@
 let configs = { en: null, es: null };
 let activeLang = 'en';
 let activeCalId = '';
+let activeConceptEN = '';
+let activeConceptES = '';
 
 function log(msg, type='') {
   const el = document.getElementById('log');
@@ -265,11 +295,17 @@ function switchLang(lang) {
   document.getElementById('tab-es').classList.toggle('active', lang==='es');
 }
 
-function loadCal(id, concept) {
+function loadCalPair(idEN, idES, conceptEN, conceptES) {
   document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
-  document.getElementById('cal-'+id).classList.add('active');
-  document.getElementById('concept').value = concept;
-  activeCalId = id;
+  // find and highlight the parent day row
+  document.querySelectorAll('.cal-day').forEach(el => {
+    const ids = Array.from(el.querySelectorAll('.cal-id')).map(s => s.textContent.trim());
+    if (ids.includes(idEN)) el.classList.add('active');
+  });
+  activeCalId = idEN;
+  activeConceptEN = conceptEN;
+  activeConceptES = conceptES;
+  document.getElementById('concept').value = `🇺🇸 ${conceptEN}\n\n🇪🇸 ${conceptES}`;
 }
 
 function clearAll() {
@@ -279,6 +315,9 @@ function clearAll() {
   document.getElementById('results').classList.remove('show');
   document.querySelectorAll('.cal-item').forEach(e => e.classList.remove('active'));
   configs = { en: null, es: null };
+  activeConceptEN = '';
+  activeConceptES = '';
+  activeCalId = '';
 }
 
 function fmtFrames(f) {
@@ -317,8 +356,13 @@ function renderConfig(lang, cfg) {
 }
 
 async function generate() {
-  const concept = document.getElementById('concept').value.trim();
-  if (!concept) { alert('Escribe el concepto primero.'); return; }
+  const conceptRaw = document.getElementById('concept').value.trim();
+  if (!conceptRaw) { alert('Escribe el concepto primero.'); return; }
+
+  // Use stored pair concepts if available, else fall back to textarea text
+  const concept_en = activeConceptEN || conceptRaw;
+  const concept_es = activeConceptES || conceptRaw;
+  const concept    = concept_en; // primary concept for slug/display
 
   const btn = document.getElementById('genBtn');
   btn.disabled = true; btn.textContent = 'Generando...';
@@ -329,7 +373,7 @@ async function generate() {
     const res = await fetch('/studio/generate', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ concept, cal_id: activeCalId }),
+      body: JSON.stringify({ concept, concept_en, concept_es, cal_id: activeCalId }),
     });
     const reader = res.body.getReader();
     const dec = new TextDecoder();
