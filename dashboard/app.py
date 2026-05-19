@@ -36,6 +36,7 @@ NOTION_TOKEN    = os.getenv("NOTION_TOKEN", "")
 NOTION_DB_ID    = os.getenv("NOTION_DATABASE_ID", "")
 DASH_USER       = os.getenv("DASHBOARD_USER", "actualyza")
 DASH_PASS       = os.getenv("DASHBOARD_PASS", "")
+DAEMON_SECRET   = os.getenv("DAEMON_SECRET", "")
 REVIEWER_USER   = os.getenv("REVIEWER_USER", "")
 REVIEWER_PASS   = os.getenv("REVIEWER_PASS", "")
 BUDGET_FILE     = Path(__file__).parent.parent / "data" / "api_usage.json"
@@ -2243,9 +2244,31 @@ def publish_mark():
     return jsonify({"ok": True})
 
 
+def _daemon_auth():
+    """Returns True if request carries valid DAEMON_SECRET."""
+    return DAEMON_SECRET and request.headers.get("X-Daemon-Key") == DAEMON_SECRET
+
+
+@app.route("/api/pending-renders")
+def api_pending_renders():
+    """Returns videos without cloud_url — called by local daemon."""
+    if not _daemon_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    from modules.publish import get_videos
+    pending = [
+        {"id": v["id"], "slug": v["slug"], "lang": v["lang"],
+         "concept": v["concept"], "config": v["config"]}
+        for v in get_videos(limit=100)
+        if not v.get("cloud_url")
+    ]
+    return jsonify(pending)
+
+
 @app.route("/publish/upload/<int:video_id>", methods=["POST"])
-@_require_auth
 def publish_upload(video_id):
+    """Receive .mp4 — accepts both session auth (browser) and daemon key."""
+    if not _daemon_auth() and not session.get("logged_in"):
+        return jsonify({"error": "unauthorized"}), 401
     """Receive .mp4 → Cloudinary → auto-schedule in Buffer at next free slot."""
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
