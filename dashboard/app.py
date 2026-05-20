@@ -2331,7 +2331,9 @@ def publish_upload(video_id):
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        print(f"[upload error] {traceback.format_exc()}", flush=True)
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 @app.route("/publish/profiles")
