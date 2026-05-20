@@ -39,6 +39,7 @@ def upload_video_unsigned(file_storage, public_id: str) -> str:
 
     endpoint = f"https://api.cloudinary.com/v1_1/{cloud_name}/video/upload"
     file_storage.seek(0)
+    file_bytes = file_storage.read()
     r = requests.post(
         endpoint,
         data={
@@ -48,7 +49,7 @@ def upload_video_unsigned(file_storage, public_id: str) -> str:
             "public_id": public_id,
             "resource_type": "video",
         },
-        files={"file": (public_id + ".mp4", file_storage, "video/mp4")},
+        files={"file": (public_id + ".mp4", file_bytes, "video/mp4")},
         timeout=120,
     )
     r.raise_for_status()
